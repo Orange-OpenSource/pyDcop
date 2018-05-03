@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Websocket Client</title>
+
+  <script type="text/javascript">
+    var ws;
+
+    function onConnectClick(){
+      var port = document.getElementById("port").value;
+    // Connect to Web Socket
+      ws = new WebSocket("ws://localhost:" + port + "/");
+      // Set event handlers.
+      ws.onopen = function() {
+        output("onopen");
+      };
+
+      ws.onmessage = function(e) {
+        // e.data contains received string.
+        output("onmessage: " + e.data);
+      };
+
+      ws.onclose = function() {
+        output("onclose");
+      };
+      ws.onerror = function(e) {
+        output("onerror");
+        console.log(e)
+      };
+    };
+
+    function onSubmit() {
+      var input = document.getElementById("input");
+      // You can send message to the Web Socket using ws.send.
+      ws.send(input.value);
+      output("send: " + input.value);
+      input.value = "";
+      input.focus();
+    }
+
+    function onCloseClick() {
+      ws.close();
+    }
+
+    function output(str) {
+      var log = document.getElementById("log");
+      var escaped = str.replace(/&/, "&amp;").replace(/</, "&lt;").
+        replace(/>/, "&gt;").replace(/"/, "&quot;"); // "
+      log.innerHTML = escaped + "<br>" + log.innerHTML;
+    }
+  </script>
+</head>
+<body>
+
+<p>
+    This file is meant to manually test the web-socket exposed by the
+    agents for the GUI application(s)
+</p>
+
+    port:
+    <input type="text" id="port" value="10001">
+    <button onclick="onConnectClick(); return false;">Connect</button>
+
+
+
+  <form onsubmit="onSubmit(); return false;">
+    <input type="text" id="input">
+    <input type="submit" value="Send">
+    <button onclick="onCloseClick(); return false;">close</button>
+  </form>
+  <div id="log"></div>
+
+</body>
+</html>

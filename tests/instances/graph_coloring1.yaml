@@ -1,0 +1,44 @@
+name: graph coloring
+objective: min
+
+domains:
+  colors:
+    values: [R, G]
+    type: 'color'
+
+variables:
+  v1:
+    domain: colors
+    cost_function: -0.1 if v1 == 'R' else 0.1
+  v2:
+    domain: colors
+    cost_function: -0.1 if v2 == 'G' else 0.1
+  v3:
+    domain: colors
+    cost_function: -0.1 if v3 == 'G' else 0.1
+
+constraints:
+  diff_1_2: 
+    type: intention
+    function: 1 if v1 == v2 else 0
+  diff_2_3: 
+    type: intention
+    function: 1 if v3 == v2 else 0
+
+agents:
+  a1:
+    capacity: 100
+  a2:
+    capacity: 100
+  a3:
+    capacity: 100
+  a4:
+    capacity: 100
+  a5:
+    capacity: 100 
+
+distribution_hints:
+  must_host:
+    a1: [v1]
+    a2: [v2]
+    a3: [v3]

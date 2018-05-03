@@ -1,0 +1,42 @@
+name: graph coloring
+objective: min
+description: This instance is meant as a pure satisfaction problem (and not optimization)
+
+domains:
+  colors:
+    values: [R, G]
+    type: 'color'
+
+variables:
+  v1:
+    domain: colors
+  v2:
+    domain: colors
+  v3:
+    domain: colors
+
+constraints:
+  diff_1_2: 
+    type: intention
+    function: 10000 if v1 == v2 else 0
+  diff_2_3: 
+    type: intention
+    function: 10000 if v3 == v2 else 0
+
+agents:
+  a1:
+    capacity: 100
+  a2:
+    capacity: 100
+  a3:
+    capacity: 100
+  a4:
+    capacity: 100
+  a5:
+    capacity: 100 
+
+distribution_hints:
+  must_host:
+    a1: [v1]
+    a2: [v2]
+    a3: [v3]

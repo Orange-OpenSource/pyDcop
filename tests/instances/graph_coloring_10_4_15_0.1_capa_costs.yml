@@ -1,0 +1,130 @@
+name: graph coloring
+objective: min
+
+domains:
+  colors:
+    type: color
+    values: [0, 1, 2]
+
+variables:
+  v0:
+    domain: colors
+  v1:
+    domain: colors
+  v2:
+    domain: colors
+  v3:
+    domain: colors
+  v4:
+    domain: colors
+  v5:
+    domain: colors
+  v6:
+    domain: colors
+  v7:
+    domain: colors
+  v8:
+    domain: colors
+  v9:
+    domain: colors
+
+constraints:
+  c0:
+    function: 10000 if v0 == v1 else 0
+    type: intention
+  c1:
+    function: 10000 if v0 == v4 else 0
+    type: intention
+  c10:
+    function: 10000 if v6 == v9 else 0
+    type: intention
+  c11:
+    function: 10000 if v7 == v9 else 0
+    type: intention
+  c2:
+    function: 10000 if v0 == v5 else 0
+    type: intention
+  c3:
+    function: 10000 if v1 == v2 else 0
+    type: intention
+  c4:
+    function: 10000 if v2 == v5 else 0
+    type: intention
+  c5:
+    function: 10000 if v2 == v6 else 0
+    type: intention
+  c6:
+    function: 10000 if v3 == v8 else 0
+    type: intention
+  c7:
+    function: 10000 if v3 == v4 else 0
+    type: intention
+  c8:
+    function: 10000 if v4 == v5 else 0
+    type: intention
+  c9:
+    function: 10000 if v4 == v7 else 0
+    type: intention
+
+agents:
+  a0:
+    capacity: 120
+  a1:
+    capacity: 120
+  a10:
+    capacity: 120
+  a11:
+    capacity: 120
+  a12:
+    capacity: 120
+  a13:
+    capacity: 120
+  a14:
+    capacity: 120
+  a2:
+    capacity: 120
+  a3:
+    capacity: 120
+  a4:
+    capacity: 120
+  a5:
+    capacity: 120
+  a6:
+    capacity: 120
+  a7:
+    capacity: 120
+  a8:
+    capacity: 120
+  a9:
+    capacity: 120
+
+
+hosting_costs:
+  default: 0
+  a1:
+    computations:
+        c1: 0
+  a2:
+    computations:
+      c2: 0
+  a3:
+    computations:
+      c3: 0
+  a4:
+    computations:
+      c4: 0
+  a5:
+    computations:
+      c5: 0
+  a6:
+    computations:
+      c6: 0
+  a7:
+    computations:
+      c7: 0
+  a8:
+    computations:
+      c8: 0
+  a9:
+    computations:
+      c9: 0
