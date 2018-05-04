@@ -29,7 +29,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from typing import List, Callable
+from typing import List
+from collections.abc import Callable
 from pydcop.utils.simple_repr import SimpleRepr, simple_repr, from_repr
 
 
