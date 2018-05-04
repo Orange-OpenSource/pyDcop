@@ -86,8 +86,11 @@ def set_parser(subparsers):
                              'name:value. Several parameters can be given.')
 
     parser.add_argument('-d', '--distribution', type=str,
-                        help='file with the distribution or algorithm for '
-                             'distributing the computation graph')
+                        default='oneagent',
+                        help='A yaml file with the distribution or algorithm '
+                             'for distributing the computation graph, if not '
+                             'given the `oneagent` will be used (one '
+                             'computation for each agent)')
     parser.add_argument('-m', '--mode',
                         default='thread',
                         choices=['thread', 'process'],
