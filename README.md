@@ -6,6 +6,9 @@ DPOP, etc.) and allows you to develop your own algorithms.
 
 PyDCOP runs on python >= 3.5.
 
+[![Documentation Status](https://readthedocs.org/projects/pydcop/badge/?version=latest)](http://pydcop.readthedocs.io/en/latest/?badge=latest)
+ 
+
 ## Installation
 
 Using pip is recommended, on ubuntu :
