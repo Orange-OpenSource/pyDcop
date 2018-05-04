@@ -124,12 +124,6 @@ def message_type(msg_type: str, fields: List[str]):
             setattr(self, k, v)
         Message.__init__(self, msg_type, None)
 
-    def set_attr(self, name: str, value: Any) -> None:
-        super().__setattr__(name, value)
-
-    def get_attr(self, name: str) -> Any:
-        return super().__getattr__(name)
-
     def to_str(self):
         fs = ', '.join([f + ': ' + str(getattr(self, f)) for f in fields])
         return msg_type + '(' + fs + ')'
@@ -174,9 +168,7 @@ def message_type(msg_type: str, fields: List[str]):
                       '__str__': to_str,
                       '__repr__': to_str,
                       '_simple_repr': _simple_repr,
-                      '__eq__': equals,
-                      '__getattr__': get_attr,
-                      '__setattr__': set_attr,
+                      '__eq__': equals
                       })
     return msg_class
 
