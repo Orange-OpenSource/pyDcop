@@ -77,6 +77,7 @@ def set_parser(subparsers):
 
     parser.add_argument('-a', '--algo',
                         choices=algorithms,
+                        required=True,
                         help='algorithm for solving the dcop')
     parser.add_argument('-p', '--algo_params',
                         type=str,
