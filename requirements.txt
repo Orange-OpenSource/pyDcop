@@ -15,7 +15,6 @@ mypy==0.600
 networkx==2.1
 numpy==1.14.3
 packaging==17.1
-pkg-resources==0.0.0
 pluggy==0.6.0
 PuLP==1.6.8
 py==1.5.3
