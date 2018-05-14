@@ -4,9 +4,16 @@ python:
   - "3.6"
   - "3.7-dev"  # 3.7 development branch
 
-# command to install dependencies
+
+# Glpk solver must be install though apt, as it is not a python package  
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y glpk-utils
+
+# Install python dependencies
 install:
   - pip install -r requirements.txt
-# command to run tests
+
+# Run tests
 script:
   - pytest ./tests/unit
