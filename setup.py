@@ -29,11 +29,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from setuptools import setup, find_packages
-
-
-with open('README.md', 'r', encoding='utf-8') as f:
-    README = f.read()
 
 # Basic dependencies, required to run pyDCOP:
 deps = [
@@ -66,12 +61,22 @@ extras = {
 }
 
 
+from setuptools import setup, find_packages
+from os import path
+
+here = path.abspath(path.dirname(__file__))
+# Get the long description from the README file
+with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
+
 setup(
     name='pydcop',
-    version='0.1.1',
+    version='0.1.2a1',
     description='Several dcop algo implementation',
-    long_description=README,
-    long_description_content_type='text/markdown', # Optional (see note above)
+
+    long_description=long_description,
+    long_description_content_type='text/markdown', 
+
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
