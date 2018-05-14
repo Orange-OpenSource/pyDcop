@@ -620,4 +620,4 @@ def test_replica_unsubscribe(directory_discovery):
 
 def wait_run():
     # Small wait, just to give some slack for other threads to run.
-    sleep(0.01)
+    sleep(0.1)
