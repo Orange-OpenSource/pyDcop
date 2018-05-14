@@ -73,8 +73,8 @@ setup(
     long_description=README,
     classifiers=[
         "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers"
-        "License :: OSI Approved :: BSD License"
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: BSD License",
 
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3.5",
