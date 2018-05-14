@@ -265,7 +265,7 @@ class UnaryFunctionRelation(AbstractBaseRelation, SimpleRepr):
                                      Callable[[Any], Union[float, int]]]) \
         -> None:
         super().__init__(name)
-        self._var = variable
+        self._variable = variable
         self._variables = [variable]
         self._rel_function = rel_function
 
@@ -291,7 +291,7 @@ class UnaryFunctionRelation(AbstractBaseRelation, SimpleRepr):
             return self
         elif len(partial_assignment) == 1:
             v_name, =  partial_assignment.keys()
-            if v_name != self._var.name:
+            if v_name != self._variable.name:
                 raise ValueError('Unknown variable when slicing UnaryRelation')
 
             name = self._name + '_' + v_name
@@ -309,7 +309,7 @@ class UnaryFunctionRelation(AbstractBaseRelation, SimpleRepr):
             raise ValueError('Need exactly one argument to get a value from an'
                              ' UnaryRelation')
         elif isinstance(assignment, dict):
-            return self._rel_function(assignment[self._var.name])
+            return self._rel_function(assignment[self._variable.name])
 
         raise ValueError('Assignment must be a list or a dict.')
 
@@ -321,7 +321,7 @@ class UnaryFunctionRelation(AbstractBaseRelation, SimpleRepr):
         if len(args) == 1:
             return self._rel_function(args[0])
         elif len(kwargs) == 1:
-            return self._rel_function(kwargs[self._var.name])
+            return self._rel_function(kwargs[self._variable.name])
         raise ValueError('Need exactly one argument to get a value from an '
                          'UnaryRelation')
 
@@ -330,18 +330,18 @@ class UnaryFunctionRelation(AbstractBaseRelation, SimpleRepr):
 
     def __repr__(self):
         return 'UnaryFunctionRelation' \
-               '({}, {}, {})'.format(self._name, self._var, self._rel_function)
+               '({}, {}, {})'.format(self._name, self._variable, self._rel_function)
 
     def __eq__(self, other):
         if type(other) != UnaryFunctionRelation:
             return False
-        if self.name == other.name and self._var == other.dimensions[0] and \
+        if self.name == other.name and self._variable == other.dimensions[0] and \
                 self._rel_function == other.function:
             return True
         return False
 
     def __hash__(self):
-        return hash((self.name, self._var, self._rel_function))
+        return hash((self.name, self._variable, self._rel_function))
 
 
 class UnaryBooleanRelation(AbstractBaseRelation, SimpleRepr):

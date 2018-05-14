@@ -185,7 +185,7 @@ class UnaryFunctionRelationTest(unittest.TestCase):
 
         r = simple_repr(f1)
         self.assertEqual(r['name'], 'f1')
-        self.assertEqual(r['var']['name'], 'x1')
+        self.assertEqual(r['variable']['name'], 'x1')
         self.assertEqual(r['rel_function']['expression'], 'x1 * 0.8')
 
     def test_from_repr_with_expression_function(self):
