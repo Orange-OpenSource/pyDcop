@@ -32,7 +32,7 @@
 from setuptools import setup, find_packages
 
 
-with open('README.md', 'r') as f:
+with open('README.md', 'r', encoding='utf-8') as f:
     README = f.read()
 
 # Basic dependencies, required to run pyDCOP:
@@ -68,20 +68,21 @@ extras = {
 
 setup(
     name='pydcop',
-    version='0.1.0',
+    version='0.1.1',
     description='Several dcop algo implementation',
     long_description=README,
+    long_description_content_type='text/markdown', # Optional (see note above)
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
 
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.5",    
 
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    author='Pierre Rust',
+    author='Pierre Rust (Orange)',
     author_email='pierre.rust@orange.com',
 
     keywords=['dcop', 'MAS'],
@@ -95,5 +96,11 @@ setup(
         'pydcop/dcop.py'
     ],
 
-    packages =find_packages()
+    packages =find_packages(),
+
+    project_urls={
+        'Documentation':  'http://pydcop.readthedocs.io',
+        'Source': 'https://github.com/Orange-OpenSource/pyDcop',
+        'Bug Reports': 'https://github.com/Orange-OpenSource/pyDcop/issues'
+    }    
 )
