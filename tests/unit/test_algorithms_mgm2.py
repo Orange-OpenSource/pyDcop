@@ -469,7 +469,8 @@ class TestsOffersComputations(unittest.TestCase):
 
         self.assertEqual(bests, [(0, 1, 'x2')])
         self.assertEqual(best_gain, 8)
-        self.assertEqual(bests2, [(0, 1, 'x2'), (1, 0, 'x2')])
+        self.assertEqual(set(bests2), 
+                         set([(0, 1, 'x2'), (1, 0, 'x2')]))
         self.assertEqual(best_gain2, 8)
 
     def test_find_best_offer_max_mode_one_offerer(self):
@@ -506,7 +507,8 @@ class TestsOffersComputations(unittest.TestCase):
 
         self.assertEqual(bests, [(0, 1, 'x2')])
         self.assertEqual(best_gain, -5)
-        self.assertEqual(bests2, [(0, 1, 'x2'), (1, 0, 'x2')])
+        self.assertEqual(set(bests2),
+                         set([(0, 1, 'x2'), (1, 0, 'x2')]))
         self.assertEqual(best_gain2, -5)
 
     def test_find_best_offer_min_mode_2_offerers(self):
@@ -539,7 +541,8 @@ class TestsOffersComputations(unittest.TestCase):
             [('x2', {(0,0): 1, (0,1): 5, (1,0): 3}),
              ('x4', {(1,0): 7, (0,1): 2, (1,1): 3})])
 
-        self.assertEqual(bests, [(0, 1, 'x2'), (1, 0, 'x4')])
+        self.assertEqual(set(bests), 
+                         set([(0, 1, 'x2'), (1, 0, 'x4')]))
         self.assertEqual(best_gain, 8)
 
     def test_find_best_offer_max_mode_2_offerers(self):
@@ -574,7 +577,8 @@ class TestsOffersComputations(unittest.TestCase):
             [('x2', {(0,0): -1, (0,1): -5, (1,0): -3}),
              ('x4', {(1, 0): -5, (0, 1): -4, (1, 1): -3})])
 
-        self.assertEqual(bests, [(0, 1, 'x2'), (0, 1, 'x4'), (1, 0, 'x4')])
+        self.assertEqual(set(bests),
+                         set([(0, 1, 'x2'), (0, 1, 'x4'), (1, 0, 'x4')]))
         self.assertEqual(best_gain, -5)
 
 
