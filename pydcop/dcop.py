@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # BSD-3-Clause License
 #
 # Copyright 2017 Orange
@@ -29,8 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-#! python
-# -*-coding:utf-8 -*
 
 """
 Main command-line interface for pydcop.
