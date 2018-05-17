@@ -368,6 +368,8 @@ class Agent(object):
             self.logger.info('Starting computations %s', computations)
 
         if self._run_t is None:
+            # We start counter time only when the first computation is run,
+            # to avoid counting idle time when we wait for orders.
             self._run_t = perf_counter()
 
         on_start_t = perf_counter()

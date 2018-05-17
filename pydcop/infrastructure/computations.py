@@ -324,9 +324,9 @@ class MessagePassingComputation(object):
 
         Parameters
         ----------
-        sender_name: str
+        sender: str
             the name of the computation that has sent this
-        msg: an instance of Messsage
+        msg: an instance of Message
             the received message that must be handled
         t: float
             reception time

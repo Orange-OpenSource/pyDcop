@@ -406,7 +406,7 @@ class Directory(object):
             self._agents_data.pop(agent)
             self.discovery.unregister_agent(agent, publish=False)
         except KeyError as ke:
-            self.logger.error('key error in unregister_agent ', ke)
+            self.logger.error('KeyError in unregister_agent: %s', ke)
             return
 
         # cleanup any subscriptions for this removed agent, that is to say

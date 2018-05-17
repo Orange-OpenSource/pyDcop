@@ -122,13 +122,21 @@ class CommunicationLayer(object):
     def send_msg(self, src_agent: str, dest_agent: str,
                  msg: ComputationMessage, on_error=None, from_retry=False):
         """
-        Send msg from src_agent to dest_agent.
-        
-        :param src_agent: source agent
-        :param dest_agent: target agent
-        :param msg: message
-        :param on_error: overrides the default `on_error` mode
-        :return: 
+
+        Parameters
+        ----------
+        src_agent: str
+            name of the sender agent
+        dest_agent: str
+            name of the target agent
+        msg: ComputationMessage
+            the message
+        on_error:
+            error handling mode, overrides the default mode set when creating
+            the CommunicationLayer instance
+        from_retry:
+            internal arg, do NOT use.
+
         """
         raise NotImplementedError('Protocol class')
 
