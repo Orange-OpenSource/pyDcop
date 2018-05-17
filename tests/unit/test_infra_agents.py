@@ -117,7 +117,6 @@ def test_create():
 
 def test_start(agent):
 
-    agent._on_start = MagicMock()
     agent.start()
 
     assert agent.is_running
@@ -125,7 +124,6 @@ def test_start(agent):
     # The discovery computation is deployed when starting the agent
     assert set(c.name for c in agent.computations(include_technical=True))\
         == {'_discovery_agt1'}
-    agent._on_start.assert_called_once_with()
 
 
 def test_stop(agent):
