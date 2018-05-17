@@ -102,7 +102,6 @@ def test_no_neighbors():
     computation.finished.assert_called_once_with()
 
 
-
 class TestsValueComputation(unittest.TestCase):
     def test_best_unary(self):
         x = Variable("x", list(range(5)))

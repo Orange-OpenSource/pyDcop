@@ -315,7 +315,7 @@ class DummySender(object):
         self.value_dest_var = None
         self.value_msg_data = None
 
-    def __call__(self, sender_var, dest_var, msg, prio=None):
+    def __call__(self, sender_var, dest_var, msg, prio=None, on_error=None):
         if msg.type == 'UTIL':
             self.util_sender_var = sender_var
             self.util_dest_var = dest_var
