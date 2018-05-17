@@ -30,6 +30,7 @@
 
 
 import logging
+from time import sleep
 from typing import List
 
 from pydcop.dcop.objects import AgentDef
@@ -119,8 +120,12 @@ def run_cmd(args):
             # block until all agents have finished
             for agent in agents:
                 agent.join()
+            logger.info('All agents have stopped')
+            if force_stopped:
+                break
+            logger.info('Wait before restarting')
+            sleep(10)
 
-            logger.info("All agents have stopped")
     else:
         agents = start_agents(names, o_addr, int(o_port),
                               args.uiport, args.port)
