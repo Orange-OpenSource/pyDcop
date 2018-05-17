@@ -195,7 +195,7 @@ class MessagePassingComputation(object):
         self._running = False
 
         self._is_paused = False
-        self._paused_messages_post = []  # type: List[Tuple[str, Any, int]]
+        self._paused_messages_post = []  # type: List[Tuple[str, Any, int, Any]]
         self._paused_messages_recv = []  # type: List[Tuple[str, Any, float]]
 
     @property
@@ -268,10 +268,10 @@ class MessagePassingComputation(object):
             waiting_msg_count = 0
             while self._paused_messages_post:
                 waiting_msg_count += 1
-                target, msg, prio = self._paused_messages_post.pop()
-                self.post_msg(target, msg, prio)
+                target, msg, prio, e = self._paused_messages_post.pop()
+                self.post_msg(target, msg, prio, e)
             self.logger.debug('On resume, posting %s pending messages ',
-                             waiting_msg_count)
+                              waiting_msg_count)
 
             waiting_msg_count = 0
             while self._paused_messages_recv:
@@ -336,13 +336,13 @@ class MessagePassingComputation(object):
         else:
             self._paused_messages_recv.append((sender, msg, t))
 
-    def post_msg(self, target: str, msg, prio: int=None):
+    def post_msg(self, target: str, msg, prio: int=None, on_error=None):
         """
         Post a message.
 
         Notes
         -----
-        This method should always be used when seinding a message. The
+        This method should always be used when sending a message. The
         computation should never use the `_msg_sender` directly has this
         would bypass the pause state.
 
@@ -352,11 +352,15 @@ class MessagePassingComputation(object):
             the target computation for the message
         msg: an instance of Message
             the message to send
+        prio: int
+            priority level
+        on_error: error handling method
+            passed to the messaging component.
         """
         if not self.is_paused:
-            self._msg_sender(self.name, target, msg, prio)
+            self._msg_sender(self.name, target, msg, prio, on_error)
         else:
-            self._paused_messages_post.append((target, msg, prio))
+            self._paused_messages_post.append((target, msg, prio, on_error))
 
     def __str__(self):
         return 'MessagePassingComputation({})'.format(self.name)
@@ -500,6 +504,9 @@ class VariableComputation(DcopComputation):
     def current_cost(self):
         return self.__cost__
 
+    def footprint(self):
+        raise NotImplementedError()
+
     def value_selection(self, val, cost):
         """
         When the computation selects a value, it MUST be done by calling
@@ -510,12 +517,11 @@ class VariableComputation(DcopComputation):
         """
         if val != self._previous_val:
             self.logger.info('Selecting new value: %s, %s (previous: %s, %s)',
-                             val, cost, self._previous_val, self.__cost__ )
+                             val, cost, self._previous_val, self.__cost__)
             self._on_value_selection(val, cost, self.cycle_count)
             self._previous_val = val
             self.__value__ = val
         self.__cost__ = cost
-
 
     def _on_value_selection(self, val, cost, cycle_count):
         pass
