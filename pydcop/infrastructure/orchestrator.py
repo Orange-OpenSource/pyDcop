@@ -674,7 +674,14 @@ class AgentsMgt(MessagePassingComputation):
             else:
                 self.all_registered.set()
         elif evt == 'agent_removed':
-            self.logger.info('Agent %s unregistered from orchestrator', agent)
+            self.logger.info('Agent %s unregistered from directory', agent)
+            remaining_agents = self.discovery.agents()
+            if remaining_agents:
+                self.logger.info('receiving removed from %s, still waiting for '
+                                 'agents %s to stop', agent, remaining_agents)
+            else:
+                self.logger.info('All agents have stopped')
+                self._all_agt_stopped.set()
         else:
             raise Exception('Invalid agent registration notification')
 
@@ -826,14 +833,6 @@ class AgentsMgt(MessagePassingComputation):
         except ValueError:
             self.logger.warning('Stopped message for an unexpected agent: %s ',
                                 msg.agent)
-
-        remaining_agents = self.discovery.agents()
-        if remaining_agents:
-            self.logger.info('receiving stopped from %s, still waiting for '
-                             'agents %s to stop', msg.agent, remaining_agents)
-        else:
-            self.logger.info('All agents have stopped')
-            self._all_agt_stopped.set()
 
     def _on_computation_end_msg(self, sender: str,
                                 msg: ComputationFinishedMessage, _: float):
