@@ -1049,11 +1049,15 @@ class AgentsMgt(MessagePassingComputation):
         Careful : This must be called from the orchestrator's agent thread.
         """
         active_agents = self.discovery.agents()
-        self.logger.info('Request agents to stop %s', active_agents)
-        for agt in active_agents:
-            if agt == 'orchestrator':
-                continue
-            self._send_mgt_msg(agt, StopAgentMessage())
+        if not active_agents:
+            self.logger.info('No agents to stop')
+            self._all_agt_stopped.set()
+        else:
+            self.logger.info('Request agents to stop %s', active_agents)
+            for agt in active_agents:
+                if agt == 'orchestrator':
+                    continue
+                self._send_mgt_msg(agt, StopAgentMessage())
 
     def _deploy_computation(self, agent_id: str):
         """Deploy computations hosted on agent `agent_id` """
