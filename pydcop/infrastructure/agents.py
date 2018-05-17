@@ -544,6 +544,9 @@ class Agent(object):
         """
         return self._running
 
+    def join(self):
+        self.t.join()
+
     def _on_start(self):
         """
         This method is called when the agent starts.

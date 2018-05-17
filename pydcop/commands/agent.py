@@ -30,6 +30,7 @@
 
 
 import logging
+from typing import List
 
 from pydcop.dcop.objects import AgentDef
 from pydcop.infrastructure.orchestratedagents import OrchestratedAgent
@@ -50,8 +51,8 @@ embedded http server (each agent has its own http server).
  
 The ui-server is a websocket server (one for each agent) that gives access to 
 an agent internal state. It is only needed if you intend to connect a graphical 
-user interface for an agent, while it is very usefull it also may have some 
-impact on performance and is better avoided when running a ssytem with a large 
+user interface for an agent, while it is very useful it also may have some 
+impact on performance and is better avoided when running a system with a large 
 number of agents.
 
 
@@ -60,7 +61,7 @@ Examples
 
 Running a single agent on port 9000, with an ui-server on port 10001 
 
-   pydcop -v 3 agent -n a1 -p 9001 --uiport 10001 --orchestrator 127.0.0.1:9000
+    pydcop -v 3 agent -n a1 -p 9001 --uiport 10001 --orchestrator 127.0.0.1:9000
 
 Running 5 agents, listing on port 9001 - 9006 (without ui-port):
 
@@ -72,6 +73,8 @@ Running 5 agents, listing on port 9001 - 9006 (without ui-port):
 
 
 logger = logging.getLogger('pydcop.cli.agent')
+force_stopped = False
+agents = []
 
 
 def set_parser(subparsers):
@@ -79,6 +82,7 @@ def set_parser(subparsers):
     parser = subparsers.add_parser('agent',
                                    help='Run one or several standalone agents')
     parser.set_defaults(func=run_cmd)
+    parser.set_defaults(on_force_exit=on_force_exit)
 
     parser.add_argument('-n', '--names', type=str, nargs='+',
                         help='The name of the agent(s). This must match the '
@@ -94,19 +98,72 @@ def set_parser(subparsers):
                              'used, this port will incremented for next '
                              'agents. If not given, no ui-server will be '
                              'started for these/this agent(s)')
+    parser.add_argument('--restart', action='store_true', default=False,
+                        help='Restart agent(s) when they have all stopped. '
+                             'Useful when running agent(s) as daemon on a '
+                             'remote machine.')
 
     parser.add_argument('-o', '--orchestrator', type=str,
                         help='The address of the orchestrator <ip>:port')
 
 
 def run_cmd(args):
-
+    global agents
     o_addr, o_port = args.orchestrator.split(':')
-    o_port = int(o_port)
-    a_port = args.port
-    u_port = args.uiport
-    for a in args.names:
-        if u_port :
+    names = list(args.names)
+    if args.restart:
+        while not force_stopped:
+            agents = start_agents(names, o_addr, int(o_port),
+                                  args.uiport, args.port)
+
+            # block until all agents have finished
+            for agent in agents:
+                agent.join()
+
+            logger.info("All agents have stopped")
+    else:
+        agents = start_agents(names, o_addr, int(o_port),
+                              args.uiport, args.port)
+
+
+def on_force_exit(_, __):
+    print('FORCE EXIT')
+    global agents, force_stopped
+    force_stopped = True
+    for agent in agents:
+        agent.stop()
+
+
+def start_agents(names: List[str], o_addr, o_port, u_port, a_port):
+    """
+    Start orchestrated agents.
+
+    Each agent will run in its own thread, in the same process. They are
+    orchestrated by an orchestrator running in another process (which must be
+    launched separately).
+
+    Parameters
+    ----------
+    names: list of strings
+        the names of the agents
+    u_port: int
+        start port for ui
+    a_port: int
+        start port for agents (messages)
+    o_addr
+        orchestrator address
+    o_port
+        orchestrator port
+
+    Returns
+    -------
+    agents
+        the list of orchestrated agents started
+
+    """
+    started_agents = []
+    for a in names:
+        if u_port:
             logger.info(
                 'Starting agent {} on port {} with ui-server on {}'.format(
                     a, a_port, u_port))
@@ -121,6 +178,9 @@ def run_cmd(args):
                                   ui_port=u_port)
 
         agent.start()
+        started_agents.append(agent)
         a_port += 1
         if u_port:
             u_port += 1
+    logger.info("All %s agents started", len(names))
+    return started_agents
