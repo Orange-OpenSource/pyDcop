@@ -48,8 +48,8 @@ import traceback
 from functools import partial
 from importlib import import_module
 from threading import Thread
-from time import perf_counter
-from typing import Dict, List, Optional, Union, Callable, Tuple, Any
+from time import perf_counter, sleep
+from typing import Dict, List, Optional, Union, Callable, Tuple
 
 from pydcop.algorithms import ComputationDef
 from pydcop.algorithms.objects import AlgoDef
@@ -57,7 +57,7 @@ from pydcop.dcop.objects import AgentDef, create_binary_variables
 from pydcop.dcop.objects import BinaryVariable
 from pydcop.dcop.relations import Constraint
 from pydcop.infrastructure.communication import Messaging, \
-    CommunicationLayer
+    CommunicationLayer, UnreachableAgent
 from pydcop.infrastructure.computations import MessagePassingComputation, \
     build_computation
 from pydcop.infrastructure.discovery import Discovery, UnknownComputation, \
@@ -301,7 +301,6 @@ class Agent(object):
         One started, an agent will dispatch any received message to the
         corresponding target computation.
 
-
         Notes
         -----
         Each agent has it's own thread, this will start the agent's thread,
@@ -321,10 +320,8 @@ class Agent(object):
                                  .format(self.name))
         self.logger.info('Starting agent %s ', self.name)
         self._running = True
-        self.add_computation(self.discovery.discovery_computation)
         self.t.start()
-        self.discovery.register_agent(self.name, self.address)
-        self.run(self.discovery.discovery_computation.name)
+
 
     def run(self, computations: Optional[Union[str, List[str]]]=None):
         """
@@ -553,20 +550,50 @@ class Agent(object):
         """
         This method is called when the agent starts.
 
-        It is meant to be overwritten in subclasses that might need to
-        perform some operations on startup. Do NOT forget to call
-        `super()._on_start()` !
 
         Notes
         -----
-        This method is always run in the agent's thread, even though thet
+        This method is meant to be overwritten in subclasses that might need to
+        perform some operations on startup. Do NOT forget to call
+        `super()._on_start()` ! When `super()._on_start()` return `False`,
+        you must also return `False` !
+
+        This method is always run in the agent's thread, even though the
         `start()` method is called from an other thread.
+
+        Returns
+        -------
+        status: boolean
+            True if all went well, False otherwise
         """
         self.logger.debug('on_start for {}'.format(self.name))
+
+        self.discovery.discovery_computation.message_sender = \
+            self._messaging.post_msg
+        self._computations[self.discovery.discovery_computation.name] = \
+            self.discovery.discovery_computation
+        while True:
+            # Check _stopping: do not prevent agent form stopping !
+            if self._stopping.is_set():
+                return False
+            try:
+                self.discovery.register_computation(
+                    self.discovery.discovery_computation.name,
+                    self.name, self.address)
+            except UnreachableAgent:
+                self.logger.warning("Could not reach directory, will retry "
+                                    "later")
+                sleep(1)
+            else:
+                break
+        self.discovery.register_agent(self.name, self.address)
+        self.discovery.discovery_computation.start()
+
         if self._ui_port:
             self._ui_server = UiServer(self, self._ui_port)
             self.add_computation(self._ui_server)
             self._ui_server.start()
+        return True
 
     def _on_stop(self):
         """
@@ -592,10 +619,22 @@ class Agent(object):
         for comp in self.computations():
             comp.stop()
             if not _is_technical(comp.name):
-                self.discovery.unregister_computation(comp.name)
+                try:
+                    self.discovery.unregister_computation(comp.name)
+                except UnreachableAgent:
+                    # when stopping the agent, the orchestrator / directory might have
+                    # already left.
+                    pass
+
         if self._ui_server:
             self._ui_server.stop()
-        self.discovery.unregister_agent(self.name)
+
+        try:
+            self.discovery.unregister_agent(self.name)
+        except UnreachableAgent:
+            # when stopping the agent, the orchestrator / directory might have
+            # already left.
+            pass
 
     def _on_computation_value_changed(self, computation: str, value,
                                       cost, cycle):
@@ -792,11 +831,23 @@ class ResilientAgent(Agent):
                 self._on_replication_done)
 
     def _on_start(self):
+        """
+        See Also
+        --------
+        Agent._on_start
+
+        Returns
+        -------
+        status
+
+        """
         self.logger.debug('Resilient agent on_start')
-        super()._on_start()
+        if not super()._on_start():
+            return False
         if self.replication_comp is not None:
             self.add_computation(self.replication_comp)
             self.replication_comp.start()
+        return True
 
     def _on_stop(self):
         if self.replication_comp is not None:

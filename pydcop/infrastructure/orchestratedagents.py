@@ -99,9 +99,22 @@ class OrchestratedAgent(ResilientAgent):
         self._mgt_computation = OrchestrationComputation(self)
 
     def _on_start(self):
-        super()._on_start()
+        """
+        See Also
+        --------
+        Agent._on_start
+
+        Returns
+        -------
+        status
+
+        """
+        # Called in the agent's thread when it starts
+        if not super()._on_start():
+            return False
         self.add_computation(self._mgt_computation)
         self._mgt_computation.start()
+        return True
 
     def _on_computation_value_changed(self, computation: str,
                                       value, cost, cycle):
@@ -128,6 +141,7 @@ class OrchestratedAgent(ResilientAgent):
     def _on_repair_done(self, selected_computation: List[str]):
         # Overwritten from ResilientAgent
         self._mgt_computation.on_repair_done(selected_computation)
+
 
 class OrchestrationComputation(MessagePassingComputation):
     """
