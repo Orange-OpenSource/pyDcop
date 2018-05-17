@@ -135,7 +135,10 @@ class Agent(object):
         self._computations = {}  # type: Dict[str, MessagePassingComputation]
 
         self.t_active = 0
-        self._run_t = None  # time when starting to run
+        # time when run the first non-technical computation is run
+        self._run_t = None
+        # time when starting the agent
+        self._start_t = None
 
         self._periodic_cb = None
         self._period = 1000
@@ -320,6 +323,7 @@ class Agent(object):
                                  .format(self.name))
         self.logger.info('Starting agent %s ', self.name)
         self._running = True
+        self._start_t = perf_counter()
         self.t.start()
 
 
@@ -396,7 +400,7 @@ class Agent(object):
         """
         float:
             timestamp for the first run computation call. This timestamp is
-            used as a reference when computin various time-related metrics.
+            used as a reference when computing various time-related metrics.
         """
         return self._run_t
 
@@ -731,7 +735,7 @@ class Agent(object):
                 # Process periodic action. Only once the agents runs the
                 # computations (i.e. self._run_t is not None)
                 ct = perf_counter()
-                if self._run_t is not None \
+                if self._start_t is not None \
                         and self._periodic_cb is not None \
                         and ct - last_cb_time >= self._period:
                     self.logger.warning('periodic cb %s %s ', ct, last_cb_time)
