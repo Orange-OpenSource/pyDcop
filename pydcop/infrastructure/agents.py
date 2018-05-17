@@ -588,6 +588,8 @@ class Agent(object):
             comp.stop()
             if not _is_technical(comp.name):
                 self.discovery.unregister_computation(comp.name)
+        if self._ui_server:
+            self._ui_server.stop()
         self.discovery.unregister_agent(self.name)
 
     def _on_computation_value_changed(self, computation: str, value,

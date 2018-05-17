@@ -68,6 +68,15 @@ class UiServer(MessagePassingComputation):
         self.logger.debug('Starting ui server on %s', self.port)
         self.t.start()
 
+    def on_stop(self):
+        """
+        Called when stopping the computation, shutdown the ws server
+
+        """
+        self.logger.debug('Stopping ui server on %s', self.port)
+        self.server.shutdown()
+        self.server.server_close()
+
     def _new_client(self, client, server):
         self.logger.debug('new client %s', client)
         pass
