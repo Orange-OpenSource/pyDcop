@@ -620,7 +620,8 @@ class DiscoveryComputation(MessagePassingComputation):
 
     def send_to_directory(self, msg):
         if self.directory_name is not None:
-            self.post_msg(self.directory_name, msg, MSG_DISCOVERY)
+            self.post_msg(self.directory_name, msg, MSG_DISCOVERY,
+                          on_error='fail')
 
     def __str__(self):
         return 'DiscoveryComputation({})'.format(self.name)
