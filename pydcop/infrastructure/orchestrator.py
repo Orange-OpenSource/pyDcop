@@ -543,7 +543,7 @@ class AgentsMgt(MessagePassingComputation):
         super().__init__(ORCHESTRATOR_MGT)
         self._orchestrator_agent = orchestrator_agent
         self._orchestrator = orchestrator
-        self.discovery = self._orchestrator_agent.discovery  # type: Discovery
+        self.discovery = self._orchestrator_agent.discovery
 
         self._algo = algo
         self.graph = cg
@@ -624,7 +624,6 @@ class AgentsMgt(MessagePassingComputation):
                               '%s from %s ', msg, sender_name, exc_info=1)
             self._orchestrator.stop_agents(10)
             self.stop()
-
 
     def current_global_cost(self):
         # Compute the cost as seen by the agents
@@ -709,7 +708,7 @@ class AgentsMgt(MessagePassingComputation):
                 self.logger.debug('Missing computation for starting  : %s ',
                                   missing)
 
-    def _cb_replica_registration(self, evt: str, replica: str, agent: str ):
+    def _cb_replica_registration(self, evt: str, replica: str, agent: str):
         if evt == 'replica_added':
             self.logger.debug('Replica added for %s on %s, now : %s ',
                               replica, agent,
@@ -893,14 +892,11 @@ class AgentsMgt(MessagePassingComputation):
                 agt, PauseMessage(
                     self.discovery.agent_computations(agt)))
 
-        evt = msg.content  # type: ScenarioEvent
+        evt = msg.content
         leaving_agents = []
         for a in evt.actions:
             if a.type == 'add_agent':
                 self.logger.info('Event action: Adding agent %s', a)
-                agt = a.args['agent']
-                # self._msg_sender.post_msg(self.name, agt + '_mgt',
-                #                           RunAgentMessage(), MSG_MGT)
 
             elif a.type == 'remove_agent':
                 self.logger.info('Event action: Removing agent %s', a)
@@ -912,7 +908,6 @@ class AgentsMgt(MessagePassingComputation):
                 raise ValueError('Unknown event action ' + str(a))
 
         self._agents_removal(leaving_agents)
-        #self._agents_arrival()
 
     def _agents_removal(self, leaving_agents: List[str]):
         # Now inform other agents of the list of agents that left the system
@@ -930,7 +925,7 @@ class AgentsMgt(MessagePassingComputation):
             if not hs:
                 self.logger.error('Orphaned computation %s has no known '
                                   'replica: will not be repaired', o)
-        self._comps_state.update({c : None for c in orphaned})
+        self._comps_state.update({c: None for c in orphaned})
 
         # For removal, agents that must be informed are agents that possess a
         # replica of one of the orphaned computation.
@@ -946,7 +941,7 @@ class AgentsMgt(MessagePassingComputation):
 
     def _agents_arrival(self, arrived_agents: List[str]):
         # TODO
-            # For arrival,
+        # For arrival,
         #  * agents that are 'near' the newly arrived agent(s)
         #    this definition of 'near' depends on ??? FIXME
         pass
@@ -961,7 +956,7 @@ class AgentsMgt(MessagePassingComputation):
                               sender_name, msg.agent, msg)
             return
 
-        if current_agt_state== 'repair_setup':
+        if current_agt_state == 'repair_setup':
             self._agts_state[msg.agent] = 'repair_ready'
             waited = [v for v in self._agts_state
                       if self._agts_state[v] == 'repair_setup']
@@ -986,7 +981,7 @@ class AgentsMgt(MessagePassingComputation):
 
     def _on_repair_done(self, sender_name: str, msg: RepairDoneMessage, _):
         self.logger.debug('Repair done on agent %s, selected computations %s',
-                         msg.agent, msg.selected_computations)
+                          msg.agent, msg.selected_computations)
         try:
             current_agt_state = self._agts_state[msg.agent]
         except KeyError:
@@ -1003,19 +998,17 @@ class AgentsMgt(MessagePassingComputation):
 
             if waited:
                 self.logger.info('Repair done on agent %s, waiting for %s',
-                                  msg.agent, waited)
+                                 msg.agent, waited)
             else:
                 # Now that the reparation process is finished, resume,
                 # all computation from the original dcop
-                ready = [v for v in self._agts_state
-                         if self._agts_state[v] == 'repair_done']
                 self.logger.info('Repair done on agent %s, all agents done, '
-                                  'resuming computations',
-                                  msg.agent)
+                                 'resuming computations',
+                                 msg.agent)
 
                 # Dump current distribution
-                dist = { a: self.discovery.agent_computations(a)
-                         for a in self.discovery.agents()}
+                dist = {a: self.discovery.agent_computations(a)
+                        for a in self.discovery.agents()}
                 result = {
                     'inputs': {
                         'dist_algo': 'repair',
