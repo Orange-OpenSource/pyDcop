@@ -46,6 +46,7 @@ from threading import Timer
 
 import functools
 
+from pydcop.version import __version__
 from pydcop.commands import solve, orchestrator, agent, replica_dist
 from pydcop.commands import distribute
 from pydcop.commands import graph
@@ -63,6 +64,8 @@ def main():
                         help='verbosity, 0 means only errors will be '
                              'logged, useful when you need to parse '
                              'the result automatically.')
+    parser.add_argument('--version', action='store_true',
+                        help='output pydcop version')
     parser.add_argument('-t', '--timeout', default=0, type=int,
                         help='timeout for running the command , '
                              'if not specified run until finished or stop '
@@ -86,9 +89,13 @@ def main():
     replica_dist.set_parser(subparsers)
     run.set_parser(subparsers)
 
-
     # parse command line options
     args = parser.parse_args()
+
+    if args.version:
+        print('pydcop', __version__ )
+        return
+
     _configure_logs(args.verbose, args.log)
 
     if hasattr(args, 'on_force_exit'):
