@@ -147,6 +147,21 @@ class GraphColoring1(unittest.TestCase):
         # lame: we do not check the result, we just ensure we do not crash
 
 
+class DistAlgoOpionCompatibility(unittest.TestCase):
+
+    def test_dist_with_only_algo_only(self):
+        run_distribute('graph_coloring1.yaml', 'oneagent',
+                                algo='maxsum')
+
+    def test_dist_with_graph_only(self):
+        run_distribute('graph_coloring1.yaml', 'oneagent',
+                                graph='factor_graph')
+
+    def test_incompatible_graph_algo_must_fail(self):
+        self.assertRaises(CalledProcessError, run_distribute,
+                          'graph_coloring1.yaml', 'oneagent',
+                          algo='dsa', graph='factor_graph')
+
 def is_hosted(mapping, computation: str):
     for a in mapping:
         if computation in mapping[a]:
@@ -154,21 +169,17 @@ def is_hosted(mapping, computation: str):
     return False
 
 
-def run_distribute(filename, distribution, graph, algo=None):
+def run_distribute(filename, distribution, graph=None, algo=None):
     """
     Run the distribute cli command with the given parameters
     """
     filename = instance_path(filename)
-    if algo is None:
-        cmd = 'dcop.py distribute -d {distribution} -g {graph} ' \
-              '{file}'.format(distribution=distribution,
-                              graph=graph,
-                              file=filename)
-    else:
-        cmd = 'dcop.py distribute -d {distribution} -g {graph} ' \
-              '-a {algo} {file}'.format(distribution=distribution,
-                                        graph=graph,
-                                        algo=algo,
-                                        file=filename)
+    algo_opt = '' if algo is None else '-a ' + algo
+    graph_opt = '' if graph is None else '-g ' + graph
+    cmd = 'dcop.py distribute -d {distribution} {graph_opt} ' \
+          '{algo_opt} {file}'.format(distribution=distribution,
+                                     graph_opt=graph_opt,
+                                     algo_opt=algo_opt,
+                                     file=filename)
     output = check_output(cmd, stderr=STDOUT, timeout=10, shell=True)
     return yaml.load(output.decode(encoding='utf-8'))
