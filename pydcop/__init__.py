@@ -29,3 +29,4 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+from .version import __version__

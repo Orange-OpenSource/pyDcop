@@ -69,9 +69,12 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+with open(path.join(here, 'pydcop', 'version.py'), encoding='utf-8') as f:
+    exec(f.read())
+
 setup(
     name='pydcop',
-    version='0.1.2a1',
+    version=__version__,
     description='Several dcop algo implementation',
 
     long_description=long_description,
