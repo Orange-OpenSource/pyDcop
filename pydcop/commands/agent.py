@@ -29,6 +29,91 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+"""
+.. _pydcop_commands_agent:
+
+pydcop agent
+============
+
+``pydcop agent`` runs one or several standalone agent(s).
+
+
+Synopsis
+--------
+
+::
+
+  pydcop agent --names <names> --port <start_port>
+               --orchestrator <orchestrator_address>
+               [--uiport <start_uiport>]
+               [--restart]
+
+
+Description
+-----------
+
+Starts one or several agents. No orchestrator is started, you must start it
+separately  using the ``pydcop orchestrator`` command. The orchestrator might
+be started after or before the agents, if it is not reachable when starting the
+agents, they will wait until it is available.
+
+All agents are started in the same process and communicate with one another
+using an embedded http server (each agent has its own http server). You can
+run this command several time on different machines, all pointing to the same
+orchestrator ; this allows to run large distributed systems.
+
+The ui-server is a websocket server (one for each agent) that gives access to
+an agent internal state. It is only needed if you intend to connect a graphical
+user interface for an agent ; while it is very useful it also may have some
+impact on performance and is better avoided when running a system with a large
+number of agents.
+
+
+See Also
+--------
+
+:ref:`pydcop_commands_orchestrator`
+
+
+Options
+-------
+
+``-n <names>`` / ``--names <names>``
+  The names of the agent(s). Notice that this needs to match the name of the
+  agents expected by the orchestrator.
+
+``--orchestrator <orchestrator_address>``
+  The address of the orchestrator as <ip>:<port>
+
+``-p <start_port>`` / ``--port <start_port>``
+  The port on which the agent will listen for messages. If several agents
+  names are started (when giving several names) this port is used for the
+  first agent and increment for each subsequent agent.
+
+``-i <start_uiport>`` / ``--uiport <start_uiport>``
+  The port on which the ui-server will be listening (same behavior as
+  ``--port`` when starting several agents). If not given, no ui-server will be
+  started for these/this agent(s).
+
+``--restart``
+  When setting this flag, agent(s) will restarted when when they have all
+  stopped. Useful when running `pydcop agent` as daemon on a remote machine.
+
+
+Examples
+--------
+
+Running a single agent on port 9000, with an ui-server on port 10001::
+
+    pydcop -v 3 agent -n a1 -p 9001 --orchestrator 127.0.0.1:9000 --uiport 10001
+
+Running 5 agents, listening on port 9001 - 9006 (without ui-server)::
+
+    pydcop -v 3 agent -n a1 a2 a3 a4 a5 -p 9001 --orchestrator 127.0.0.1:9000
+
+
+"""
+
 import logging
 from time import sleep
 from typing import List
@@ -36,42 +121,6 @@ from typing import List
 from pydcop.dcop.objects import AgentDef
 from pydcop.infrastructure.orchestratedagents import OrchestratedAgent
 from pydcop.infrastructure.communication import HttpCommunicationLayer
-
-"""
-The 'agent' dcop cli command runs one or several standalone agent(s).
-
-
-Notes
------
-
-By standalone, we means agents without an Orchestrator, which may be run 
-separately (and generally before) using the `pydcop orchestrator` command.
-
-Agents created with this command communicate with one another using an 
-embedded http server (each agent has its own http server). 
- 
-The ui-server is a websocket server (one for each agent) that gives access to 
-an agent internal state. It is only needed if you intend to connect a graphical 
-user interface for an agent, while it is very useful it also may have some 
-impact on performance and is better avoided when running a system with a large 
-number of agents.
-
-
-Examples
---------
-
-Running a single agent on port 9000, with an ui-server on port 10001 
-
-    pydcop -v 3 agent -n a1 -p 9001 --uiport 10001 --orchestrator 127.0.0.1:9000
-
-Running 5 agents, listing on port 9001 - 9006 (without ui-port):
-
-    pydcop -v 3 agent -n a1 a2 a3 a4 a5 -p 9001 --orchestrator 127.0.0.1:9000
-
-
-  
-"""
-
 
 logger = logging.getLogger('pydcop.cli.agent')
 force_stopped = False
@@ -90,22 +139,24 @@ def set_parser(subparsers):
                              'name of the agents expected by the '
                              'orchestrator.')
     parser.add_argument('-p', '--port', type=int,
-                        help='The port on which the agent will '
-                             'be listening for messages. If several name are '
-                             'used, this port will incremented for next agents')
-    parser.add_argument('-i', '--uiport', type=int, default=None,
-                        help='The port on which the ui-server will '
-                             'be listening for messages. If several name are '
-                             'used, this port will incremented for next '
-                             'agents. If not given, no ui-server will be '
-                             'started for these/this agent(s)')
-    parser.add_argument('--restart', action='store_true', default=False,
-                        help='Restart agent(s) when they have all stopped. '
-                             'Useful when running agent(s) as daemon on a '
-                             'remote machine.')
-
+                        help='The port on which the agent will listen for '
+                             'messages. If several agents names are started '
+                             '(when giving several names) this port is used '
+                             'for the first agent and increment for each '
+                             'subsequent agent.')
     parser.add_argument('-o', '--orchestrator', type=str,
                         help='The address of the orchestrator <ip>:port')
+
+    parser.add_argument('-i', '--uiport', type=int, default=None,
+                        help='The port on which the ui-server will be listening'
+                             ' (same behavior as``--port`` when starting '
+                             'several agents). If not given, no ui-server will '
+                             'be started for these/this agent(s).')
+    parser.add_argument('--restart', action='store_true', default=False,
+                        help='When setting this flag, agent(s) will restarted'
+                             'when when they have all stopped. Useful when '
+                             'running `pydcop agent` as daemon on a remote '
+                             'machine.')
 
 
 def run_cmd(args):
