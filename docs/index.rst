@@ -66,6 +66,13 @@ We recommend using pip and installing pyDCOP in a
   cd pyDcop
   pip install .
 
+Additionnally, for computations distribution, pyDCOP uses the 
+`glpk <https://www.gnu.org/software/glpk/>`_ linear program solver, which must
+be installed on the system (as it is not a python library which could be 
+installed as a dependency by `pip`). For example, on an ubuntu / debian system::
+
+  sudo apt-get install glpk-utils
+
 
 Documentation
 -------------
