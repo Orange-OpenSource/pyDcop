@@ -29,6 +29,75 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+"""
+.. _pydcop_commands_orchestrator:
+
+pydcop orchestrator
+===================
+
+``pydcop orchestrator`` runs an orchestrator.
+
+Synopsis
+--------
+
+::
+
+  pydcop orchestrator --algo <algo> [--algo_params <params>]
+                      --distribution <distribution>
+                      <dcop_files>
+
+
+Description
+-----------
+
+Runs an orchestrator, which waits for agents, deploys on them the computations
+required to solve the DCOP with the requested algorithm and collects
+selected values from agents. Agents must be run separately using the
+``agent`` command (see. :ref:`pydcop_commands_agent`).
+
+The ``orchestrator`` command support the global ``--timeout`` argument and can
+also be stopped using ``CTRL+C``.
+
+When the orchestrator stops, it request all agents to stop and displays the
+current DCOP solution (with associated cost) in yaml.
+
+See Also
+--------
+
+:ref:`pydcop_commands_agent`
+
+
+Options
+-------
+
+``--algo <dcop_algorithm>`` / ``-a <dcop_algorithm>``
+  Name of the dcop algorithm, e.g. 'maxsum', 'dpop', 'dsa', etc.
+
+``--algo_params <params>`` / ``-p <params>``
+  Parameters (optional) for the DCOP algorithm, given as string "name:value".
+  May be used multiple times to set several parameters. Available parameters
+  depend on the algorithm, check algorithms documentation.
+
+``--distribution <distribution>`` / ``-d <distribution>``
+  Either a distribution algorithm ('oneagent', 'adhoc', 'ilp_fgdp', etc.) or
+  the path to a yaml file containing the distribution
+
+``<dcop_files>``
+  One or several path to the files containning the dcop. If several path are
+  given, their content is concatenated as used a the yaml definition for the
+  DCOP.
+
+Examples
+--------
+
+Running an orchestrator for 5 seconds, to solve a graph coloring DCOP with
+``maxsum``. Computations are distributed using the ``adhoc`` algorithm::
+
+  pydcop --timeout 5 orchestrator -a maxsum -d adhoc graph_coloring.yaml
+
+
+"""
+
 import json
 import logging
 import sys
@@ -43,20 +112,6 @@ from pydcop.dcop.yamldcop import load_dcop_from_file
 from pydcop.distribution.yamlformat import load_dist_from_file
 from pydcop.infrastructure.communication import HttpCommunicationLayer
 from pydcop.infrastructure.orchestrator import Orchestrator
-
-"""
-The 'orchestrator' dcop cli command runs an orchestrator, which waits for 
-agents, deploy 
-computations and receive selected values from agents. 
-Agents must be run separately using the 'agent command'.
-
-The 'orchestrator' command support:
- * the global timeout argument : stop all registered agent and display the 
-   current result
- * the forced interruption (ctrl-c) : same as timeout
-
-"""
-
 
 logger = logging.getLogger('pydcop.cli.orchestrator')
 
