@@ -93,7 +93,7 @@ def set_parser(subparsers):
                         help="dcop file")
 
     parser.add_argument('-g', '--graph',
-                        required=True,
+                        required=False,
                         choices=['factor_graph', 'pseudotree',
                                  'constraints_hypergraph'],
                         help='graphical model for dcop computations')
@@ -118,12 +118,24 @@ def run_cmd(args):
     logger.debug('dcop command "distribute" with arguments {} '.format(args))
 
     dcop_yaml_files = args.dcop_files
-    dist_module, algo_module, graph_module = _load_modules(args.dist,
-                                                           args.algo,
-                                                           args.graph)
-
     logger.info('loading dcop from {}'.format(dcop_yaml_files))
     dcop = load_dcop_from_file(dcop_yaml_files)
+
+    dist_module = load_distribution_module(args.dist)
+
+    algo_module, graph_module = None, None
+    if args.algo is not None:
+        algo_module = load_algo_module(args.algo)
+
+    if args.graph is not None:
+        graph_module = load_graph_module(args.graph)
+        # Check that the graph model and the algorithm are compatible:
+        if algo_module is not None and algo_module.GRAPH_TYPE != args.graph:
+            _error('Incompatible graph model and algorithm')
+    elif algo_module is not None:
+        graph_module = load_graph_module(algo_module.GRAPH_TYPE)
+    else:
+        _error('You must pass at leat --graph or --algo option')
 
     # Build factor-graph computation graph
     logger.info('Building computation graph for dcop {}'
@@ -177,22 +189,29 @@ def run_cmd(args):
         sys.exit(2)
 
 
-def _load_modules(dist, algo, graph):
-    dist_module, algo_module, graph_module = None, None, None
+def load_distribution_module(dist):
+    dist_module = None
     try:
         dist_module = import_module('pydcop.distribution.{}'.format(dist))
-        # TODO check the imported module has the right methods ?
     except ImportError as e:
         _error('Could not find distribution method {}'.format(dist), e)
+    return dist_module
 
+
+def load_graph_module(graph):
+    graph_module = None
     try:
-        # Algo is optional, do not fail if we cannot find it
-        if algo is not None:
-            algo_module = import_module('pydcop.algorithms.{}'.format(algo))
         graph_module = import_module('pydcop.computations_graph.{}'.
                                      format(graph))
     except ImportError as e:
-        _error('Could not find computation graph type: {}'.format(
-            algo_module.GRAPH_TYPE), e)
+        _error('Could not find computation graph type: {}'.format(graph), e)
+    return graph_module
 
-    return dist_module, algo_module, graph_module
+
+def load_algo_module(algo):
+    algo_module = None
+    try:
+        algo_module = import_module('pydcop.algorithms.{}'.format(algo))
+    except ImportError as e:
+        _error('Could not find dcop algorithm: {}'.format(algo), e)
+    return algo_module
