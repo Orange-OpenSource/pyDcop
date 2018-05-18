@@ -16,7 +16,6 @@ pyDCOP command line reference
    cli/distribute
 
 
-
 pyDCOP command line interface can be called either using ``dcop.py`` or
 ``pydcop`` (which is simply a shell script pointing to ``dcop.py``). For example,
 the two following commands are strictly equivalent::
@@ -44,6 +43,9 @@ pydcop supports the following global options::
 
 ``--timeout <timeout>`` / ``-t <timeout>``
   Set a global timeout (in seconds) for the command.
+
+``--output <output_file>``
+  Write the command's output to a file instead of std out.
 
 ``-verbose <level>`` / ``-v <level>``
   Set verbosity level (0-3). Defaults to level 0, which should be used when you
