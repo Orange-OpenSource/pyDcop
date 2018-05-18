@@ -7,7 +7,9 @@ pyDCOP v0.1.2 [Unreleased]
 --------------------------
 
 ### Added
-- add --restart flag to cli command
+- new `--restart` flag on `agent` cli command
+- new `--version` global option on cli
+- add a lot of documentation : usage, command line reference, etc. 
 
 ### Fixed
 - when stopping an agent, the ws-sever (for ui) was not closed properly.
