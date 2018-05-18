@@ -30,40 +30,107 @@
 
 
 """
+.. _pydcop_commands_distribute:
 
-Distribute a dcop over a set of agents.
+pydcop distribute
+=================
 
-Print the distribution obtained.
+``pydcop distribute``  distributes a the computations for a DCOP over a set
+of agents.
+
 
 Synopsis
 --------
 ::
 
-    pydcop distribute --graph <graph-model> --dist <distribution method>
-        --algo <dcop-algorithm> <dcop-files>
+    pydcop distribute --dist <distribution_method>
+                      [--graph <graph_model>]
+                      [--algo <dcop_algorithm>] <dcop-files>
+
+Description
+-----------
+
+Distributes the computation used to solve a DCOP.
+
+The distribution obtained is written in yaml on standard output. It can also be
+written into a file by using the ``--output`` global option. The
+output file can be used as an input for
+several commands that accept a distribution (e.g.
+:ref:`orchestrator<pydcop_commands_orchestrator>`,
+:ref:`solve<pydcop_commands_solve>`,
+:ref:`run<pydcop_commands_run>`)
+
+See Also
+--------
+:ref:`concepts_graph` and
+:ref:`concepts_distribution`
 
 
 Options
 -------
 
-* ``--graph / -g <graph-model>`` : computation graph model
+``--dist <distribution_method>`` / ``-d <distribution_method>``
+  The distribution algorithm (``oneagent``, ``adhoc``, ``ilp_fgdp``, etc.,
+  see :ref:`concepts_distribution`).
 
-* ``--dist / -d <distribution method>`` : distribution method
+``--algo <dcop_algorithm>`` / ``-a <dcop_algorithm>``
+  The (optional) algorithm whose computations will be distributed. It is needed
+  when the distribution depends on the computation's characteristics (which
+  depend on the algorithm). For example when the distribution is based on
+  computations footprint of communication load, the dcop algorithm is needed.
 
-* ``--algo / -a <dcop-algorithm>`` : the algorithm whose computation must be
-  distributed
+``--graph <graph_model>`` / ``-g <graph_model>``
+  The (optional) computation graph model,
+  one of ``factor_graph``, ``pseudotree``, ``constraints_hypergraph``
+  (see. :ref:`concepts_graph`)
+  The set of computation to distribute depends on the graph model used to
+  represent the DCOP.
+  When the ``--algo`` option is used, it is not required as the graph model
+  can be deduced from the DCOP algorithm.
 
-* ``<dcop-files>`` : one or several files containing the dcop
+``<dcop-files>``
+  One or several path to the files containning the dcop. If several path are
+  given, their content is concatenated as used a the yaml definition for the
+  DCOP.
 
 
-Usage Examples
---------------
+Examples
+--------
 
-* distribute a dcop solved with dsa, which runs on a constraint hyper-graph,
-  using the ``ilp_compref`` distribution method::
+Distributing a DCOP for dsa, hence modeled as a constraints graph,
+using the ``ilp_compref`` distribution method::
 
-    pydcop distribute -g constraints_hypergraph -d ilp_compref -a dsa \\
-      tests/instances/graph_coloring_10_4_15_0.1_capa_costs.yml
+  pydcop distribute -d ilp_compref -a dsa \\
+                    graph_coloring_10_4_15_0.1_capa_costs.yml
+
+Distributing a DCOP modelled as a factor graph. The DCOP algorithm is not
+required here as the ``oneagent`` distribution algorithm does not depends on
+the computation's characteristics (as it simply assign one computation to each
+agent)::
+
+  dcop.py distribute --graph factor_graph \\
+                     --dist oneagent graph_coloring1.yaml
+
+The following command gives the same result. Here, we can deduce the required
+graph model, as maxsum works on a factor graph::
+
+  dcop.py distribute --algo maxsum \\
+                     --dist oneagent graph_coloring1.yaml
+
+Example output::
+
+  cost: 0
+  distribution:
+    a1: [v3]
+    a2: [diff_1_2]
+    a3: [diff_2_3]
+    a4: [v1]
+    a5: [v2]
+  inputs:
+    algo: null
+    dcop: [tests/instances/graph_coloring1.yaml]
+    dist_algo: oneagent
+    graph: factor_graph
 
 
 """
@@ -90,7 +157,7 @@ def set_parser(subparsers):
     parser.set_defaults(func=run_cmd)
 
     parser.add_argument('dcop_files', type=str, nargs='+', metavar='FILE',
-                        help="dcop file")
+                        help="dcop file(s)")
 
     parser.add_argument('-g', '--graph',
                         required=False,
@@ -159,10 +226,14 @@ def run_cmd(args):
                         computation_memory=computation_memory,
                         communication_load=communication_load)
         dist = distribution.mapping()
-        cost = dist_module.distribution_cost(
-            distribution, cg, dcop.agents.values(),
-            computation_memory=computation_memory,
-            communication_load=communication_load)
+
+        if hasattr(dist_module, 'distribution_cost'):
+            cost = dist_module.distribution_cost(
+                distribution, cg, dcop.agents.values(),
+                computation_memory=computation_memory,
+                communication_load=communication_load)
+        else:
+            cost = None
 
         result = {
             'inputs': {
