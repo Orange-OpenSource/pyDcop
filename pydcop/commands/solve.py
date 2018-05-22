@@ -28,6 +28,109 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+"""
+.. _pydcop_commands_solve:
+
+pydcop solve
+============
+
+``pydcop solve`` solves a static DCOP by running locally a set of
+agents.
+
+Synopsis
+--------
+
+::
+
+  pydcop solve --algo <algo> [--algo_params <params>]
+               [--distribution <distribution>]
+               [--mode <mode>]
+               [--collect_on <collect_mode>]
+               [--period <p>]
+               [--run_metrics <file>]
+               [--end_metrics <file>]
+               <dcop_files>
+
+
+Description
+-----------
+
+The ``solve`` command is a shorthand for the ``agent`` and ``orchestrator``
+commands,
+it solves a DCOP on the local machine, automatically creating the
+orchestrator and the agents as specified in the dcop definitions.
+
+Using ``solve`` all agents run in the same machine and using ``--mode thread``
+communicate in memory (without network), which scales easily to more than
+100 agents.
+
+Depending on the ``--mode`` parameter, agents will be
+created as threads (lightweight) or as process (heavier, but better
+parallelism on a multi-core cpu).
+
+Notes
+-----
+
+No automatic stop is implemented for the moment, you need to use the global
+``--timeout`` option.
+You can also stop the process manually with CTRL+C.
+
+Agents are only stopped once they have handled all messages already
+present in their message queue : this means that even a force stop can take
+some time.
+
+Options
+-------
+
+``--algo <dcop_algorithm>`` / ``-a <dcop_algorithm>``
+  Name of the dcop algorithm, e.g. 'maxsum', 'dpop', 'dsa', etc.
+
+``--algo_params <params>`` / ``-p <params>``
+  Parameters (optional) for the DCOP algorithm, given as string "name:value".
+  May be used multiple times to set several parameters. Available parameters
+  depend on the algorithm, check algorithms documentation.
+
+``--distribution <distribution>`` / ``-d <distribution>``
+  Either a distribution algorithm ('oneagent', 'adhoc', 'ilp_fgdp', etc.) or
+  the path to a yaml file containing the distribution
+
+``--mode <mode>`` / ``-m``
+    Indicated if agents must be run as threads (default) or processes.
+    either ``'thread'`` or ``'process'``
+
+``--collect_on <collect_mode>`` / ``-c``
+    Metric collection mode, one of ``'value_change'``, ``'cycle_change'``,
+    ``'period'``.
+
+``--period <p>``
+    When using ``--collect_on period``, the period in second for metrics
+    collection.
+
+``--run_metrics <file>``
+    File to store store metrics.
+
+``--end_metrics <file>``
+    End metrics (i.e. when the solve process stops) will be appended to this
+    file.
+
+``<dcop_files>``
+  One or several paths to the files containing the dcop. If several paths are
+  given, their content is concatenated as used a the yaml definition for the
+  DCOP.
+
+
+Examples
+--------
+
+The simplest form is to simply specify an algorithm and a dcop yaml file.
+Beware that, depending on the algorithm, this command may never return and
+need to be stopped with CTRL+C::
+
+    dcop.py solve --algo maxsum  graph_coloring1.yaml
+    dcop.py -t 5 solve --algo maxsum  graph_coloring1.yaml
+
+
+"""
 
 import json
 import logging
@@ -45,19 +148,6 @@ from pydcop.infrastructure.run import run_local_thread_dcop, \
     run_local_process_dcop
 
 
-"""
-Solving a dcop 
-
-No automatic stop is implemented for the moment, you need to provide a 
-timeout and you can also stop the process manually with CTRL+C.
-
-Note that agent are only stopped once they have handled all messages already 
-present in their message queue : this means that even a force stop can take 
-quite some time.
-
-"""
-
-
 logger = logging.getLogger('pydcop.cli.solve')
 
 
@@ -73,16 +163,14 @@ def set_parser(subparsers):
     parser.set_defaults(on_force_exit=on_force_exit)
 
     parser.add_argument('dcop_files', type=str,  nargs='+',
-                        help="dcop file")
+                        help="The DCOP, in one or several yaml file(s)")
 
     parser.add_argument('-a', '--algo',
-                        choices=algorithms,
-                        required=True,
-                        help='algorithm for solving the dcop')
+                        choices=algorithms, required=True,
+                        help='The algorithm for solving the dcop')
     parser.add_argument('-p', '--algo_params',
-                        type=str,
-                        nargs='*',
-                        help='parameters for the algorithm , given as '
+                        type=str, nargs='*',
+                        help='Optional parameters for the algorithm , given as '
                              'name:value. Several parameters can be given.')
 
     parser.add_argument('-d', '--distribution', type=str,
@@ -204,7 +292,7 @@ def prepare_metrics_files(run, end, mode):
     return csv_cb
 
 
-def run_cmd(args, timer):
+def run_cmd(args, timer=None):
     logger.debug('dcop command "solve" with arguments {}'.format(args))
 
     global INFINITY
