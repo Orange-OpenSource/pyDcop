@@ -28,6 +28,68 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+"""
+.. _pydcop_commands_graph:
+
+pydcop graph
+============
+
+``pydcop graph`` outputs some metrics for a graph model for a DCOP.
+
+Synopsis
+--------
+::
+
+  pydcop graph --graph <graph_model> <dcop_files>
+
+
+Description
+-----------
+
+Outputs some metrics for a graph model for a DCOP:
+
+* constraints_count
+* variables_count
+* density
+* edges_count
+* nodes_count
+
+
+Options
+-------
+
+``--graph <graph_model>`` / ``-g <graph_model>``
+  The computation graph model,
+  one of ``factor_graph``, ``pseudotree``, ``constraints_hypergraph``
+  (see. :ref:`concepts_graph`)
+  The set of computation to distribute depends on the graph model used to
+  represent the DCOP.
+
+``<dcop-files>``
+  One or several paths to the files containing the dcop. If several paths are
+  given, their content is concatenated as used a the yaml definition for the
+  DCOP.
+
+
+Example
+-------
+
+::
+
+  dcop.py graph --graph factor_graph graph_coloring1.yaml
+
+Example output::
+
+  constraints_count: 2
+  density: 0.4
+  edges_count: 4
+  nodes_count: 5
+  status: OK
+  variables_count: 3
+
+
+
+"""
 
 import logging
 from importlib import import_module
@@ -50,7 +112,7 @@ def set_parser(subparsers):
                                    help='Graph metrics for dcop graphs')
     parser.set_defaults(func=run_cmd)
 
-    parser.add_argument('dcop_file', type=str, nargs='+', help="dcop file")
+    parser.add_argument('dcop_file', type=str, nargs='+', help="dcop file(s)")
 
     parser.add_argument('-g', '--graph',
                         choices=['factor_graph', 'pseudotree',
