@@ -29,26 +29,48 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 """
+.. _pydcop_commands_run:
+
+
+pydcop run
+==========
+
 Running a (dynamic) DCOP
 
+Synopsis
+--------
+
+::
+
+  pydcop run
+
+Description
+-----------
 the run command run a dcop, it is generally used for dynamic dcop where
 various events can occur during the life of the system.
 
 
-Example:
+Options
+-------
 
+TODO
+
+
+Examples
+--------
+
+::
     pydcop -v 2 run --algo dsa  \
-                --algo_params variant:B \
-                --distribution  dist.yaml \
-                --replica_dist  replica_dist.yaml \
-                --scenario scenario.yaml \
-                --replication dist_ucs_hostingcosts \
-                --collect_on period
-                --period 1
-                --run_metrics  run_dcop.csv
-                --end_metrics  several_runs.csv
+                    --algo_params variant:B \
+                    --distribution  dist.yaml \
+                    --replica_dist  replica_dist.yaml \
+                    --scenario scenario.yaml \
+                    --replication dist_ucs_hostingcosts \
+                    --collect_on period
+                    --period 1
+                    --run_metrics  run_dcop.csv
+                    --end_metrics  several_runs.csv
 
 """
 import json

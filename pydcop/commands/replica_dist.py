@@ -29,10 +29,24 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
-
 """
+.. _pydcop_commands_replica_dist:
+
+pydcop replica_dist
+===================
+
 Distributing computation replicas
+
+Synopsis
+--------
+
+::
+
+  pydcop orchestrator
+
+
+Description
+-----------
 
 To distribute computations' replicas, one need :
 
@@ -51,13 +65,20 @@ To distribute computations' replicas, one need :
   => these are given in the dcop definition yaml file
 
 
-Examples:
+Options
+-------
 
-Passing the computation distribution.
+TODO
 
-    pydcop replica_dist -r dist_ucs -k 3
-       -a dsa --distribution dist_graphcoloring.yml
-       ~/Projects/These/pydcop/tests/instances/graph_coloring_10_4_15_0.1.yml
+
+Examples
+--------
+
+Passing the computation distribution::
+
+  pydcop replica_dist -r dist_ucs -k 3
+                      -a dsa --distribution dist_graphcoloring.yml
+                      graph_coloring_10_4_15_0.1.yml
 
 
 
