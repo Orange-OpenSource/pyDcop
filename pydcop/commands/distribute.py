@@ -89,7 +89,7 @@ Options
   can be deduced from the DCOP algorithm.
 
 ``<dcop-files>``
-  One or several path to the files containning the dcop. If several path are
+  One or several paths to the files containing the dcop. If several paths are
   given, their content is concatenated as used a the yaml definition for the
   DCOP.
 
