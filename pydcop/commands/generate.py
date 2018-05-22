@@ -35,54 +35,38 @@
 pydcop generate
 ===============
 
-Generate several dcop problems for benchmark.
-
+Problem generator for benchmarks.
 
 Synopsis
 --------
-
 ::
 
-  [--output <file>] <problem-type> ...
-
+    pydcop generate [--output <file>] <problem-type> ...
 
 Description
 -----------
 
-Type of problems
+The ``generate`` command is still a work in progress and and pretty unstable at the moment. 
+It currently generate problems for the following types:
 
 * graph coloring :
 * mixed constraints: generate dcops with both hard and soft constraints
 * ising problem
 
-TODO
+Documentation will be added once the command is more stable
 
 
 Options
 -------
 
-
-For graph coloring
-^^^^^^^^^^^^^^^^^^
-
-For SECP
-^^^^^^^^
-
-
-
-Examples:
-
+TODO
 
 
 
 Examples
 --------
 
-::
     pydcop generate --output dcop.yaml ising_soft --size 10 --range 10
-
-
-TODO
 
 
 
