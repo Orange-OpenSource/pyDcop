@@ -53,25 +53,6 @@ Features
   DCOP computations on agents and achieve resiliency.
 
 
-Installation
-------------
-
-PyDCOP runs on python >= 3.5.
-We recommend using pip and installing pyDCOP in a 
-`python venv <https://docs.python.org/3/library/venv.html>`_::
-
-  python3 -m venv ~/pydcop_env
-  source ~/pydcop_env/bin/actiavte
-  git clone https://github.com/Orange-OpenSource/pyDcop.git
-  cd pyDcop
-  pip install .
-
-Additionnally, for computations distribution, pyDCOP uses the 
-`glpk <https://www.gnu.org/software/glpk/>`_ linear program solver, which must
-be installed on the system (as it is not a python library which could be 
-installed as a dependency by `pip`). For example, on an ubuntu / debian system::
-
-  sudo apt-get install glpk-utils
 
 
 Documentation
@@ -80,6 +61,8 @@ Documentation
 .. toctree::
    :maxdepth: 1
 
+   installation
+   getting_started
    concepts
    usage
    algorithms
