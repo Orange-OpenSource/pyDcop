@@ -54,7 +54,12 @@ pydcop supports the following global options::
 
 ``--log <long_conf_file>``
   Log configuration file. Can be used instead of ``-verbose`` for precise
-  control over log (filtering, output to several files, etc.).
+  control over log (filtering, output to several files, etc.). This
+  file uses the `standard python log configuration file format <https://docs
+  .python.org/3/library/logging.config.html#configuration-file-format>`_ .
+  The following sample file can be used as a starting point to build your own
+  custom log configuration : :download:`log.conf<cli/log.conf>`.
+
 
 
 
