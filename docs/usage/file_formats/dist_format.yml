@@ -1,0 +1,19 @@
+
+# Optional, when the distribution is generated with the `pydcop distribute`
+# command, it contains the parameter that where used to generate the
+# distribution
+inputs:
+  dist_algo: ilp_comcost
+  dcop: path/to/dcop/file.yaml
+  graph: constraints_hypergraph
+  algo: dsa
+
+
+# The distribution is a mapping from agents to computations
+# All agents are listed, even if they do not host any computation.
+distribution:
+  a0: []
+  a1: [v1, v2]
+  a2: []
+  a3: [v2, v3]
+
