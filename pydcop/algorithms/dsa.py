@@ -29,8 +29,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-# -*- coding: utf-8 -*-
-
 """
 DSA : Distributed Stochastic algorithm
 --------------------------------------
@@ -41,10 +39,10 @@ local search DCOP algorithm.
 Algorithm Parameters
 ^^^^^^^^^^^^^^^^^^^^
 
-
 * **variant**: 'A', 'B' or 'C' ; the variant of the algorithm,
   as defined in [Zhang2005]_ . Defaults to B
 * **probability**: probability of changing a value. Defaults to 0.7
+
 
 Example
 ^^^^^^^

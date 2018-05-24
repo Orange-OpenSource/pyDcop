@@ -28,6 +28,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+"""
+The ``computations`` module contains base classes for computation and message.
+
+You generally need to sub-class classes from this module when implementing
+your own DCOP algorithm.
+
+"""
+
 
 import logging
 from importlib import import_module
@@ -40,6 +48,27 @@ from pydcop.utils.simple_repr import SimpleRepr, SimpleReprException, \
 
 
 class Message(SimpleRepr):
+    """
+    Base class for messages.
+
+    you generally sub-class ``Message`` to define the message type for a DCOP
+    algorithm. Alternatively you can use :py:func:`message_type` to create
+    your own message type.
+
+    See Also
+    --------
+    message_type
+
+    Parameters
+    ----------
+    msg_type: string
+       the message type ; this will be used to select the correct handler
+       for a message in a DcopComputation instance.
+    content: Any
+       optional, usually you sub-class Message and add your own content
+       attributes.
+
+    """
 
     def __init__(self, msg_type, content=None):
         self._msg_type = msg_type
@@ -47,10 +76,28 @@ class Message(SimpleRepr):
 
     @property
     def size(self):
+        """
+        Returns the size of the message.
+
+        Optional, will be used when computing the communication load of an
+        algorithm and by some distribution methods.
+
+        Returns
+        -------
+        size : int
+
+        """
         return 0
 
     @property
-    def type(self):
+    def type(self) -> str:
+        """
+        The type of the message
+
+        Returns
+        -------
+        message_type: str
+        """
         return self._msg_type
 
     @property
@@ -383,6 +430,17 @@ class DcopComputation(MessagePassingComputation):
         the ComputationDef object contains the information about the dcop
         computation : algorithm used, neighbors, etc.
 
+    Notes
+    -----
+
+    When subclassing DcopComputation, you **must** declare in __init__ the
+    message handlers for the message's type(s) of your algorithm. For example
+    with the following ``_on_my_msg`` will be called for each incoming
+    ``my-msg`` message.
+
+        self._msg_handlers['my_msg'] = self._on_my_msg
+
+
     """
 
     def __init__(self, name, comp_def: ComputationDef):
@@ -468,6 +526,11 @@ class VariableComputation(DcopComputation):
     """
     A VariableComputation is a dcop computation that is responsible for
     selecting the value of a variable.
+
+    See Also
+    --------
+    DcopComputation
+
 
     """
 

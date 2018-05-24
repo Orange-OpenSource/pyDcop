@@ -29,6 +29,17 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+"""
+
+DPOP algorithm
+--------------
+
+TODO
+
+
+
+"""
+
 import logging
 
 from typing import Iterable

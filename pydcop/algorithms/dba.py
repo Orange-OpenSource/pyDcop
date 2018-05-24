@@ -73,6 +73,27 @@ Example
       "status": "TIMEOUT"
     }
 
+
+Messages
+^^^^^^^^
+
+.. autoclass:: DbaOkMessage
+  :members:
+
+.. autoclass:: DbaImproveMessage
+  :members:
+
+.. autoclass:: DbaEndMessage
+  :members:
+
+Computation
+^^^^^^^^^^^
+
+.. autoclass:: DbaComputation
+  :members:
+
+
+
 """
 import logging
 import random
@@ -107,7 +128,7 @@ def algo_name() -> str:
     return __name__.split('.')[-1]
 
 
-def build_computation(comp_def: ComputationDef) -> VariableComputation :
+def build_computation(comp_def: ComputationDef) -> VariableComputation:
     return DbaComputation(comp_def.node.variable,
                           comp_def.node.constraints,
                           mode=comp_def.algo.mode,
@@ -127,10 +148,6 @@ def computation_memory(computation: VariableComputationNode) -> float:
     ----------
     computation: VariableComputationNode
         a computation in the hyper-graph computation graph
-    links: iterable of links
-        links for this computation node. links maps to constraints in the
-        computation graph and can be hyper-edges (when the arity of the
-        constraint is > 2)
 
     Returns
     -------
@@ -338,7 +355,7 @@ class DbaComputation(VariableComputation):
         self.__postponed_ok_messages__ = []
 
         self.__constraints__ = list(constraints)
-        self.__constraints_weights__ = [1 for c in constraints]
+        self.__constraints_weights__ = [1 for _ in constraints]
         self._violated_constraints = []
         # The algorithm starts in "ok?" mode
         self._mode = 'starting'
@@ -376,12 +393,12 @@ class DbaComputation(VariableComputation):
         self.value_selection(random.choice(self.variable.domain),
                              self.current_cost)
         self.logger.info('%s dba starts: randomly select value %s and '
-                          'send to neighbors', self.variable.name,
-                          self.current_value)
+                         'send to neighbors', self.variable.name,
+                         self.current_value)
         self._send_current_value()
         self._go_to_wait_ok_mode()
 
-    def _on_ok_msg(self, variable_name, recv_msg, t):
+    def _on_ok_msg(self, variable_name, recv_msg, _):
         """
         This method  implements the wait_ok_mode of DBA as described in
         'Distributed Breakout Algorithm for Solving Distributed Constraint
@@ -486,15 +503,21 @@ class DbaComputation(VariableComputation):
         This function compute the evaluation value (the number of violated
         constraints) regarding the current assignment.
 
-        :param: a value for the variable of this object. You can choose any
-        of the definition domain, according to the context in which you use the
-        function.
+        Parameters
+        ----------
+        val: Any
+            A value for the variable of this object. You can choose any
+            of the definition domain, according to the context in which you use
+            the function.
 
-        :param: the list of constraints involving the variable of this
-        computation, with the values of other variables set to the values
-        sent by the neighbors
+        relations: list of constraints objects
+            The list of constraints involving the variable of this
+            computation, with the values of other variables set to the values
+            sent by the neighbors
 
-        :return: the evaluation value for the given assignment and the list
+        Returns
+        -------
+        The evaluation value for the given assignment and the list
         of indices of the violated constraints for this value
         """
         i = 0
@@ -518,7 +541,7 @@ class DbaComputation(VariableComputation):
 
 
 # #############################IMPORVE MODE##################################
-    def _on_improve_msg(self, variable_name, recv_msg, t):
+    def _on_improve_msg(self, variable_name, recv_msg, _):
 
         if self._mode == 'improve':
             self._handle_improve_message(variable_name, recv_msg)
@@ -529,7 +552,7 @@ class DbaComputation(VariableComputation):
     def _handle_improve_message(self, variable_name, recv_msg):
         self._neighbors_improvements[variable_name] = recv_msg
         self.logger.info('%s received possible improvement value %s from %s',
-                          self.name, recv_msg.improve, variable_name)
+                         self.name, recv_msg.improve, variable_name)
 
         self._termination_counter = min(recv_msg.termination_counter,
                                         self._termination_counter)
@@ -588,7 +611,7 @@ class DbaComputation(VariableComputation):
 
     def _increase_weights(self, constraints):
         self.logger.warning('%s increase the weights of the constraints %s',
-                         self.name, constraints)
+                            self.name, constraints)
         for i in constraints:
             self.__constraints_weights__[i] += 1
 
@@ -599,7 +622,7 @@ class DbaComputation(VariableComputation):
             self._handle_ok_message(sender, msg)
         self.__postponed_ok_messages__.clear()
 
-    def _on_end_msg(self, variable_name, recv_msg, t):
+    def _on_end_msg(self, variable_name, recv_msg, _):
         # To avoid to send again and again EndMessages to the neighbors
         if self._mode != 'finished':
             self._send_end_msg()
