@@ -67,6 +67,7 @@ Documentation
    usage
    algorithms
    implementation
+   bibliography
 
 
 Contributing
@@ -89,3 +90,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+

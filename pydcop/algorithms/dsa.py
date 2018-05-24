@@ -33,15 +33,18 @@
 DSA : Distributed Stochastic algorithm
 --------------------------------------
 
-Distributed Stochastic Algorithms [Zhang2005]_ is a synchronous, stochastic,
+Distributed Stochastic Algorithms :cite:`Zhang2005` is a synchronous, stochastic,
 local search DCOP algorithm.
-
+  
 Algorithm Parameters
 ^^^^^^^^^^^^^^^^^^^^
 
-* **variant**: 'A', 'B' or 'C' ; the variant of the algorithm,
-  as defined in [Zhang2005]_ . Defaults to B
-* **probability**: probability of changing a value. Defaults to 0.7
+**variant**
+  'A', 'B' or 'C' ; the variant of the algorithm,
+  as defined in :cite:`Zhang2005` . Defaults to B
+
+**probability**
+  probability of changing a value. Defaults to 0.7
 
 
 Example
@@ -61,8 +64,6 @@ Example
       "status": "TIMEOUT"
     }
 
-
-.. [Zhang2005] Distributed stochastic search and distributed breakout: Properties, comparison and applications to constraint optimization problems in sensor networks. (Zhang, W., Wang, G., Xing, Z., Wittenberg, L - 2005)
 
 
 """
