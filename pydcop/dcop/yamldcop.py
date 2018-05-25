@@ -301,12 +301,16 @@ def _build_agents(loaded) -> Dict[str, AgentDef]:
     agents_list = {}
     if 'agents' in loaded:
         for a_name in loaded['agents']:
-            kw = loaded['agents'][a_name]
+            try:
+                kw = loaded['agents'][a_name]
+                # we accept any attribute for the agent
+                # Most of the time it will be capacity and also preference but
+                # any named value is valid:
+                agents_list[a_name] = kw if kw else {}
+            except TypeError:
+                # means agents are given as a list and not a map:
+                agents_list[a_name] = {}
 
-            # we accept any attribute for the agent
-            # Most of the time it will be capacity and also preference but
-            # any named value is valid:
-            agents_list[a_name] = kw
 
     routes = {}
     default_route = 1
