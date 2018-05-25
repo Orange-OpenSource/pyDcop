@@ -10,8 +10,9 @@ objective: min
 
 
 # Domains:
-# Each domain must have a name, used as a key in the yaml dictionnary, a type
-# and a list of values. 
+# Each domain must have a name, used as a key in the yaml dictionary,
+# and a list of values. Type is optional and can be used to identify the kind
+# of value in the domain ('luminosity', 'color', etc.)
 # The values are expressed as a sequence of values and can be either 
 # given extensively like `[A, B, C]` or as a range like `[1 .. 10]`.
 # If all values in the domain can be interpreted as a int, the list is a
@@ -29,7 +30,6 @@ domains:
     initial_value: 3
   dbool:
     values  : [true, false]
-    type   : non_semantic
 
 # Variables
 # Note: variables must always be defined after the domains

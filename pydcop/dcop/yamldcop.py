@@ -139,7 +139,8 @@ def _build_domains(loaded) -> Dict[str, VariableDomain]:
 
             if len(values) == 1 and '..' in values[0]:
                 values = str_2_domain_values(d['values'][0])
-            domains[d_name] = VariableDomain(d_name, d['type'], values)
+            d_type = d['type'] if 'type' in d else ''
+            domains[d_name] = VariableDomain(d_name, d_type, values)
 
     return domains
 
