@@ -392,14 +392,7 @@ class DpopAlgo(VariableComputation):
 
             values, current_cost = find_arg_optimal(
                 self._variable, self._joined_utils, self._mode)
-            self.value_selection(values[0], float(current_cost))
-            self.logger.info('Value selected at %s : %s - %s', self.name,
-                             self.current_value, self.current_cost)
-        return {
-            'num_msg_out': msg_count,
-            'size_msg_out': msg_size,
-            'current_value': self.current_value
-        }
+            self.select_value_and_finish(values[0], float(current_cost))
 
     def stop_condition(self):
         # dpop stop condition is easy at it only selects one single value !
@@ -407,6 +400,28 @@ class DpopAlgo(VariableComputation):
             return ALGO_STOP
         else:
             return ALGO_CONTINUE
+
+    def select_value_and_finish(self, value, cost):
+        """
+        Select a value for this variable.
+
+        DPOP is not iterative, once we have selected our value the algorithm
+        is finished for this computation.
+
+        Parameters
+        ----------
+        value: any (depends on the domain)
+            the selected value
+        cost: float
+            the local cost for this value
+
+        """
+
+        self.value_selection(value, cost)
+        self.stop()
+        self.finished()
+        self.logger.info('Value selected at %s : %s - %s', self.name,
+                         value, cost)
 
     def _on_util_message(self, variable_name, recv_msg, t):
         self.logger.debug('Util message from %s : %r ',
@@ -420,7 +435,7 @@ class DpopAlgo(VariableComputation):
             self._waited_children.remove(variable_name)
         except ValueError as e:
             self.logger.error('Unexpected UTIL message from %s on %s : %r ',
-                              variable_name, self.name , recv_msg)
+                              variable_name, self.name, recv_msg)
             raise e
         # keep a reference of the separator of this children, we need it when
         # computing the value message
@@ -439,19 +454,20 @@ class DpopAlgo(VariableComputation):
 
                 values, current_cost = find_arg_optimal(
                     self._variable, self._joined_utils, self._mode)
-                self.value_selection(values[0], float(current_cost))
-                self.logger.info('Value selected : %s - %s',
-                                 self.current_value, self.current_cost)
+                selected_value = values[0]
 
                 self.logger.info('ROOT: On UNTIL message from %s, send value '
                                  'msg to childrens %s ',
                                   variable_name, self._children)
                 for c in self._children:
                     msg = DpopMessage('VALUE', ([self._variable],
-                                                [self.current_value]))
+                                                [selected_value]))
                     self.post_msg(c, msg)
                     msg_count += 1
                     msg_size += msg.size
+
+                self.select_value_and_finish(selected_value,
+                                             float(current_cost))
             else:
                 # We have received the Utils msg from all our children, we can
                 # now compute our own utils relation by joining the accumulated
@@ -464,12 +480,6 @@ class DpopAlgo(VariableComputation):
                 self.post_msg(self._parent, msg)
                 msg_count += 1
                 msg_size += msg.size
-
-        return {
-            'num_msg_out': msg_count,
-            'size_msg_out': msg_size,
-            'current_value': self.current_value
-        }
 
     def _compute_utils_msg(self):
 
@@ -501,14 +511,11 @@ class DpopAlgo(VariableComputation):
         self.logger.debug('Relation after slicing %s', rel)
 
         values, current_cost = find_arg_optimal(self._variable, rel, self._mode)
-        self.value_selection(values[0], float(current_cost))
-        self.logger.info('on VALUE msg from %s, %s select value %s cost=%s',
-                         variable_name, self.name, self.current_value,
-                         self.current_cost)
+        selected_value = values[0]
 
         for c in self._children:
             variables_msg = [self._variable]
-            values_msg = [self.current_value]
+            values_msg = [selected_value]
 
             # own_separator intersection child_separator union
             # self.current_value
@@ -525,11 +532,8 @@ class DpopAlgo(VariableComputation):
             msg_size += msg.size
             self.post_msg(c, msg)
 
-        return {
-            'num_msg_out': msg_count,
-            'size_msg_out': msg_size,
-            'current_value': self.current_value
-        }
+        self.select_value_and_finish(selected_value, float(current_cost))
+
 
     def __str__(self):
         return 'dpop algo for variable {} (p: {}, relations : {} )'.format(
