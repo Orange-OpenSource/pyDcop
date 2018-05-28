@@ -127,7 +127,7 @@ constraints:
     type: extensional
     # When using intentional constraints, the list of variables the contraints
     # depends on must be explicitly given:
-    variables: var1, var2, var3
+    variables: [var1, var2, var3]
     # A default value may be defined, it will be used for all assignment that
     # are not explicitly given in the values section.
     default: 100
@@ -143,9 +143,15 @@ constraints:
 
     
 # Agents
+# Agents can be given as a yaml list :
+#     agents: [a1, a2, a2, a3]
+# When you need to set properties on agents, use a yaml map instead:
 agents:
   a1:
+    # capacity is an agent property expected by many distribution algorithm:
     capacity: 100
+    # You can add any property to an agent:
+    foo: bar
   a2:
     capacity: 100
   a3:
