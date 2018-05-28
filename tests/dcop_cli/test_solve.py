@@ -151,7 +151,7 @@ class GraphColoring1(unittest.TestCase):
     def test_dpop_oneagent_process(self):
         result = run_solve('dpop', 'oneagent', 'graph_coloring1.yaml', 3,
                            'process')
-        self.check_results(result)
+        self.check_results(result, 'FINISHED')
 
     def test_dpop_ilp_fgdp(self):
         # ILP-FGDP does not work for dpop, it should return an error
