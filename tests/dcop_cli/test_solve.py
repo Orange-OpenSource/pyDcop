@@ -49,6 +49,7 @@ class SimpleSecpDCOP1(unittest.TestCase):
 
     def test_maxsum_ilp_fgdp(self):
         result = run_solve('maxsum', 'ilp_fgdp', 'secp_simple1.yaml', 5)
+        print(result)
         self.check_results(result)
 
     def test_maxsum_ilp_fgdp_process(self):
@@ -98,9 +99,9 @@ class SimpleSecpDCOP1(unittest.TestCase):
 
 class GraphColoring1(unittest.TestCase):
 
-    def check_results(self, results):
+    def check_results(self, results, status='TIMEOUT'):
         # No convergence detection for now, always stop on timeout
-        self.assertEqual(results['status'], 'TIMEOUT')
+        self.assertEqual(results['status'], status)
         assignment = results['assignment']
         self.assertEqual(assignment['v1'], 'R')
         self.assertEqual(assignment['v2'], 'G')
@@ -145,7 +146,7 @@ class GraphColoring1(unittest.TestCase):
 
     def test_dpop_oneagent(self):
         result = run_solve('dpop', 'oneagent', 'graph_coloring1.yaml', 1)
-        self.check_results(result)
+        self.check_results(result, 'FINISHED')
 
     def test_dpop_oneagent_process(self):
         result = run_solve('dpop', 'oneagent', 'graph_coloring1.yaml', 3,

@@ -53,7 +53,7 @@ from pydcop.commands import graph
 from pydcop.commands import generate
 from pydcop.commands import run
 
-timer = None
+cli_timer = None
 
 
 def main():
@@ -105,10 +105,10 @@ def main():
     if hasattr(args, 'func'):
         if args.timeout:
             if hasattr(args, 'on_timeout'):
-                global timer
-                timer = Timer(args.timeout, _on_timeout, [args.on_timeout])
-                timer.start()
-                args.func(args, timer)
+                global cli_timer
+                cli_timer = Timer(args.timeout, _on_timeout, [args.on_timeout])
+                cli_timer.start()
+                args.func(args, cli_timer)
             else:
                 print('Command {}, does not support the global timeout '
                       'parameter'.format(args))
@@ -128,8 +128,8 @@ def main():
 
 def _on_force_exit(sub_exit_func, sig, frame):
 
-    if timer is not None:
-        timer.cancel()
+    if cli_timer is not None:
+        cli_timer.cancel()
 
     sub_exit_func(sig, frame)
 

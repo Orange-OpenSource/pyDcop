@@ -271,6 +271,9 @@ class Orchestrator(object):
             self._events_iterator = iter(scenario)
             self._process_event()
 
+        self.mgt.wait_stop_agents()
+        self.stop()
+
     def stop_agents(self, timeout: float):
         self.logger.info('Requesting all agents to stop')
         self._stopping.set()
@@ -590,6 +593,8 @@ class AgentsMgt(MessagePassingComputation):
         # used to detect the end of a cycle
         self._computation_cycle = defaultdict(lambda: set())
 
+        self._computation_status = {n.name : '' for n in self.graph.nodes}
+
         self.dist_count = 0
 
     @property
@@ -842,6 +847,14 @@ class AgentsMgt(MessagePassingComputation):
         self.logger.info('Received computation_end from %s : %s - %s',
                          msg.agent, msg.computation, sender)
 
+        self._computation_status[msg.computation] = 'finished'
+        self.logger.debug(' status %s', self._computation_status.items())
+        all_finished = all(s == 'finished'
+                           for n, s in self._computation_status.items())
+        if all_finished:
+            self.logger.info('All DCOP computation have finished : stop')
+            self._orchestrator_stop_agents()
+
     def _orchestrator_deploy_computations(self, *_):
         """
         Deploy the computations on the orchestrated agents.
@@ -1065,7 +1078,7 @@ class AgentsMgt(MessagePassingComputation):
             self.discovery.subscribe_replica(
                 comp_def.node.name, self._cb_replica_registration)
 
-    def wait_stop_agents(self, timeout):
+    def wait_stop_agents(self, timeout=None):
         # wait until all agents have indicated they have stopped
         self.logger.info('Orchestrator is waiting for agents to stop')
         self._all_agt_stopped.wait(timeout)
