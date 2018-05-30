@@ -68,7 +68,7 @@ Now you can simply run the following command to
 this DCOP with the
 :ref:`DPOP algorithm<implementation_reference_algorithms_dpop>`::
 
-  pydcop solve -algo dpop graph_coloring.yaml
+  pydcop solve --algo dpop graph_coloring.yaml
 
 This should output a result simular to this::
 
@@ -93,7 +93,7 @@ Of course, you can solve it with any other DCOP algorithm implemented by
 pyDCOP. Some algorithms have no default termination condition, in this case
 you can stop the execution with ``CTRL+C`` or use the ``--timeout`` option::
 
-  pydcop --timeout 3 solve -algo mgm graph_coloring.yaml
+  pydcop --timeout 3 solve --algo mgm graph_coloring.yaml
 
 You may notice that with this command the assignment in the result is not
 always the same and not always the result we found using DPOP.
