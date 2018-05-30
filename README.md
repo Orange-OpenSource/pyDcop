@@ -5,7 +5,7 @@
 
 pyDCOP is a python library for Distributed Constraints Optimization.
 It contains implementations of several standard DCOP algorithms (MaxSum, DSA,
-DPOP, etc.) and allows you to develop your own algorithms.
+DPOP, MGM, etc.) and allows you to develop your own algorithms.
 
 pyDCOP runs on python >= 3.5.
 
