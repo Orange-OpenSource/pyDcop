@@ -1123,56 +1123,59 @@ class ResilientAgent(Agent):
                                  *args, **kwargs):
         self.logger.debug('Computation %s has finished', computation)
 
-        if computation in self._repair_computations:
-            repair_comp = self._repair_computations[computation]
-            repair_comp.status = 'finished'
+        if self.replication_comp and computation in self._repair_computations:
+            self._on_repair_computation_finished(computation)
 
-            # deploy the computation if it was selected during reparation:
-            if repair_comp.computation.current_value == 1:
-                self.logger.info('Reparation: computation %s selected on %s',
-                                 repair_comp.candidate, self.name)
-                comp_def = self.replication_comp.replicas[repair_comp.candidate]
-                self.logger.info('Deploying computation %s locally with '
-                                 'definition , %r',repair_comp.candidate,
-                                 comp_def)
-                comp = build_computation(comp_def)
-                self.add_computation(comp)
-            else:
-                self.logger.info('Reparation: computation %s NOT selected on '
-                                 '%s', repair_comp.candidate, self.name)
-            # Remove replica: it will be re-replicated by its new host.
-            self.replication_comp.remove_replica(repair_comp.candidate)
+    def _on_repair_computation_finished(self, computation: str):
+        repair_comp = self._repair_computations[computation]
+        repair_comp.status = 'finished'
 
-            if all(c.status == 'finished'
-                   for c in self._repair_computations.values()):
+        # deploy the computation if it was selected during reparation:
+        if repair_comp.computation.current_value == 1:
+            self.logger.info('Reparation: computation %s selected on %s',
+                             repair_comp.candidate, self.name)
+            comp_def = self.replication_comp.replicas[repair_comp.candidate]
+            self.logger.info('Deploying computation %s locally with '
+                             'definition , %r', repair_comp.candidate,
+                             comp_def)
+            comp = build_computation(comp_def)
+            self.add_computation(comp)
+        else:
+            self.logger.info('Reparation: computation %s NOT selected on '
+                             '%s', repair_comp.candidate, self.name)
+        # Remove replica: it will be re-replicated by its new host.
+        self.replication_comp.remove_replica(repair_comp.candidate)
 
-                selected_computations = \
-                    [c.candidate for c in self._repair_computations.values()
-                     if c.computation.current_value == 1]
-                self.logger.info('All repair computations have finished, '
-                                 'selected computation : %s',
+        if all(c.status == 'finished'
+               for c in self._repair_computations.values()):
+
+            selected_computations = \
+                [c.candidate for c in self._repair_computations.values()
+                 if c.computation.current_value == 1]
+            self.logger.info('All repair computations have finished, '
+                             'selected computation : %s',
+                             selected_computations)
+            self._on_repair_done(selected_computations)
+
+            if selected_computations:
+                self.logger.info('Re-replicate newly activated computations '
+                                 'on  %s : %s , level %s', self.name,
+                                 selected_computations,
+                                 self._replication_level)
+                self.replication_comp.replicate(self._replication_level,
+                                                selected_computations)
+
+                self.logger.info('Starting newly activated computations on '
+                                 '%s : %s ', self.name,
                                  selected_computations)
-                self._on_repair_done(selected_computations)
+                for selected in selected_computations:
+                    self.computation(selected).on_start()
+                    self.computation(selected).pause()
 
-                if selected_computations:
-                    self.logger.info('Re-replicate newly activated computations '
-                                     'on  %s : %s , level %s', self.name,
-                                     selected_computations,
-                                     self._replication_level)
-                    self.replication_comp.replicate(self._replication_level,
-                                                    selected_computations)
-
-                    self.logger.info('Starting newly activated computations on '
-                                     '%s : %s ', self.name,
-                                     selected_computations)
-                    for selected in selected_computations:
-                        self.computation(selected).on_start()
-                        self.computation(selected).pause()
-
-                # Remove / undeploy repair comp once repaired
-                for repair_comp in self._repair_computations.values():
-                    self.remove_computation(repair_comp.computation.name)
-                self._repair_computations.clear()
+            # Remove / undeploy repair comp once repaired
+            for repair_comp in self._repair_computations.values():
+                self.remove_computation(repair_comp.computation.name)
+            self._repair_computations.clear()
 
     def _on_repair_done(self, selected_computations: List[str]):
         """
