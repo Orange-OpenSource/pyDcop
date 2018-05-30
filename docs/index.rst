@@ -13,7 +13,7 @@ Overview
 pyDCOP is a library and command line application for **Distributed Constraints
 Optimization Problems** (aka DCOP).
 
-A Distributed Constraints Optimization Problems is traditionnaly represented as 
+A Distributed Constraints Optimization Problems is traditionally represented as
 a tuple 
 :math:`\langle \mathcal{A}, \mathcal{X}, \mathcal{D}, \mathcal{C}, \mu \rangle`
 , where:
@@ -23,7 +23,7 @@ a tuple
 * :math:`\mathcal{D} = \{\mathcal{D}_{x_1},\ldots,\mathcal{D}_{x_n}\}` is a set of finite
   domains, such that variable :math:`x_i` takes values in :math:`\mathcal{D}_{x_i} = \{v_1,\ldots, v_k\}`;
 * :math:`\mathcal{C} = \{c_1,\ldots,c_m\}` is a set of soft constraints, where each :math:`c_i`
-  defines a cost :math:`$\in \mathbb{R} \cup \{\infty\}` for each combination of assignments to a
+  defines a cost :math:`\in \mathbb{R} \cup \{\infty\}` for each combination of assignments to a
   subset of variables (a constraint is initially known only to the agents involved);
 * :math:`\mu: \mathcal{X} \rightarrow \mathcal{A}` is a function mapping variables to their associated agent.
 

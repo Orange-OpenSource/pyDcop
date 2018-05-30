@@ -1,4 +1,4 @@
-Algortihms
+Algorithms
 ==========
 
 TODO

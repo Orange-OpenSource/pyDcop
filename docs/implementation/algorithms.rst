@@ -16,7 +16,7 @@ To implement an algorithm you need:
 - to define one or several :py:class:`.Message`
 - to implement your logic in a
   :py:class:`.DcopComputation` class
-- to implement a few predefined utility methods and attribute
+- to implement some predefined utility methods and attributes
 - optionally, you may also implement some other methods used for some
   distribution methods
 
@@ -53,7 +53,7 @@ fields ``foo`` and ``bar``::
 
 You can then use ``MyMessage`` like any class::
 
-  >>> msg1 = MyMessage(foo=42, bar=21)
+  >>> msg = MyMessage(foo=42, bar=21)
   >>> msg.foo
   42
   >>> msg.type
@@ -97,15 +97,15 @@ which provides some convenient methods for value selection.
 For more complex algorithm, you can define several computations
 (with pyDCOP, your algorithm can have as many kind of computation as you want),
 look at MaxSum's implementation for an example
-(`MaxSum` has two kind of computations, for `Factor` and `Variable`)..
+(`MaxSum` has two kind of computations, for `Factor` and `Variable`).
 
 
 Receiving messages
 ^^^^^^^^^^^^^^^^^^
 
 At runtime, an instance of a computation is deployed on an agent,
-which notify it when receiving a message.
-The computation then process the message and,
+which notifies it when receiving a message.
+The computation then processes the message and,
 if necessary, emits new messages for other computations.
 
 For each message type, you must declare a handler method::
@@ -129,12 +129,12 @@ When sending messages, a computation never needs
 to care about the agent hosting the target computations :
 all message routing and delivery is taken care of by
 the agent and communication infrastructure.
-Messages are sent by calling ``self.post_msg`` ::
+Messages are sent by calling ``self.post_msg``::
 
   self.post_msg(target_computation_name, message_object)
 
 All computations must be subclasses of ``MessagePassingComputation``.
-In each of these classes implements the ``on_message`` method to handle
+Each of these classes implements the ``on_message`` method to handle
 received message. Alternatively, you may also extend the
 ``AbstractMessagePassingAlgorithm`` class and register one method for
 each of the message in your constructor::
@@ -147,7 +147,7 @@ Selecting a value
 
 In your computation, when selecting a value for a variable, you **must**
 call ``self.value_selection`` with the value and the associated local cost.
-This is allows pydcop to monitor value selection on each agent and
+This is allows pyDcop to monitor value selection on each agent and
 extract the final assignment::
 
     self.value_selection(self._v.initial_value, None)
@@ -184,20 +184,19 @@ were not given::
     the values extracted form `params`)
     """
 
-An ``Algodef`` instance populated with the parsed parameter will be passed to
-your ``build_computation`` method, you can then use it to pass these parameter
+An ``Algodef`` instance populated with the parsed parameters will be passed to
+your ``build_computation`` method, you can then use it to pass these parameters
 to the computation instance.
 
 
-Distribution and deployement
+Distribution and deployment
 ----------------------------
-
 
 Your module must also provide a a few predefined utility methods, used to
 build and deploy your algorithm, and may define some optional method, used for
-deployement and distribution.
+deployment and distribution.
 
-The module of your algorithm **must** also an attribute named ``GRAPH_TYPE`` which
+The module of your algorithm **must** also have an attribute named ``GRAPH_TYPE`` which
 must contains the name of the computation graph type used. Available
 computation graph types are ``'factor_graph'``, ``'pseudo_tree'`` and
 ``'constraints_hypergraph'``, other could be defined in the future::
@@ -225,7 +224,7 @@ during development) you can simply return 0::
 
 
 When deploying  the computation, concrete ``MessagePassingComputation`` objects
-must be instanciated on their assignated agent. For this, an algorithm
+must be instantiated on their assigned agent. For this, an algorithm
 module **must** also provide a factory method to build computation object::
 
     def build_computation(node: ComputationNode, links: Iterable[Link], algo: AlgoDef)-> MessagePassingComputation:

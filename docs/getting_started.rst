@@ -58,15 +58,17 @@ content::
     agents: [a1, a2, a3, a4, a5]
 
 You don't need for the moment to understand everything in this file, it's
-enough to know that this represents a graph coloring problem, modelled as a
+enough to know that it represents a `graph coloring problem`__, modeled as a
 DCOP with 3 variables (this example is taken from :cite:`Farinelli2008`).
+
+__  https://en.wikipedia.org/wiki/Graph_coloring
 
 Now you can simply run the following command to
 :ref:`solve<pydcop_commands_solve>`
 this DCOP with the
-:ref:`dpop algorithm<implementation_reference_algorithms_dpop>`::
+:ref:`DPOP algorithm<implementation_reference_algorithms_dpop>`::
 
-  pydcop solve -algo dpop  graph_coloring.yaml
+  pydcop solve --algo dpop graph_coloring.yaml
 
 This should output a result simular to this::
 
@@ -85,27 +87,24 @@ This should output a result simular to this::
     "violation": 0
   }
 
-Congratulation, you have solve your first DCOP using pyDCOP !!
+Congratulations, you have solved your first DCOP using pyDCOP !!
 
-Of course you can solve it with any other dcop algorithm implemented by
+Of course, you can solve it with any other DCOP algorithm implemented by
 pyDCOP. Some algorithms have no default termination condition, in this case
 you can stop the execution with ``CTRL+C`` or use the ``--timeout`` option::
 
-  pydcop  --timeout 3 solve -algo mgm  graph_coloring.yaml
+  pydcop --timeout 3 solve --algo mgm graph_coloring.yaml
 
 You may notice that with this command the assignment in the result is not
-always the same and not always the result we fuond using dpop.
-This is because mgm is a *local search* algorithm, which can be trapped in a
-local minima.
-On the other hand dpop is a *complete algorithm* and will always return the
-optimal assignment (if your problem is small enough to use dpop on it !).
+always the same and not always the result we found using DPOP.
+This is because :ref:`MGM<implementation_reference_algorithms_mgm>` is a *local search* algorithm, which can be trapped in a
+local minimum.
+On the other hand DPOP is a *complete algorithm* and will always return the
+optimal assignment (if your problem is small enough to use DPOP on it !).
 
 
 Analysing results
 -----------------
-
-
-
 
 
 
