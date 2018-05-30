@@ -1,0 +1,236 @@
+
+# DCOP name is mandatory.
+name: 'dcop yaml sample format'
+# The desciption is optional and can span several lines if needed
+description: This serves as a informal specification
+             of the yaml-based ddcop serialization format.
+
+# Objective is mandatory and can be min or max
+objective: min
+
+
+# Domains:
+# Each domain must have a name, used as a key in the yaml dictionary,
+# and a list of values. Type is optional and can be used to identify the kind
+# of value in the domain ('luminosity', 'color', etc.)
+# The values are expressed as a sequence of values and can be either 
+# given extensively like `[A, B, C]` or as a range like `[1 .. 10]`.
+# If all values in the domain can be interpreted as a int, the list is a
+# list of int, otherwise it is a list of strings. Booleans are also supported.
+# An optional initial value can also be given.
+domains: 
+  d1:
+    values  : [0, 1, 2, 3, 4]
+    type   : non_semantic
+  d2:
+    values  : ['A', 'B', 'C', 'D', 'E']
+  d3:
+    values  : [1 .. 10]
+    type   : non_semantic
+    initial_value: 3
+  dbool:
+    values  : [true, false]
+
+# Variables
+# Note: variables must always be defined after the domains
+variables:
+  var1:
+    # The domain for the value of the variable    
+    domain : d1
+    # initial_value: Optional, the initial value for this variable
+    initial_value: 0
+    # You may add any extra (key: value), which will not be interpreted when 
+    # parsing be will be preserved and could be used in distribution or 
+    # solve phases.
+    yourkey: yourvalue
+    foo: bar
+    
+  var2:
+    domain : d2
+    initial_value: 0
+  var3:
+    domain : d1
+    initial_value: 0
+    # Defining cost on a variable is actually the same thing as defining a 
+    # unary constraint (cost function) depending on this variable.
+    # cost_function must be a valid python expression that only refers to this 
+    # variable.
+    cost_function: var3 * 0.5 
+  var4:
+    domain : d3
+    initial_value: 0
+    cost_function: var4 * 0.6   
+    # When noise_level is used, some noise will be added to the cost generated
+    # by the cost function. The value of noise_level represents the maximum 
+    # amount of noise that can be added to a cost. For example a noise_level of 
+    # 0.2 means that for each value in the domain, a random number between 0 
+    # and 0.2 will be added to the result of the cost function
+    noise_level: 0.2
+
+# External variables are not controlled nor modified during the optimization
+# process. These variables can be used in constraints definition.
+# In a dynamic DCOP they can be modified externally through events.
+# Initial value is mandatory for external variables.
+external_variables:
+  ext_var1:
+    domaine: dbool
+    initial_value: False
+
+# Constraints
+constraints:
+  c1:
+    # type: pydcop supports intentional and extensional constraints
+    type: intention
+    # Any valid python expression can be used as a function declaration and
+    # any builtin python function can be used (e.g. abs, round, etc.).
+    # 'function' is mandatory for intentional constraints
+    # The variable this constraints depends on are automatically extracted from
+    # the expression, meaning you must only refer to valid variables (or 
+    # external variables) in it.
+    function: var3 - var1 + var2
+  c2:
+    type: intention
+    # This constraint uses an external variable.
+    # Notice that the ternary python operator is a valid python expression.
+    function: var1 if ext_var else var3
+  c3:
+    type: intention
+    # Pseudo-Hard constraint sample.
+    # Real hard constraints are not supported, you can emulate them by defining
+    # contraints  
+    function: 1000 if var2 == var3 else 0
+  cost_d1:
+    type: intention
+    function: var1 * 0.8
+    # noise: random.randint(0, 20) / 1000    
+  cost_d2:
+    type: intention
+    function: var2 * 0.4
+    # TODO : noise on constraint function is not supported yet, but it could 
+    # be defined like this in the future
+    # noise: random.randint(0, 20) / 1000   
+    # noise_level: 0.02
+  constraint1:
+    type: intention
+    function: var2 * 0.4 + var3 + var1 *0.5
+    # partial : a dictionnary variable name : value
+    # variable must be in the scope og the constraint and value must be in the
+    # domain of the corresponding variable.
+    # When using partial, the resulting constraint be based on the the partial 
+    # application of the function with these variable 'frozen' with their given
+    # value.
+    # This is usefull when serializing dynamic dcop 
+    partial:
+      var2: 2
+      var3: 1
+  c_ext:
+    type: extensional
+    # When using intentional constraints, the list of variables the contraints
+    # depends on must be explicitly given:
+    variables: [var1, var2, var3]
+    # A default value may be defined, it will be used for all assignment that
+    # are not explicitly given in the values section.
+    default: 100
+    values:
+      # The `values` section is a map from the values of the constraint to
+      # a list of assignments that yield that value. Assignment are given in
+      # the same order as the variables in the `variables` section above.
+      # Here for example, the constraint `c_ext` has a value of 10 for two
+      # assignments:
+      #    {var1: 1, var2: 2, var3: 3} and {var1: 1, var2: 2, var3: 4}
+      10 : 1 2 3 | 1 2 4
+      2  : 2 3 'too bad'
+
+    
+# Agents
+# Agents can be given as a yaml list :
+#     agents: [a1, a2, a2, a3]
+# When you need to set properties on agents, use a yaml map instead:
+agents:
+  a1:
+    # capacity is an agent property expected by many distribution algorithm:
+    capacity: 100
+    # You can add any property to an agent:
+    foo: bar
+  a2:
+    capacity: 100
+  a3:
+    capacity: 100
+
+
+# Routes model the cost of communication between any pair of two agents
+# This can be used when distributing computations on agents, to optimize the
+# distribution for reduced communication cost
+# Route are assumed to be symmetric : the cost of the route (a1, a2) is the
+# same than the cost of (a2, a1). If you specify the cost more than once an
+# error will be raised when parsing the file.
+# The neutral , dans default, value for routes is 1, as they are used as a
+# multiplication factor for the message sizes. When all routes are set to 1,
+# only the communication load between computations is used.
+# Setting a route to 0 means that it's completely
+# free to use, no matter how many data you send on this route (which not
+# realistic)
+# Note that only agents that have already been defined before can be used here.
+routes:
+  # This cost will be used for any pair of agents for which no specific cost
+  # is given.
+  default: 5
+  a1:
+    a2: 10
+    a3: 4
+  a2: 
+    # The following line would produce an error as it re-defines the route
+    # (a1, a2)
+    # a1: 6
+    a3: 4
+
+
+# The hosting_cost is a measure of the costs for a agent for hosting a given
+# computation.
+# The neutral value for preferences is 0.
+# To model the fact that an agent is generally less attractive for
+# computations (independently of which computations), simply use the 'default'
+# attribute (global or agent level).
+# hosting_cost can be seen as a generalized, fine grained, version of the
+# 'must_host'relation in distribution_hints. A distribution method will
+# generally use hosting_cost or distribution_hints but not both.
+# Beware that these costs are aggregated with the routes costs (which are
+# multiplied by msg size, for each edge) and thus must high enough to have
+# any influence !
+hosting_costs:
+  # This default value will be used if nothing more specific is given.
+  default: 1000
+  a1:
+    # This default value is only used for agent a1, for computations which do
+    # not have a more specific value given.
+    default: 5000
+    computations:
+      c1: 10
+      c2: 30
+  a2:
+    default: 0
+  a3:
+    default: 10
+
+
+# distribution_hints contains additional information that can be used during
+# the distribution phase.
+distribution_hints:
+
+  must_host:
+    # a pair agent_name : [list of variables or cconstraints names]
+    # This means that computation dealing specificaly with one of these variable 
+    # or computation MUST be hosted on this agent.
+    a1: [var1]
+    a2: [var2, var3]
+
+  host_with:
+    # a pair variable name: list of constraint or variable names
+    # of constraint name: list of constraint or variable names
+    # indicates if the computation for this variable should be hosted on the 
+    # same agent as some other variables / agents.
+    # This info is may be used by some distribution methods but not necessarily 
+    # all of them.
+    var1: [c1, c2]
+    c3: [a2]
+

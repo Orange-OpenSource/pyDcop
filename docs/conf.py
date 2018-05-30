@@ -35,7 +35,8 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
-    'sphinx.ext.napoleon' # for numpy style documentation
+    'sphinx.ext.napoleon',  # for numpy style documentation
+    'sphinxcontrib.bibtex'  # for bibtex based bibliography and citation
 ]
 
 

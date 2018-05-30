@@ -28,6 +28,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+"""
+MGM2 : a 2-coordinated DCOP algorithm
+-------------------------------------
+
+Mgm2 algorithm as described in
+'Distributed  Algorithms for DCOP: A Graphical-Game-Base Approach' (R. Maheswaran,
+J. Pearce, M. Tambe, 2004)
+
+"""
+
 
 import logging
 import random

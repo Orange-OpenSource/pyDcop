@@ -50,7 +50,8 @@ test_deps = [
 # Extra dependencies, used to generate docs
 doc_deps = [
     'sphinx',
-    'sphinx_rtd_theme'
+    'sphinx_rtd_theme',
+    ' sphinxcontrib-bibtex'
 ]
 
 # Required to install dev dependencies with pip

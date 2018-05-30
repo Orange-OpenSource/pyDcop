@@ -71,9 +71,19 @@ parallelism on a multi-core cpu).
 Notes
 -----
 
-No automatic stop is implemented for the moment, you need to use the global
+Depending on the DCOP algorithm, the solve process may or may not automatically.
+For example, :ref:`DPOP<implementation_reference_algorithms_dpop>`
+has a clear termination condition and the command will return once this
+condition is reached.
+On the other hand, some other algorithm like
+:ref:`MaxSum<implementation_reference_algorithms_maxsum>` have
+no clear termination condition
+(several options are available,
+which could be passed as argument to the algorithm).
+
+For these algorithm you need to use the global
 ``--timeout`` option.
-You can also stop the process manually with CTRL+C.
+You can also stop the process manually with ``CTRL+C``.
 
 Agents are only stopped once they have handled all messages already
 present in their message queue : this means that even a force stop can take
@@ -135,10 +145,11 @@ need to be stopped with CTRL+C::
 import json
 import logging
 import os
+import multiprocessing
+import sys
 from functools import partial
 from queue import Queue, Empty
 from threading import Thread
-import multiprocessing
 
 from pydcop.algorithms import list_available_algorithms
 from pydcop.commands._utils import build_algo_def, _error, _load_modules
@@ -231,6 +242,8 @@ columns = {
 collect_on = None
 run_metrics = None
 end_metrics = None
+
+timeout_stopped = False
 
 
 def add_csvline(file, mode, metrics):
@@ -375,6 +388,14 @@ def run_cmd(args, timer=None):
     try:
         orchestrator.deploy_computations()
         orchestrator.run()
+        if timer:
+            timer.cancel()
+        if not timeout_stopped:
+            _results('FINISHED')
+            sys.exit(0)
+
+        # in case it did not stop, dump remaining threads
+
     except Exception as e:
         logger.error(e, exc_info=1)
         orchestrator.stop_agents(5)
@@ -385,10 +406,13 @@ def run_cmd(args, timer=None):
 def on_timeout():
     if orchestrator is None:
         return
+    global timeout_stopped
+    timeout_stopped = True
     # Stopping agents can be rather long, we need a big timeout !
     orchestrator.stop_agents(20)
     orchestrator.stop()
     _results('TIMEOUT')
+    sys.exit(0)
 
 
 def on_force_exit(sig, frame):

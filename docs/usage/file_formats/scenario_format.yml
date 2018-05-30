@@ -1,0 +1,32 @@
+
+# In case the scenario was generated automatically, the parameters used for
+# generation
+inputs:
+  bar: foo
+
+# Ordered list of events and delays.
+# The scenario should always start with a delay, although that is not
+# mandatory.
+events:
+
+# A delay is simply an entry in the list with a delay attribute, given in
+# seconds.
+  - id: w
+    delay: 1
+
+# An event is a list of actions that happens simultaneously:
+  - id: e1
+    actions:
+      - type: remove_agent
+        agent: a2
+      - type: remove_agent
+        agent: a3
+  - id: w
+    delay: 1.5
+  - id: e2
+    actions:
+      - type: add_agent
+        agent: a12
+        extra_params: ...
+
+

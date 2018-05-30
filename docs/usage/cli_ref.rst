@@ -31,7 +31,7 @@ Additionally, some options apply to many commands and must be given
 **before** the command, for example in the following ``-t`` and ``-v`` are
 **global options** and ``--algo`` is an option of the ``solve`` command::
 
-  pydcop -t 5 -v 3 solve --algo maxsum  graph_coloring1.yaml
+  pydcop -t 5 -v 3 solve --algo maxsum  graph_coloring.yaml
 
 pydcop supports the following global options::
 
@@ -54,7 +54,12 @@ pydcop supports the following global options::
 
 ``--log <long_conf_file>``
   Log configuration file. Can be used instead of ``-verbose`` for precise
-  control over log (filtering, output to several files, etc.).
+  control over log (filtering, output to several files, etc.). This
+  file uses the `standard python log configuration file format <https://docs
+  .python.org/3/library/logging.config.html#configuration-file-format>`_ .
+  The following sample file can be used as a starting point to build your own
+  custom log configuration : :download:`log.conf<cli/log.conf>`.
+
 
 
 

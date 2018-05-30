@@ -27,6 +27,24 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+"""
+
+MaxSum: Belief-propagation DCOP algorithm
+-----------------------------------------
+
+Implementation of the MaxSum algorithm
+
+We try to make as few assumption on the way the algorithm is run,
+and especially on the distribution of variables and factor on agents.
+In particular, we do not force here a factor and a variable to belong to
+the same agent and thus variables and factors are implemented completely
+independently.
+To run the Algorithm, factor and variable must be distributed on agents (
+who will 'run' them).
+
+
+
+"""
 
 
 import logging
@@ -44,18 +62,6 @@ from . import generate_assignment_as_dict
 from pydcop.infrastructure.computations import Message, DcopComputation, \
     VariableComputation
 
-"""Implementation of the MaxSum algorithm
-
-We try to make as few assumption on the way the algorithm is run,
-and especially on the distribution of variables and factor on agents.
-In particular, we do not force here a factor and a variable to belong to
-the same agent and thus variables and factors are implemented completely
-independently.
-To run the Algorithm, factor and variable must be distributed on agents (
-who will 'run' them).
-
-
-"""
 
 # Avoid using symbolic infinity as it is currently not correctly
 # (de)serialized

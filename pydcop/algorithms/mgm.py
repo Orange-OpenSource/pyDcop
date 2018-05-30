@@ -28,6 +28,21 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+"""
+
+MGM : Maximum Gain Message
+--------------------------
+
+Algorithm Parameters
+^^^^^^^^^^^^^^^^^^^^
+TODO
+
+Example
+^^^^^^^
+
+TODO
+
+"""
 
 import logging
 import random

@@ -1,0 +1,25 @@
+
+# Optional, when the replica distribution is generated with the
+# `pydcop replica_dist` command, it contains the parameter that where used to
+# generate the distribution
+inputs:
+  distribution: path/to/distfile.yml
+  # dist_algo: ilp_comcost
+  dcop: path/to/dcop/file.yaml
+  graph: constraints_hypergraph
+  algo: dsa
+  k : 3
+  replication: dist_ucs_hostingcosts
+
+
+replica_dist:
+  v0: [a12, a5, a1]
+  v1: [a12, a5, a1]
+  v2: [a12, a5, a1]
+  v3: [a12, a5, a9]
+  v4: [a1, a5, a9]
+  v5: [a12, a9, a1]
+  v6: [a12, a9, a1]
+  v7: [a12, a5, a1]
+  v8: [a12, a5, a9]
+  v9: [a12, a5, a1]
