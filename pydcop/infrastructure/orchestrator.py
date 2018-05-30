@@ -1121,6 +1121,11 @@ class AgentsMgt(MessagePassingComputation):
                 self.logger.warning(
                     'Incomplete metrics for computation %s : %s ',
                     agt, agt_metrics)
+            except ZeroDivisionError:
+                self.logger.warning(
+                    'Incomplete metrics for computation %s : %s ',
+                    agt, agt_metrics)
+
 
         if self._agt_cycle_metrics[self._current_cycle]:
             active_ratio = activity / len(self._agt_cycle_metrics[
