@@ -19,9 +19,11 @@ pyDCOP v0.1.2 [Unreleased]
 ### Fixed
 - When stopping an agent, the ws-sever (for ui) was not closed properly.
 - Issues causing delays when stopping the orchestrator.
-- Invalid metrics containing management computations instead of agents
+- Invalid metrics containing management computations instead of agents.
 - Avoid some crashes during metrics computations (when stopping the system 
-  when metrics are not ready yet)
+  when metrics are not ready yet).
+- Activity ratio computation was wrong.
+- A bug with end metric computations.   
 
 ## Modified
 - domain type is now optional (in API and yaml DCOP format)
