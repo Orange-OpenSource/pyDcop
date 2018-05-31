@@ -687,7 +687,7 @@ class Agent(object):
             'size_ext_msg': {k: v
                              for k, v in self._messaging.size_ext_msg.items()
                              if k in own_computations},
-            'last_msg_time': self._messaging.last_msg_time,
+            # 'last_msg_time': self._messaging.last_msg_time,
             'activity_ratio': activity_ratio,
             'cycles': {c.name: c.cycle_count for c in self.computations()}
         }
