@@ -10,9 +10,10 @@ This small tutorial will guide you to solve your first DCOP using pyDCOP.
 Solving your first DCOP
 -----------------------
 
-Once you have installed pyDCOP (and activated the python venv you have
-installed it in), create a text file ``graph_coloring.py`` with following
-content::
+Once you have
+:ref:`installed pyDCOP<installation>`
+(and activated the python venv you have installed it in),
+create a text file ``graph_coloring.py`` with following content::
 
     name: graph coloring
     objective: min
