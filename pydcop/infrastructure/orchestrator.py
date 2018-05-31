@@ -296,7 +296,7 @@ class Orchestrator(object):
         return self.mgt.current_solution()
 
     def end_metrics(self):
-        return self.mgt.global_metrics('END', perf_counter())
+        return self.mgt.global_metrics('END', self.mgt.last_agt_stop_time)
 
     def wait_ready(self):
         """Blocks until the Orchestrator is ready to perform another action.
@@ -573,6 +573,13 @@ class AgentsMgt(MessagePassingComputation):
         self._nb_computations = 0
         self.start_time = None
 
+        # last_agt_stop_time is the perf_counter() time from the last
+        # received stopped message from an agent.
+        # A the end of a run, this can be used to identify the real end of the
+        # solve process (as unregistration from discovery can have delay and
+        # thus cannot be used to get an accurate end time)
+        self.last_agt_stop_time = None
+
         # Used to store stae of agent: replication | repair_setup |
         # repair_ready | repair_done
         self._agts_state = {}  # type: Dict[str, str]
@@ -837,6 +844,7 @@ class AgentsMgt(MessagePassingComputation):
         except ValueError:
             self.logger.warning('Stopped message for an unexpected agent: %s ',
                                 msg.agent)
+        self.last_agt_stop_time = perf_counter()
 
     def _on_computation_end_msg(self, sender: str,
                                 msg: ComputationFinishedMessage, _: float):

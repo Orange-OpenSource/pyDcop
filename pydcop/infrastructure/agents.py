@@ -634,6 +634,9 @@ class Agent(object):
             self._ui_server.stop()
 
         try:
+            # Wait a bit to make sure that the stopped message can reach the
+            # orchestrator before unregistration.
+            sleep(0.5)
             self.discovery.unregister_agent(self.name)
         except UnreachableAgent:
             # when stopping the agent, the orchestrator / directory might have
