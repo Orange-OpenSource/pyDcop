@@ -1115,21 +1115,21 @@ class AgentsMgt(MessagePassingComputation):
 
         # msg stats and activity ratio
         msg_count, msg_size = 0, 0
+        agt_cycles = []
         for agt in self._agt_cycle_metrics[self._current_cycle]:
             agt_metrics = self._agt_cycle_metrics[self._current_cycle][agt]
             try:
-                for v in agt_metrics['count_ext_msg']:
-                    msg_count += agt_metrics['count_ext_msg'][v]
-                for v in agt_metrics['size_ext_msg']:
-                    msg_size += agt_metrics['size_ext_msg'][v]
+                msg_count += sum( agt_metrics['count_ext_msg'][v]
+                                  for v in agt_metrics['count_ext_msg'])
+                msg_size += sum(agt_metrics['size_ext_msg'][v]
+                                for v in agt_metrics['size_ext_msg'])
+                agt_cycles += [agt_metrics['cycles'][v]
+                                    for v in agt_metrics['cycles']]
             except KeyError:
                 self.logger.warning(
                     'Incomplete metrics for computation %s : %s ',
                     agt, agt_metrics)
-            except ZeroDivisionError:
-                self.logger.warning(
-                    'Incomplete metrics for computation %s : %s ',
-                    agt, agt_metrics)
+        max_cycle = max(agt_cycles, default=0)
 
         total_time = t - self.start_time if self.start_time is not None else 0
 
@@ -1141,7 +1141,7 @@ class AgentsMgt(MessagePassingComputation):
             'time': total_time,
             'msg_count': msg_count,
             'msg_size': msg_size,
-            'cycle': self._current_cycle,
+            'cycle': max_cycle,
             'agt_metrics': self._agt_cycle_metrics[self._current_cycle]
         }
 
