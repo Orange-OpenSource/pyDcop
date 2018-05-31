@@ -17,6 +17,7 @@ pyDCOP v0.1.2 [Unreleased]
 ### Fixed
 - When stopping an agent, the ws-sever (for ui) was not closed properly.
 - Issues causing delays when stopping the orchestrator.
+- Invalid metrics containing management computations instead of agents
 
 
 pyDCOP v0.1.0 - 2018-05-04

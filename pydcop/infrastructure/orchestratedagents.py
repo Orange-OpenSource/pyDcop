@@ -279,7 +279,7 @@ class OrchestrationComputation(MessagePassingComputation):
         else:
             metrics = dict()
         value_msg = ValueChangeMessage(
-            self.name, computation, value, cost, cycle,metrics)
+            self.agent.name, computation, value, cost, cycle,metrics)
         self.post_msg(ORCHESTRATOR_MGT, value_msg, MSG_VALUE)
 
     def on_computation_new_cycle(self, computation, *args, **kwargs):
@@ -316,7 +316,7 @@ class OrchestrationComputation(MessagePassingComputation):
         Send metrics to the orchestrator.
         :return:
         """
-        self.send_to_orchestrator(MetricsMessage(self.name,
+        self.send_to_orchestrator(MetricsMessage(self.agent.name,
                                                   self.agent.metrics()))
 
     def send_to_orchestrator(self, msg: Message):
