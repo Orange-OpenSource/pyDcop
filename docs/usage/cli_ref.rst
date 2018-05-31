@@ -1,4 +1,7 @@
 
+
+.. _usage_cli_ref:
+
 pyDCOP command line reference
 =============================
 

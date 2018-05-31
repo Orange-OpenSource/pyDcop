@@ -78,6 +78,7 @@ this DCOP with the
 This should output a result simular to this::
 
   {
+    // Rather long list of infomration, not included here ....
     "assignment": {
       "v1": "R",
       "v2": "G",
@@ -85,12 +86,13 @@ This should output a result simular to this::
     },
     "cost": -0.1,
     "cycle": 1,
-    "msg_count": 49,
-    "msg_size": 16,
+    "msg_count": 4,
+    "msg_size": 8,
     "status": "FINISHED",
-    "time": 0.006229691000044113,
+    "time": 0.008432154994807206,
     "violation": 0
   }
+
 
 Congratulations, you have solved your first DCOP using pyDCOP !!
 
@@ -108,3 +110,5 @@ local minimum.
 On the other hand DPOP is a *complete algorithm* and will always return the
 optimal assignment (if your problem is small enough to use DPOP on it !).
 
+Now that you have run your first DCOP, you can head to the next tutorial to
+learn how to :ref:`analyse the results<tutorials_analysing_results>`.
