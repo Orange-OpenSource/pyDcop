@@ -11,6 +11,7 @@ pyDCOP v0.1.2 [Unreleased]
 - New `--version` global option on cli.
 - `--graph` option may be omitted in `distribute` cli command, when `--algo`
  is given.
+-- `--output` is now supported by the `solve` cli command 
 - Add a lot of documentation : usage, command line reference, etc. 
 - termination detection in solve command: the command returns if all 
   computations have finished.

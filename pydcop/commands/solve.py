@@ -244,6 +244,7 @@ run_metrics = None
 end_metrics = None
 
 timeout_stopped = False
+output_file = None
 
 
 def add_csvline(file, mode, metrics):
@@ -308,11 +309,11 @@ def prepare_metrics_files(run, end, mode):
 def run_cmd(args, timer=None):
     logger.debug('dcop command "solve" with arguments {}'.format(args))
 
-    global INFINITY
+    global INFINITY, collect_on, output_file
     INFINITY = args.infinity
-
-    global collect_on
+    output_file = args.output
     collect_on = args.collect_on
+
     period = None
     if args.collect_on == 'period':
         period = 1 if args.period is None else args.period
@@ -431,6 +432,7 @@ def _results(status):
     :param status:
     :return:
     """
+
     metrics = orchestrator.end_metrics()
     metrics['status'] = status
     global end_metrics, run_metrics
@@ -438,6 +440,11 @@ def _results(status):
         add_csvline(end_metrics, collect_on, metrics)
     if run_metrics is not None:
         add_csvline(run_metrics, collect_on, metrics)
+
+    if output_file:
+        with open(output_file, encoding='utf-8', mode='w') as fo:
+                fo.write(json.dumps(metrics, sort_keys=True, indent='  '))
+
     print(json.dumps(metrics, sort_keys=True, indent='  '))
 
 
