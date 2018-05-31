@@ -672,9 +672,14 @@ class Agent(object):
 
     def metrics(self):
         idle = 0 if self._run_t is None else self._run_t - self.t_active
+        own_computations = { c.name for c in self.computations()}
         m = {
-            'count_ext_msg': dict(self._messaging.count_ext_msg),
-            'size_ext_msg': dict(self._messaging.size_ext_msg),
+            'count_ext_msg': {k: v
+                              for k, v in self._messaging.count_ext_msg.items()
+                              if k in own_computations},
+            'size_ext_msg': {k: v
+                             for k, v in self._messaging.size_ext_msg.items()
+                             if k in own_computations},
             'last_msg_time': self._messaging.last_msg_time,
             'active': self.t_active,
             'idle': idle,

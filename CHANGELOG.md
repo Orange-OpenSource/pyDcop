@@ -26,6 +26,8 @@ pyDCOP v0.1.2 [Unreleased]
 ## Modified
 - domain type is now optional (in API and yaml DCOP format)
 - agents can be given as a list or a dict in yaml
+- the number and size of technical computations (mgt, discovery, etc.)  is not 
+  output in metrics 
 
 pyDCOP v0.1.0 - 2018-05-04
 --------------------------
