@@ -1107,7 +1107,6 @@ class AgentsMgt(MessagePassingComputation):
 
         # msg stats and activity ratio
         msg_count, msg_size = 0, 0
-        activity = 0
         for agt in self._agt_cycle_metrics[self._current_cycle]:
             agt_metrics = self._agt_cycle_metrics[self._current_cycle][agt]
             try:
@@ -1115,8 +1114,6 @@ class AgentsMgt(MessagePassingComputation):
                     msg_count += agt_metrics['count_ext_msg'][v]
                 for v in agt_metrics['size_ext_msg']:
                     msg_size += agt_metrics['size_ext_msg'][v]
-                activity += agt_metrics['active'] / \
-                    (agt_metrics['active'] + agt_metrics['idle'])
             except KeyError:
                 self.logger.warning(
                     'Incomplete metrics for computation %s : %s ',
@@ -1125,13 +1122,6 @@ class AgentsMgt(MessagePassingComputation):
                 self.logger.warning(
                     'Incomplete metrics for computation %s : %s ',
                     agt, agt_metrics)
-
-
-        if self._agt_cycle_metrics[self._current_cycle]:
-            active_ratio = activity / len(self._agt_cycle_metrics[
-                                          self._current_cycle])
-        else:
-            active_ratio = None
 
         total_time = t - self.start_time if self.start_time is not None else 0
 
@@ -1143,7 +1133,6 @@ class AgentsMgt(MessagePassingComputation):
             'time': total_time,
             'msg_count': msg_count,
             'msg_size': msg_size,
-            'active_ratio': active_ratio,
             'cycle': self._current_cycle,
             'agt_metrics': self._agt_cycle_metrics[self._current_cycle]
         }

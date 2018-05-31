@@ -671,7 +671,11 @@ class Agent(object):
         dest.on_message(sender_name, msg, t)
 
     def metrics(self):
-        idle = 0 if self._run_t is None else self._run_t - self.t_active
+        if self._run_t is None:
+            activity_ratio = 0
+        else:
+            total_t = perf_counter() - self._run_t
+            activity_ratio = self.t_active / (total_t)
         own_computations = { c.name for c in self.computations()}
         m = {
             'count_ext_msg': {k: v
@@ -681,8 +685,7 @@ class Agent(object):
                              for k, v in self._messaging.size_ext_msg.items()
                              if k in own_computations},
             'last_msg_time': self._messaging.last_msg_time,
-            'active': self.t_active,
-            'idle': idle,
+            'activity_ratio': activity_ratio,
             'cycles': {c.name: c.cycle_count for c in self.computations()}
         }
         return m
