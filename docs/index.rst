@@ -62,7 +62,7 @@ Documentation
    :maxdepth: 1
 
    installation
-   getting_started
+   tutorials
    concepts
    usage
    algorithms

@@ -1,3 +1,7 @@
+
+.. _tutorials_getting_started:
+
+
 Getting started
 ===============
 
@@ -97,19 +101,9 @@ you can stop the execution with ``CTRL+C`` or use the ``--timeout`` option::
 
 You may notice that with this command the assignment in the result is not
 always the same and not always the result we found using DPOP.
-This is because :ref:`MGM<implementation_reference_algorithms_mgm>` is a *local search* algorithm, which can be trapped in a
+This is because :ref:`MGM<implementation_reference_algorithms_mgm>` is
+a *local search* algorithm, which can be trapped in a
 local minimum.
 On the other hand DPOP is a *complete algorithm* and will always return the
 optimal assignment (if your problem is small enough to use DPOP on it !).
 
-
-Analysing results
------------------
-
-
-
-Analysing results
-
-* end results
-* run-time metrics
-* plotting the results
