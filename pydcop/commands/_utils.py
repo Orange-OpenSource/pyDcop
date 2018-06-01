@@ -141,7 +141,7 @@ def prepare_metrics_files(run, end, mode):
         elif not os.path.exists(os.path.dirname(run_metrics)):
             os.makedirs(os.path.dirname(run_metrics))
         # Add column labels in file:
-        headers = ','.join(columns[mode])
+        headers = ', '.join(columns[mode])
         with open(run_metrics, 'w', encoding='utf-8') as f:
             f.write(headers)
             f.write('\n')
@@ -164,7 +164,7 @@ def prepare_metrics_files(run, end, mode):
 
 def add_csvline(file, mode, metrics):
     data = [metrics[c] for c in columns[mode]]
-    line = ','.join([str(d) for d in data])
+    line = ', '.join([str(d) for d in data])
 
     with open(file, mode='at', encoding='utf-8') as f:
         f.write(line)
