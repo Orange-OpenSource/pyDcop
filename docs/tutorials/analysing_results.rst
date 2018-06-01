@@ -17,14 +17,15 @@ This command outputs many results, given in json so that you can parse then
 easily, for example when writing more complex scripts for
 experimentation.
 You can also get these results directly in a file using the ``--output`` global
-option (see. :ref:`pyDcop cli dcoumentation<usage_cli_ref>`):
+option (see. :ref:`pyDcop cli dcoumentation<usage_cli_ref_options>`):
 ``pydcop --output results.json solve --algo dpop graph_coloring.yaml``
 
-You may have noticed that, even though the DCOP has only 3 variable and a
-handful of constraints, the results is quite long and contains many
+You may have noticed that, even though the DCOP has only 3 variables and a
+handful of constraints, the results is quite long and contains a lot of
 information.
 
-At the top level you can find several global information::
+At the top level you can find global results, which apply to the DCOP as a
+whole::
 
     {
       "agt_metrics": {
@@ -66,7 +67,7 @@ At the top level you can find several global information::
 
 
 The ``agt_metrics`` section contains one entry for each of the agents in the
-DCOP. This section contains several entries::
+DCOP. Each of these entries contains several items::
 
     "a1": {
       "activity_ratio": 0.24987247830102727,
@@ -82,7 +83,7 @@ DCOP. This section contains several entries::
     },
 
 
-* ``count_ext_msg`` and ``size_ext_msg``, which contains count and size of
+* ``count_ext_msg`` and ``size_ext_msg``, which contain count and size of
   messages sent and received by each DCOP computations hosted on this agent
 * ``cycles``, the number of cycles for each DCOP computation hosted on this
   agent.
