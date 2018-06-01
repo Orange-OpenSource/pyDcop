@@ -276,6 +276,7 @@ class MgmComputation(VariableComputation):
         self._gain = None
         self._new_value = None
 
+        self.stop_cycle = stop_cycle
         self.__break_mode__ = break_mode
         self.__random_nb__ = 0  # used in case break_mode is 'random'
 
@@ -416,6 +417,8 @@ class MgmComputation(VariableComputation):
 
         """
         self.new_cycle()
+        if self.stop_cycle and self.cycle_count >= self.stop_cycle:
+            self.finished()
         msg = MgmValueMessage(self.current_value)
         self.logger.debug('%s sends value message %s to %s', self.name, msg,
                           self.neighbors)
