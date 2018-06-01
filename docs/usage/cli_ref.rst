@@ -66,7 +66,11 @@ pydcop supports the following global options::
   The following sample file can be used as a starting point to build your own
   custom log configuration : :download:`log.conf<cli/log.conf>`.
 
-
+Additionally the ``--help`` / ``-h`` option can always be used both as a
+global option and as a command option.
+Calling ``pydcop --help`` outputs a general help for pyDCOP command line
+interface, with a list of available commands.
+``pydcop <command> --help`` outputs help for this specific command.
 
 
 
