@@ -180,9 +180,10 @@ def set_parser(subparsers):
                         choices=algorithms, required=True,
                         help='The algorithm for solving the dcop')
     parser.add_argument('-p', '--algo_params',
-                        type=str, nargs='*',
-                        help='Optional parameters for the algorithm , given as '
-                             'name:value. Several parameters can be given.')
+                        type=str,  action='append',
+                        help='Optional parameters for the algorithm, given as '
+                             'name:value. Use this option several times '
+                             'to set several parameters.')
 
     parser.add_argument('-d', '--distribution', type=str,
                         default='oneagent',
