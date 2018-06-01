@@ -93,7 +93,21 @@ def build_algo_def(algo_module, algo_name: str, objective,
                                                      algo_module.algo_params))
 
         except Exception as e:
-            _error(e)
+            if isinstance(algo_module.algo_params, list):
+                param_msgs = []
+                for param_def in algo_module.algo_params:
+                    valid_values = '' if param_def.values is None \
+                        else 'values: {}'.format(param_def.values)
+                    param_msg = "  * {} ({}) default : {}  {} ".format(
+                        param_def.name, param_def.type,
+                        param_def.default_value, valid_values)
+                    param_msgs.append(param_msg)
+                msg = str(e)
+                msg += '\nAvailable parameters for {}:\n'.format(algo_name)
+                msg += '\n'.join(param_msgs)
+                _error(msg)
+            else:
+                _error(e)
 
     else:
         if cli_params:
