@@ -38,8 +38,10 @@ from importlib import import_module
 
 import sys
 from queue import Queue, Empty
+from types import FunctionType
 from typing import List
 
+from pydcop.algorithms import prepare_algo_params
 from pydcop.algorithms.objects import AlgoDef
 
 logger = logging.getLogger('pydcop')
@@ -51,11 +53,20 @@ def build_algo_def(algo_module, algo_name: str, objective,
     Build the AlgoDef, which contains the full algorithm specification (
     name, objective and parameters)
 
-    :param algo_module:
-    :param algo_name:
-    :param objective:
-    :param cli_params:
-    :return:
+    Parameters
+    ----------
+    algo_module: module object
+        the module containing the algorithm
+    algo_name: str
+        name of the algorithm
+    objective: str
+        'min' or 'max'
+    cli_params: dict
+        dict containing parameters for the algorithm
+
+    Returns
+    -------
+    algorithm definition, as an ``AlgoDef`` object.
     """
 
     # Parameters for the algorithm:
@@ -70,8 +81,17 @@ def build_algo_def(algo_module, algo_name: str, objective,
             logger.info('Using default parameters for %s', algo_name)
 
         try:
-            algo_params = algo_module.algo_params(params)
-            return AlgoDef(algo_name, objective, **algo_params)
+
+            if isinstance(algo_module.algo_params, FunctionType):
+                # FIXME: remove once all algorithms use the new param mechanism
+                # with prepare_algo_params
+                return AlgoDef(algo_name, objective,
+                               **algo_module.algo_params(params))
+            else:
+                return AlgoDef(algo_name, objective,
+                               **prepare_algo_params(params,
+                                                     algo_module.algo_params))
+
         except Exception as e:
             _error(e)
 
@@ -79,7 +99,6 @@ def build_algo_def(algo_module, algo_name: str, objective,
         if cli_params:
             _error('Algo {} does not support any parameter'.format(algo_name))
         return AlgoDef(algo_name, objective)
-
 
 
 # Files for logging metrics

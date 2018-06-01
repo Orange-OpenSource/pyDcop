@@ -168,21 +168,20 @@ Various
 Parameters
 ^^^^^^^^^^
 
-If the algorithm supports parameters, you must define a method to parse the
-command-line supplied parameters and set default values for parameters that
-were not given::
+If the algorithm supports parameters, you must give a definition of these
+parameters in your module, by defining a variable named ``algo_params``. See
+for example in mgm implementation::
 
-    def algo_params(params: Dict[str, str]):
-    """
-    Returns the parameters for the algorithm.
+    algo_params = [
+        AlgoParameterDef('break_mode', 'str', ['lexic', 'random'], 'lexic'),
+        AlgoParameterDef('stop_cycle', 'int', None, None),
 
-    If a value for parameter is given in `params` it is parsed and (if acceptable)
-    used, otherwise a default value is used instead.
+    ]
 
-    :param params: a dict containing name and values for parameters as string
-    :return:a Dict with all parameters (either their default value or
-    the values extracted form `params`)
-    """
+
+These definitions will be automatically used
+(with :py:func:`pydcop.algorithms.prepare_algo_params`) to check parameters
+for validity and add default values.
 
 An ``Algodef`` instance populated with the parsed parameters will be passed to
 your ``build_computation`` method, you can then use it to pass these parameters

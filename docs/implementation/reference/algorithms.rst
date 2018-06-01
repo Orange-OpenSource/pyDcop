@@ -16,3 +16,8 @@ DCOP algorithms currently implemented in pyDCOP:
   algorithms/maxsum
   algorithms/dpop
 
+
+.. autoclass:: pydcop.algorithms.AlgoParameterDef
+  :members:
+
+.. autofunction:: pydcop.algorithms.prepare_algo_params

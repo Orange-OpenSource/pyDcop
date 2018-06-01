@@ -30,8 +30,9 @@
 
 
 import pkgutil
+from collections import namedtuple
 from importlib import import_module
-from typing import List
+from typing import List, Any, Dict
 
 import numpy as np
 
@@ -231,3 +232,120 @@ class ComputationDef(SimpleRepr):
         if self.node == other.node and self.algo == other.algo:
             return True
         return False
+
+
+AlgoParameterDef = namedtuple('AlgoParameterDef',
+                              ['name', 'type', 'values', 'default_value'])
+
+
+def is_of_type_by_str(value: Any, type_str: str):
+    """
+    Check if the type of ``value`` is ``type_str``.
+
+    Parameters
+    ----------
+    value: any
+        a value
+    type_str: str
+        the expected type of ``value``, given as a str
+
+    Examples
+    --------
+
+    >>> is_of_type_by_str(2, 'int')
+    True
+    >>> is_of_type_by_str("2.5", 'float')
+    False
+
+    Returns
+    -------
+    boolean
+    """
+    return value.__class__.__name__ == type_str
+
+
+def check_param_value(param_val: Any, param_def: AlgoParameterDef) -> None:
+    """
+    Check if  ``param_val`` is a valid value for a ``AlgoParameterDef``
+
+    Parameters
+    ----------
+    param_val: any
+        a value
+    param_def: AlgoParameterDef
+        a parameter definition
+
+    Examples
+    --------
+
+    >>> param_def = AlgoParameterDef('p', 'str', ['a', 'b'], 'b')
+    >>> check_param_value('b', param_def)
+
+    Raises
+    ------
+    Raises a ValueError if the value does not satisfies the parameter
+    definition.
+
+    """
+    if not is_of_type_by_str(param_val, param_def.type):
+        raise ValueError('Invalid type for value {} of parameter {}, '
+                         'must be {}'.format(param_val,
+                                             param_def.name, param_def.type))
+
+    if param_def.values:
+        if param_val in param_def.values:
+            return
+        else:
+            raise ValueError('Invalid value for parameter {}, must be one of '
+                             '{}'.format(param_def.name, param_def.values))
+
+
+def prepare_algo_params(params: Dict[str, Any],
+                        parameters_definitions: List[AlgoParameterDef]):
+    """
+    Check validity of algorithm parameters and add default value for missing
+    parameters.
+
+    Parameters
+    ----------
+    params: Dict[str, Any]
+        a dict containing name and values for parameters
+    parameters_definitions: list of AlgoParameterDef
+        definition of parameters
+
+    Examples
+    --------
+
+    >>> param_defs = [AlgoParameterDef('p1', 'str', ['1', '2'], '1'), \
+                      AlgoParameterDef('p2', 'int', None, 5)]
+    >>> prepare_algo_params({}, param_defs)
+    {'p1': '1', 'p2': 5}
+    >>> prepare_algo_params({'p2' : 2}, param_defs)
+    {'p1': '1', 'p2': 2}
+
+    Returns
+    -------
+    params: dict
+        a Dict with all algorithms parameters. If a parameter was not
+        provided in the input dict, it is added with its default value.
+
+    """
+    selected_params = {}
+    all_algo_params = {param_def.name: param_def
+                       for param_def in parameters_definitions}
+    for param_name in params:
+        if param_name in all_algo_params:
+            param_def = all_algo_params[param_name]
+            param_val = params[param_name]
+            check_param_value(param_val, param_def)
+            selected_params[param_name] = param_val
+
+        else:
+            raise ValueError('Unknown parameter for MGM : {}'
+                             .format(param_name))
+
+    missing_params = set(all_algo_params) - set(params)
+    for param_name in missing_params:
+        selected_params[param_name] = all_algo_params[param_name].default_value
+
+    return selected_params
