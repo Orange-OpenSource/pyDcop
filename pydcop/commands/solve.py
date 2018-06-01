@@ -232,12 +232,11 @@ INFINITY = None
 # Files for logging metrics
 columns = {
     'cycle_change': ['cycle', 'time', 'cost', 'violation', 'msg_count',
-                     'msg_size',
-                     'active_ratio', 'status'],
+                     'msg_size', 'status'],
     'value_change': ['time', 'cycle', 'cost', 'violation', 'msg_count',
-                     'msg_size', 'active_ratio', 'status'],
+                     'msg_size', 'status'],
     'period': ['time', 'cycle', 'cost', 'violation', 'msg_count', 'msg_size',
-               'active_ratio', 'status']
+               'status']
 }
 
 collect_on = None
