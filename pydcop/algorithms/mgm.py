@@ -35,7 +35,10 @@ MGM : Maximum Gain Message
 
 Algorithm Parameters
 ^^^^^^^^^^^^^^^^^^^^
-TODO
+MGM supports two parameters:
+
+* break_mode
+* stop_cycle
 
 Example
 ^^^^^^^
@@ -44,23 +47,21 @@ TODO
 
 """
 
-import logging
-import random
-import operator
-
 import functools
+import logging
+import operator
+import random
 from typing import Any
 from typing import Dict
 from typing import Iterable, Set
 
 from pydcop.algorithms import filter_assignment_dict, find_arg_optimal, \
-    ComputationDef
-from pydcop.infrastructure.computations import Message, VariableComputation
-
-from pydcop.computations_graph.constraints_hypergraph import ConstraintLink, \
+    ComputationDef, check_param_value, AlgoParameterDef
+from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
 from pydcop.dcop.objects import Variable
 from pydcop.dcop.relations import RelationProtocol
+from pydcop.infrastructure.computations import Message, VariableComputation
 
 GRAPH_TYPE = 'constraints_hypergraph'
 
@@ -77,6 +78,17 @@ def algo_name() -> str:
     The name of the algorithm implemented by this module : 'mgm'
     """
     return __name__.split('.')[-1]
+
+
+"""
+MGM supports two paramaters: 
+* break_mode
+* stop_cycle
+"""
+algo_params = [
+    AlgoParameterDef('break_mode', 'str', ['lexic', 'random'], 'lexic'),
+    AlgoParameterDef('stop_cycle', 'int', None, None),
+]
 
 
 def build_computation(comp_def: ComputationDef):
@@ -211,39 +223,6 @@ class MgmGainMessage(Message):
         return False
 
 
-def algo_params(params: Dict[str, str]):
-    """
-    DSA support two parameters:
-
-    * the value used as 'infinity', returned as the cost of a violated
-    constraint (it must map the value used in your dcop definition)
-
-    * 'max_path' : an upper bound for the maximum distance between two
-    agents in the graph. Ideally you could use the graph diameter or simply
-    the number of variables in the problem. It is use for termination
-    detection (which in DBA only works is there is a solution to the problem).
-
-    :param params: a dict containing name and values for parameters
-
-    :return: a Dict with all dsa paremeters (either their default value or
-    the values extracted form `params`
-    """
-    mgm_params = {
-        'break_mode': 'lexic',
-    }
-    if 'break_mode' in params:
-        if (params['break_mode'] == 'lexic') or \
-                (params['break_mode'] == 'random'):
-            mgm_params['break_mode'] = params['break_mode']
-        else:
-            raise ValueError("'break_mode' parameter for MGM must be in {}"
-                             .format(BREAK_MODES))
-    remaining_params = set(params) - {'break_mode'}
-    if remaining_params:
-        raise ValueError('Unknown parameter(s) for MGM : {}'
-                         .format(remaining_params))
-    return mgm_params
-
 
 # ###########################   COMPUTATION   ############################
 class MgmComputation(VariableComputation):
@@ -258,6 +237,7 @@ class MgmComputation(VariableComputation):
                  utilities: Iterable[RelationProtocol],
                  mode='min', msg_sender=None, logger=None,
                  break_mode='lexic',
+                 stop_cycle= None,
                  comp_def=None):
         """
         :param variable: a variable object for which this computation is

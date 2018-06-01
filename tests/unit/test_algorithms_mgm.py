@@ -28,8 +28,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
-from pydcop.computations_graph.constraints_hypergraph import ConstraintLink
 from pydcop.dcop.objects import Variable
 from pydcop.algorithms import mgm
 from pydcop.computations_graph.constraints_hypergraph \
@@ -80,4 +78,5 @@ def test_name_import_as():
 
     import pydcop.algorithms.mgm as foo
     assert foo.algo_name() == 'mgm'
+
 
