@@ -30,6 +30,7 @@ pyDCOP v0.1.2 [Unreleased]
 - agents can be given as a list or a dict in yaml
 - the number and size of technical computations (mgt, discovery, etc.)  is not 
   output in metrics 
+- new mechanism for defining algorithms parameters   
 
 pyDCOP v0.1.0 - 2018-05-04
 --------------------------

@@ -238,8 +238,8 @@ def test_check_type_by_string_invalid_type():
 def test_is_valid_param_value():
     param_def = algorithms.AlgoParameterDef('p', 'str', ['a', 'b'], 'b')
 
-    algorithms.check_param_value('b', param_def)
-    algorithms.check_param_value('a', param_def)
+    assert 'b' == algorithms.check_param_value('b', param_def)
+    assert 'a' == algorithms.check_param_value('a', param_def)
 
     with pytest.raises(ValueError):
         algorithms.check_param_value('invalid_value', param_def)
@@ -289,6 +289,11 @@ def test_algo_parameters_with_all_params(algo_param_defs):
     assert 'param2' in params
     assert params['param2'] == 10
 
+
+def test_algo_parameters_with_int_conversion(algo_param_defs):
+    params = algorithms.prepare_algo_params({'param2': '10'}, algo_param_defs)
+
+    assert params['param2'] == 10
 
 def test_algo_parameters_with_invalid_param(algo_param_defs):
     with pytest.raises(ValueError):

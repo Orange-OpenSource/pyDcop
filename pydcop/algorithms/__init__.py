@@ -264,9 +264,13 @@ def is_of_type_by_str(value: Any, type_str: str):
     return value.__class__.__name__ == type_str
 
 
-def check_param_value(param_val: Any, param_def: AlgoParameterDef) -> None:
+def check_param_value(param_val: Any, param_def: AlgoParameterDef) -> Any:
     """
     Check if  ``param_val`` is a valid value for a ``AlgoParameterDef``
+
+    When a parameter is given as a str, and the definition expect an int or a
+    float, a conversion is automatically attempted and the converted value is
+    returned
 
     Parameters
     ----------
@@ -275,29 +279,51 @@ def check_param_value(param_val: Any, param_def: AlgoParameterDef) -> None:
     param_def: AlgoParameterDef
         a parameter definition
 
-    Examples
-    --------
+    Returns
+    -------
+    param_value:
+        the parameter value if it is valid according to the definition (and
+        potentially after conversion)
 
-    >>> param_def = AlgoParameterDef('p', 'str', ['a', 'b'], 'b')
-    >>> check_param_value('b', param_def)
 
     Raises
     ------
     Raises a ValueError if the value does not satisfies the parameter
     definition.
 
+    Examples
+    --------
+
+    >>> param_def = AlgoParameterDef('p', 'str', ['a', 'b'], 'b')
+    >>> check_param_value('b', param_def)
+    'b'
+
+    With automatic conversion from str to int
+    >>> param_def = AlgoParameterDef('p', 'int', None, None)
+    >>> check_param_value('5', param_def)
+    5
+
+
     """
     if not is_of_type_by_str(param_val, param_def.type):
-        raise ValueError('Invalid type for value {} of parameter {}, '
-                         'must be {}'.format(param_val,
-                                             param_def.name, param_def.type))
+
+        if param_def.type == 'int':
+            param_val = int(param_val)
+        elif param_def.type == 'float':
+            param_val = float(param_val)
+        else:
+
+            raise ValueError(
+                'Invalid type for value {} of parameter {}, must be {}'.format(
+                    param_val, param_def.name, param_def.type))
 
     if param_def.values:
         if param_val in param_def.values:
-            return
+            return param_val
         else:
             raise ValueError('Invalid value for parameter {}, must be one of '
                              '{}'.format(param_def.name, param_def.values))
+    return param_val
 
 
 def prepare_algo_params(params: Dict[str, Any],
@@ -337,7 +363,7 @@ def prepare_algo_params(params: Dict[str, Any],
         if param_name in all_algo_params:
             param_def = all_algo_params[param_name]
             param_val = params[param_name]
-            check_param_value(param_val, param_def)
+            param_val = check_param_value(param_val, param_def)
             selected_params[param_name] = param_val
 
         else:
