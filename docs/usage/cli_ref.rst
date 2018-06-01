@@ -41,6 +41,9 @@ pydcop supports the following global options::
   pydcop [--version] [--timeout <timeout>] [--verbosity <level>]
          [--log <log_conf_file>]
 
+
+.. _usage_cli_ref_options:
+
 ``--version``
   Outputs pydcop version and exits.
 

@@ -118,33 +118,25 @@ all logs from DPOP computations will be logged in a ``agents.log`` file,
 without any log from the pyDCOP infrastructure
 (discovery, messaging, etc.).
 This can be very useful to analyse an algorithm's behavior.
-When solving our graph coloring problem with DPOP, you should get a log
+When solving our graph coloring problem with DPOP, you should get a log file
 containing something similar to this::
 
 
   pydcop.algo.dpop.v3 -  Leaf v3 prepares init message v3 -> v2
-  pydcop.algo.dpop.v2 -  Util message from v3 : NAryMatrixRelation(None,
- ['v2'], [-0.1  0.1])
-  pydcop.algo.dpop.v2 -  On UTIL message from v3, send UTILS msg to parent
-  ['v3']
-  pydcop.algo.dpop.v1 -  Util message from v2 : NAryMatrixRelation(None,
- ['v1'], [0. 0.])
-  pydcop.algo.dpop.v1 -  ROOT: On UNTIL message from v2, send value msg to
- childrens ['v2']
+  pydcop.algo.dpop.v2 -  Util message from v3 : NAryMatrixRelation(None, ['v2'], [-0.1  0.1])
+  pydcop.algo.dpop.v2 -  On UTIL message from v3, send UTILS msg to parent ['v3']
+  pydcop.algo.dpop.v1 -  Util message from v2 : NAryMatrixRelation(None, ['v1'], [0. 0.])
+  pydcop.algo.dpop.v1 -  ROOT: On UNTIL message from v2, send value msg to childrens ['v2']
   pydcop.algo.dpop.v1 -  Selecting new value: R, -0.1 (previous: None, None)
   pydcop.algo.dpop.v1 -  Value selected at v1 : R - -0.1
-  pydcop.algo.dpop.v2 -  v2: on value message from v1 : "DpopMessage(VALUE,
- ([Variable(v1, None, VariableDomain(colors))], ['R']))"
+  pydcop.algo.dpop.v2 -  v2: on value message from v1 : "DpopMessage(VALUE, ([Variable(v1, None, VariableDomain(colors))], ['R']))"
   pydcop.algo.dpop.v2 -  Slicing relation on {'v1': 'R'}
-  pydcop.algo.dpop.v2 -  Relation after slicing NAryMatrixRelation
- (joined_utils, ['v2'])
+  pydcop.algo.dpop.v2 -  Relation after slicing NAryMatrixRelation (joined_utils, ['v2'])
   pydcop.algo.dpop.v2 -  Selecting new value: G, 0.0 (previous: None, None)
   pydcop.algo.dpop.v2 -  Value selected at v2 : G - 0.0
-  pydcop.algo.dpop.v3 -  v3: on value message from v2 : "DpopMessage(VALUE,
- ([Variable(v2, None, VariableDomain(colors))], ['G']))"
+  pydcop.algo.dpop.v3 -  v3: on value message from v2 : "DpopMessage(VALUE, ([Variable(v2, None, VariableDomain(colors))], ['G']))"
   pydcop.algo.dpop.v3 -  Slicing relation on {'v2': 'G'}
-  pydcop.algo.dpop.v3 -  Relation after slicing NAryMatrixRelation
- (joined_utils, ['v3'])
+  pydcop.algo.dpop.v3 -  Relation after slicing NAryMatrixRelation(joined_utils, ['v3'])
   pydcop.algo.dpop.v3 -  Selecting new value: R, 0.1 (previous: None, None)
   pydcop.algo.dpop.v3 -  Value selected at v3 : R - 0.1
 
@@ -152,9 +144,12 @@ containing something similar to this::
 Run-time metrics
 ----------------
 
-The output of the :ref:`solve<pydcop_commands_solve>` command only gives you the
-end results of the command, but sometime you need to know what happens during
-the execution of the DCOP algorithm.
+The output of the :ref:`solve<pydcop_commands_solve>` command only gives you
+the end results of the command, but sometime you need to know what happens
+*during* the execution of the DCOP algorithm.
+pyDCOP is able to collect metrics
+In that case, you must use one of the
+
 
 
 
