@@ -92,11 +92,13 @@ class OrchestratedAgent(ResilientAgent):
                                       publish=False)
         self.discovery.register_computation(ORCHESTRATOR_MGT, ORCHESTRATOR,
                                             publish=False)
+
+        self._mgt_computation = OrchestrationComputation(self)
+
         self.metrics_on = metrics_on
         if metrics_on == 'period':
             self.set_periodic_action(metrics_period,
                                      self._mgt_computation.send_metrics)
-        self._mgt_computation = OrchestrationComputation(self)
 
     def _on_start(self):
         """
