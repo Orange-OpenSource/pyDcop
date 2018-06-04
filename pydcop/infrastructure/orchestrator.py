@@ -243,8 +243,7 @@ class Orchestrator(object):
         start their computations. If the agents are not ready, the orchestrator
         automatically waits until agents are ready (i.e. computations have
         been deployed).
-        This methods returns immediately, if you need to wait until the run
-        is finished, especially when using a timeout, use wait_ready.
+
 
         Parameters
         ----------
@@ -262,14 +261,20 @@ class Orchestrator(object):
         self._mgt_method('_orchestrator_run_computations', None)
 
         if timeout is not None:
+            self.logger.info('Setting timer for %s timeour ', timeout)
             self._timeout_timer = threading.Timer(timeout,
                                                   self._on_timeout)
             self._timeout_timer.start()
             self.mgt.ready_to_run = threading.Event()
+        else:
+            self.logger.info('Not timeout, stop with ctrl+c or on algo end ')
 
         if scenario is not None:
+            self.logger.info('Setting scenario ')
             self._events_iterator = iter(scenario)
             self._process_event()
+        else:
+            self.logger.info('No scenario ')
 
         self.mgt.wait_stop_agents()
         self.stop()
@@ -344,6 +349,7 @@ class Orchestrator(object):
             Message(method, arg), msg_type=MSG_MGT)
 
     def _on_timeout(self):
+        self.logger.info("Timeout, requesting agents to stop")
         self.stop_agents(5)
         self.stop()
         self.mgt.ready_to_run.set()
