@@ -846,7 +846,7 @@ class AgentsMgt(MessagePassingComputation):
         self._emit_metrics(t)
 
     def _on_agent_stopped_msg(self, sender: str, msg: AgentStoppedMessage,
-                              _: float):
+                              reception_time: float):
         self.logger.debug('Received stopped from %s : %s - %s', msg.agent,
                           dict(msg.metrics), sender)
         try:
@@ -855,7 +855,7 @@ class AgentsMgt(MessagePassingComputation):
         except ValueError:
             self.logger.warning('Stopped message for an unexpected agent: %s ',
                                 msg.agent)
-        self.last_agt_stop_time = perf_counter()
+        self.last_agt_stop_time = reception_time
 
     def _on_computation_end_msg(self, sender: str,
                                 msg: ComputationFinishedMessage, _: float):
@@ -1109,6 +1109,7 @@ class AgentsMgt(MessagePassingComputation):
 
         # Current global cost
         agent_values = self._agent_cycle_values[self._current_cycle]
+
         assignment = {k: agent_values[k][0] for k in agent_values
                       if agent_values[k]}
         # only keep dcop variable to compute the solution cost
