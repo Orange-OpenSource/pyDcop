@@ -130,6 +130,7 @@ class Agent(object):
         self.t = Thread(target=self._run, name='thread_'+name)
         self.t.daemon = daemon
         self._stopping = threading.Event()
+        self._shutdown = threading.Event()
         self._running = False
         # _idle means that we have finished to handle all incoming messages
         self._idle = False
@@ -328,7 +329,6 @@ class Agent(object):
         self._start_t = perf_counter()
         self.t.start()
 
-
     def run(self, computations: Optional[Union[str, List[str]]]=None):
         """
         Run computations hosted on this agent.
@@ -405,6 +405,20 @@ class Agent(object):
             used as a reference when computing various time-related metrics.
         """
         return self._run_t
+
+    def clean_shutdown(self):
+        """
+        Perform a clean shutdown of the agent.
+
+        All pending messages are handled before stopping the agent thread.
+
+        This method returns immediately, use `join` to wait until the agent's
+        thread has stopped.
+
+        """
+        self.logger.debug('Clean shutdown requested')
+        self._shutdown.set()
+        self._messaging.shutdown()
 
     def stop(self):
         """
@@ -725,6 +739,10 @@ class Agent(object):
                 full_msg, t = self._messaging.next_msg(0.05)
                 if full_msg is None:
                     self._idle = True
+                    if self._shutdown.is_set():
+                        self.logger.info("No message during shutdown, "
+                                         "stopping agent thread")
+                        break
                 else:
 
                     current_t = perf_counter()

@@ -15,6 +15,7 @@ pyDCOP v0.1.2 [Unreleased]
 - Add a lot of documentation : usage, command line reference, etc. 
 - termination detection in solve command: the command returns if all 
   computations have finished.
+- Clean shutdown mechanism for orchestrator, agents, and messaging   
 
 ### Fixed
 - When stopping an agent, the ws-sever (for ui) was not closed properly.
