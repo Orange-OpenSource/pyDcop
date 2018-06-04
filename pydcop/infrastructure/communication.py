@@ -462,6 +462,8 @@ class Messaging(object):
         self.last_msg_time = 0
         self.msg_queue_count = 0
 
+        self._shutdown = False
+
     @property
     def communication(self)-> CommunicationLayer:
         return self._comm
@@ -538,6 +540,9 @@ class Messaging(object):
             MSG_ALGO. Used to send messages with an higher priority first.
         on_error: ??
         """
+        if self._shutdown:
+            return
+
         msg_type = MSG_ALGO if msg_type is None else msg_type
         try:
             dest_agent = self.discovery.computation_agent(dest_computation)
@@ -590,6 +595,16 @@ class Messaging(object):
 
             self._comm.send_msg(self._local_agent, dest_agent, full_msg,
                                 on_error=on_error)
+
+    def shutdown(self):
+        """Shutdown messaging
+
+        No new message will be sent and any new message posted will be
+        silently dropped.
+        However it is still possible to call ``next_msg`` to empty the queue
+        and handle all message received before ``shutdown` was called.
+        """
+        self._shutdown = True
 
     def _on_computation_registration(self, evt: str, computation: str,
                                      agent: str):
