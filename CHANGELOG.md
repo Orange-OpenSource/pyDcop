@@ -23,7 +23,9 @@ pyDCOP v0.1.2 [Unreleased]
 - Avoid some crashes during metrics computations (when stopping the system 
   when metrics are not ready yet).
 - Activity ratio computation was wrong.
-- Bugs with end metric computations (cycle and time).   
+- Bugs with end metric computations (cycle and time).
+- Bug with solve and run command when collecting lots of metrics (would 
+  not honor the timeout)   
 
 ## Modified
 - domain type is now optional (in API and yaml DCOP format)

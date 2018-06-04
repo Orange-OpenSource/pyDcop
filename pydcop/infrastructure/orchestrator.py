@@ -346,7 +346,7 @@ class Orchestrator(object):
     def _mgt_method(self, method: str, arg: Any):
         self.messaging.post_msg(
             ORCHESTRATOR_MGT, ORCHESTRATOR_MGT,
-            Message(method, arg), msg_type=MSG_MGT)
+            Message(method, arg), msg_type=5)
 
     def _on_timeout(self):
         self.logger.info("Timeout, requesting agents to stop")
