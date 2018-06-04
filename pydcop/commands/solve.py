@@ -147,6 +147,8 @@ import logging
 import os
 import multiprocessing
 import sys
+import threading
+import traceback
 from functools import partial
 from queue import Queue, Empty
 from threading import Thread
@@ -306,7 +308,7 @@ def prepare_metrics_files(run, end, mode):
     return csv_cb
 
 
-def run_cmd(args, timer=None):
+def run_cmd(args, timer=None, timeout=None):
     logger.debug('dcop command "solve" with arguments {}'.format(args))
 
     global INFINITY, collect_on, output_file
@@ -388,12 +390,16 @@ def run_cmd(args, timer=None):
 
     try:
         orchestrator.deploy_computations()
-        orchestrator.run()
+        orchestrator.run(timeout=timeout)
         if timer:
             timer.cancel()
         if not timeout_stopped:
-            _results('FINISHED')
-            sys.exit(0)
+            if orchestrator.status == "TIMEOUT":
+                _results('TIMEOUT')
+                sys.exit(0)
+            else:
+                _results('FINISHED')
+                sys.exit(0)
 
         # in case it did not stop, dump remaining threads
 
@@ -405,12 +411,23 @@ def run_cmd(args, timer=None):
 
 
 def on_timeout():
+    logger.debug('cli timeout ')
+    # Timeout should have been handled by the orchestrator, if the cli timeout
+    # has been reached, something is probably wrong : dump threads.
+    for th in threading.enumerate():
+        print(th)
+        traceback.print_stack(sys._current_frames()[th.ident])
+        print()
+
     if orchestrator is None:
+        logger.debug("cli timeout with no orchestrator ?" )
         return
     global timeout_stopped
     timeout_stopped = True
     # Stopping agents can be rather long, we need a big timeout !
+    logger.debug('stop agent on cli timeout ')
     orchestrator.stop_agents(20)
+    logger.debug('stop orchestrator on cli timeout ')
     orchestrator.stop()
     _results('TIMEOUT')
     sys.exit(0)

@@ -54,7 +54,7 @@ from pydcop.commands import generate
 from pydcop.commands import run
 
 cli_timer = None
-
+TIMEOUT_SLACK = 40
 
 def main():
 
@@ -106,10 +106,11 @@ def main():
         if args.timeout:
             if hasattr(args, 'on_timeout'):
                 global cli_timer
-                cli_timer = Timer(args.timeout, _on_timeout, [args.on_timeout])
+                cli_timer = Timer(args.timeout+TIMEOUT_SLACK, _on_timeout,
+                                  [args.on_timeout])
                 cli_timer.daemon = True
                 cli_timer.start()
-                args.func(args, cli_timer)
+                args.func(args, cli_timer, args.timeout)
             else:
                 print('Command {}, does not support the global timeout '
                       'parameter'.format(args))
