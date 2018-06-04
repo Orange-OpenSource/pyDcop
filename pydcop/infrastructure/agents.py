@@ -749,7 +749,7 @@ class Agent(object):
                 if self._start_t is not None \
                         and self._periodic_cb is not None \
                         and ct - last_cb_time >= self._period:
-                    self.logger.warning('periodic cb %s %s ', ct, last_cb_time)
+                    self.logger.info('periodic cb %s %s ', ct, last_cb_time)
                     self._periodic_cb()
                     last_cb_time = ct
 
