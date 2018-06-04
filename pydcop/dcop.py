@@ -107,6 +107,7 @@ def main():
             if hasattr(args, 'on_timeout'):
                 global cli_timer
                 cli_timer = Timer(args.timeout, _on_timeout, [args.on_timeout])
+                cli_timer.daemon = True
                 cli_timer.start()
                 args.func(args, cli_timer)
             else:

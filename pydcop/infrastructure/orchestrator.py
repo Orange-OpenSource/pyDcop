@@ -264,6 +264,7 @@ class Orchestrator(object):
             self.logger.info('Setting timer for %s timeour ', timeout)
             self._timeout_timer = threading.Timer(timeout,
                                                   self._on_timeout)
+            self._timeout_timer.daemon = True
             self._timeout_timer.start()
             self.mgt.ready_to_run = threading.Event()
         else:
