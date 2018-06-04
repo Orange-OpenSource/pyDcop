@@ -600,7 +600,7 @@ class AgentsMgt(MessagePassingComputation):
         # metrics
         # Storing metrics for agent across several cycles :
         # Dict cycle->agent->metrics or value
-        self._current_cycle = 1
+        self._current_cycle = 0
         self._agt_cycle_metrics = defaultdict(lambda: {})
         self._agent_cycle_values = defaultdict(lambda: {})
         # used to detect the end of a cycle
