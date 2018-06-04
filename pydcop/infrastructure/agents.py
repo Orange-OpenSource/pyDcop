@@ -120,6 +120,8 @@ class Agent(object):
         self.discovery = Discovery(self._name, self.address)
         self._comm.discovery = self.discovery
         self._messaging = Messaging(name, comm)
+        self.discovery.discovery_computation.message_sender = \
+            self._messaging.post_msg
 
         # Ui server
         self._ui_port = ui_port
@@ -572,8 +574,6 @@ class Agent(object):
         """
         self.logger.debug('on_start for {}'.format(self.name))
 
-        self.discovery.discovery_computation.message_sender = \
-            self._messaging.post_msg
         self._computations[self.discovery.discovery_computation.name] = \
             self.discovery.discovery_computation
         while True:
