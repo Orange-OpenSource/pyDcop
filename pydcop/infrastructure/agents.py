@@ -376,7 +376,7 @@ class Agent(object):
             self._run_t = perf_counter()
 
         on_start_t = perf_counter()
-        for c in self._computations.values():
+        for c in list(self._computations.values()):
             if computations is None:
                 if c.is_running:
                     self.logger.debug('Do not start computation %s, already '
