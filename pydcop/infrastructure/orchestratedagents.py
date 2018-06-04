@@ -282,7 +282,7 @@ class OrchestrationComputation(MessagePassingComputation):
             metrics = dict()
         value_msg = ValueChangeMessage(
             self.agent.name, computation, value, cost, cycle,metrics)
-        self.post_msg(ORCHESTRATOR_MGT, value_msg, MSG_VALUE)
+        self.post_msg(ORCHESTRATOR_MGT, value_msg, MSG_MGT)
 
     def on_computation_new_cycle(self, computation, *args, **kwargs):
         cycle_count, = args
