@@ -1099,6 +1099,9 @@ class AgentsMgt(MessagePassingComputation):
 
     def global_metrics(self, current_status, t):
 
+        if t is None:
+            t = perf_counter()
+
         # Current global cost
         agent_values = self._agent_cycle_values[self._current_cycle]
         assignment = {k: agent_values[k][0] for k in agent_values
