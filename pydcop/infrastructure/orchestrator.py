@@ -132,6 +132,8 @@ class Orchestrator(object):
         self.logger = self._own_agt.logger
         self.dcop = dcop
 
+        self.status = 'OK'
+
         # For scenario execution
         self._events_iterator = None
         self._event_timer = None  # type: threading.Timer
@@ -278,7 +280,8 @@ class Orchestrator(object):
             self.logger.info('No scenario ')
 
         self.mgt.wait_stop_agents()
-        self.stop()
+        self._own_agt.clean_shutdown()
+        self._own_agt.join()
 
     def stop_agents(self, timeout: float):
         self.logger.info('Requesting all agents to stop')
@@ -350,9 +353,10 @@ class Orchestrator(object):
             Message(method, arg), msg_type=5)
 
     def _on_timeout(self):
+        """Run timeout callback"""
+        self.status = "TIMEOUT"
         self.logger.info("Timeout, requesting agents to stop")
         self.stop_agents(5)
-        self.stop()
         self.mgt.ready_to_run.set()
 
 
