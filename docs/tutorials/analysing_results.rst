@@ -103,50 +103,70 @@ pyDCOP is able to collect metrics at different events during the DCOP execution.
 You must use the ``--collect_on`` option to select
 when you want metrics to be captured:
 
-* ``cycle_change``: metrics are collected every time a a new value is selected
-  for a variable.
+* ``cycle_change``: metrics are collected every time the algorithm switch
+  from one cycle (aka iteration) to the next one.
+  This mode only makes sense with algorithm which have a notion of cycle.
 * ``period``: metrics are collected periodically , for each agent (meaning
-  your will have line of metric for each agent and for each period)
+  your will have line of metric for each agent and for each period).
   When using this mode, you **must** also set ``--period`` to set the
   metrics collection period (in second).
 * ``value_change``: metrics are collected every time a new value is selected
   for a variable.
 
-When collecting run-time metrics, you also need to use the ``--run_metrics``
-to indicates the file where the metrics must be written. One cvs line is
-written in this file for each metric collection. These lines contains the
-following columns: ``time, cycle, cost, violation, msg_count, msg_size,  status``
+When collecting run-time metrics, you also need to use the
+``--run_metrics <file>`` option
+to indicates the file where the metrics must be written.
+One csv line is written in this file for each metric collection.
+These lines contains the following columns:
+``time, cycle, cost, violation, msg_count, msg_size,  status``
 , where the definition of these metrics are the same than for end-results.
 
-For example::
+For example, this line contains metrics from cycle 14 and the solution at
+this point has a cost of 0.1::
 
   time, cycle, cost, violation, msg_count, msg_size, status
   0.10148727701744065, 14, 0.1, 0, 112, 112, RUNNING
 
 
+.. warning:: Be careful when collecting metrics with a large number of agents.
+  For example, A ``--period`` of 0.1 means
+  each agent will send its metrics 10 times per second.
+  If you have 100 agents, collecting 1000 metrics per second will slow you
+  down quite a bit and could even give invalid results if all these metrics
+  could not be handled and written before the end of the timeout.
+
+  If you want to assess the overall time needed to solve a problem,
+  it is better not to collect run time metrics at the same time.
+  In that case, you should only rely on the end-metrics,
+  which does not influence the execution of the algorithm.
+
+
 Examples
 ^^^^^^^^
+
+For more interesting results, we use a bigger DCOP in these samples.
+It's a graph coloring problem with 20 variables, generated with the
+:ref:`generate command<pydcop_commands_generate>` :
 
 Solving with MGM (stooping after 20 cycles), collecting metrics on every cycle
 change::
 
   pydcop solve --algo mgm --algo_params stop_cycle:20 \
                --collect_on cycle_change --run_metric ./metrics.csv \
-               graph_coloring.yaml
+               graph_coloring_20.yaml
 
-Solving with MGM during 2 seconds, collecting metrics every 0.5 second::
+Solving with MGM during 5 seconds, collecting metrics every 0.2 second::
 
-  pydcop -t 2 solve --algo mgm --collect_on period --period 0.5 \
-                    --run_metric ./metrics.csv \
-                    graph_coloring.yaml
+  pydcop -t 5  solve --algo mgm --collect_on period --period 0.2 \
+                     --run_metric ./metrics_on_period.csv \
+                     graph_coloring_20.yaml
 
-Solving with MGM during 2 seconds, collecting metrics every time a new value
+Solving with MGM during 5 seconds, collecting metrics every time a new value
 is selected::
 
-  pydcop -t 2 solve --algo mgm --collect_on value_change \
-                    --run_metric ./metrics.csv \
-                    graph_coloring.yaml
-
+  pydcop -t 5  solve --algo mgm  --collect_on value_change \
+                     --run_metric ./metrics.csv \
+                     graph_coloring_20.yaml
 
 
 Plotting the results
@@ -159,6 +179,10 @@ any of the commonly used plot utility like `gnu-plot <http://gnuplot.info/>`_,
 `R <https://www.r-project.org/>`_, `matplotlib <https://matplotlib.org/>`_, etc.
 
 matplot lib example.
+
+For course, before running this exemple, you need to install matplotlib:
+
+  pip install matplotlib
 
 
 
