@@ -80,8 +80,10 @@ Options
   depend on the algorithm, check algorithms documentation.
 
 ``--distribution <distribution>`` / ``-d <distribution>``
-  Either a distribution algorithm ('oneagent', 'adhoc', 'ilp_fgdp', etc.) or
-  the path to a yaml file containing the distribution
+  Either a :ref:`distribution algorithm<implementation_reference_distributions>`
+  (``oneagent``, ``adhoc``, ``ilp_fgdp``, etc.) or
+  the path to a yaml file containing the distribution.
+  If not given, ``oneagent`` is used.
 
 ``--address <ip_address>``
   Optional IP address the orchestrator will listen on.
@@ -90,7 +92,6 @@ Options
 ``--port <port>``
   Optional port the orchestrator will listen on.
   If not given we try to use port 9000.
-
 
 ``<dcop_files>``
   One or several paths to the files containing the dcop. If several paths are
@@ -159,9 +160,12 @@ def set_parser(subparsers):
                              "not given we try to use port 9000.")
 
     parser.add_argument('-d', '--distribution',
+                        default='oneagent',
                         choices=['oneagent', 'adhoc', 'ilp_fgdp'],
-                        help='Algorithm for distributing the computation '
-                             'graph')
+                        help='A yaml file with the distribution or algorithm '
+                             'for distributing the computation graph, if not '
+                             'given the `oneagent` will be used (one '
+                             'computation for each agent)')
 
 
 orchestrator = None
