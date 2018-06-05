@@ -55,39 +55,59 @@ Synopsis
 Description
 -----------
 
-The ``solve`` command is a shorthand for the ``agent`` and ``orchestrator``
-commands,
-it solves a DCOP on the local machine, automatically creating the
-orchestrator and the agents as specified in the dcop definitions.
+The ``solve`` command is a shorthand for the
+:ref:`agent<pydcop_commands_agent>` and
+:ref:`orchestrator<pydcop_commands_orchestrator>`
+commands.
+It solves a DCOP on the local machine, automatically creating all the agents
+as specified in the dcop definitions and the orchestrator
+(required for bootstrapping and collecting metrics and results).
 
-Using ``solve`` all agents run in the same machine and using ``--mode thread``
-communicate in memory (without network), which scales easily to more than
-100 agents.
+When using ``solve`` all agents run on the same machine.  Depending on the
+``--mode`` parameter, agents will be created as threads (lightweight)
+or as process (heavier, but better parallelism on a multi-core cpu).
+Using ``--mode thread`` (the default) agents communicate in memory (without
+network), which scales easily to more than 100 agents.
 
-Depending on the ``--mode`` parameter, agents will be
-created as threads (lightweight) or as process (heavier, but better
-parallelism on a multi-core cpu).
 
 Notes
------
-
-Depending on the DCOP algorithm, the solve process may or may not automatically.
+------
+Depending on the DCOP algorithm, the solve process may or may not stop
+automatically.
 For example, :ref:`DPOP<implementation_reference_algorithms_dpop>`
 has a clear termination condition and the command will return once this
 condition is reached.
 On the other hand, some other algorithm like
 :ref:`MaxSum<implementation_reference_algorithms_maxsum>` have
-no clear termination condition
-(several options are available,
-which could be passed as argument to the algorithm).
+no clear termination condition.
 
-For these algorithm you need to use the global
+Some algorithm have an optional termination condition, which can be passed
+as an argument to the algorithm.
+With :ref:`MGM<implementation_reference_algorithms_mgm>` for example,
+you can use ``--algo_params stop_cycle:<cycle_count>`` ::
+
+  pydcop solve --algo mgm --algo_params stop_cycle:20 \\
+               --collect_on cycle_change --run_metric ./metrics.csv \\
+               graph_coloring_50.yaml
+
+For algorithms with no termination condition, you should use the global
 ``--timeout`` option.
-You can also stop the process manually with ``CTRL+C``.
+Note that the ``--timeout`` is used as a timeout for the solve process only.
+Bootstrapping the system and gathering metrics take additional time,
+which is not accounted for in the timeout.
+This means that the solve command may take more time to return
+than the time set with the global ``--timeout`` option.
 
-Agents are only stopped once they have handled all messages already
-present in their message queue : this means that even a force stop can take
-some time.
+You can always stop the process manually with ``CTRL+C``.
+Here again, the system may take a few seconds to stop.
+
+Output
+------
+
+This commands outputs the end results of the solve process.
+A detailed description of this output is described in the
+:ref:`tutorials_analysing_results` tutorial.
+
 
 Options
 -------
@@ -96,36 +116,44 @@ Options
   Name of the dcop algorithm, e.g. 'maxsum', 'dpop', 'dsa', etc.
 
 ``--algo_params <params>`` / ``-p <params>``
-  Parameters (optional) for the DCOP algorithm, given as string "name:value".
-  May be used multiple times to set several parameters. Available parameters
-  depend on the algorithm, check algorithms documentation.
+  Optional parameter(s) for the DCOP algorithm, given as string
+  ``name:value``.
+  This option may be used multiple times to set several parameters.
+  Available parameters depend on the algorithm,
+  check :ref:`algorithms documentation<implementation_reference_algorithms>`.
 
 ``--distribution <distribution>`` / ``-d <distribution>``
-  Either a distribution algorithm ('oneagent', 'adhoc', 'ilp_fgdp', etc.) or
-  the path to a yaml file containing the distribution
+  Either a :ref:`distribution algorithm<implementation_reference_distributions>`
+  (``oneagent``, ``adhoc``, ``ilp_fgdp``, etc.) or
+  the path to a yaml file containing the distribution.
+  If not given, ``oneagent`` is used.
 
 ``--mode <mode>`` / ``-m``
     Indicated if agents must be run as threads (default) or processes.
-    either ``'thread'`` or ``'process'``
+    either ``thread`` or ``process``
 
 ``--collect_on <collect_mode>`` / ``-c``
-    Metric collection mode, one of ``'value_change'``, ``'cycle_change'``,
-    ``'period'``.
+    Metric collection mode, one of ``value_change``, ``cycle_change``,
+    ``period``.
+    See :ref:`tutorials_analysing_results` for details.
 
 ``--period <p>``
     When using ``--collect_on period``, the period in second for metrics
     collection.
+    See :ref:`tutorials_analysing_results` for details.
 
 ``--run_metrics <file>``
     File to store store metrics.
+    See :ref:`tutorials_analysing_results` for details.
 
 ``--end_metrics <file>``
     End metrics (i.e. when the solve process stops) will be appended to this
-    file.
+    file (in csv).
 
 ``<dcop_files>``
   One or several paths to the files containing the dcop. If several paths are
-  given, their content is concatenated as used a the yaml definition for the
+  given, their content is concatenated as used a the
+  :ref:`yaml definition<usage_file_formats_dcop>` for the
   DCOP.
 
 
@@ -139,6 +167,12 @@ need to be stopped with CTRL+C::
     dcop.py solve --algo maxsum  graph_coloring1.yaml
     dcop.py -t 5 solve --algo maxsum  graph_coloring1.yaml
 
+
+Solving with MGM, with two algorithm parameter and a log configuration file::
+
+  pydcop --log log.conf solve --algo mgm --algo_params stop_cycle:20 \\
+                              --algo_params break_mode:random  \\
+                              graph_coloring.yaml \\
 
 """
 
@@ -162,7 +196,6 @@ from pydcop.infrastructure.run import run_local_thread_dcop, \
 
 
 logger = logging.getLogger('pydcop.cli.solve')
-
 
 def set_parser(subparsers):
 
