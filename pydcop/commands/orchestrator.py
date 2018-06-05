@@ -75,9 +75,11 @@ Options
   Name of the dcop algorithm, e.g. 'maxsum', 'dpop', 'dsa', etc.
 
 ``--algo_params <params>`` / ``-p <params>``
-  Parameters (optional) for the DCOP algorithm, given as string "name:value".
-  May be used multiple times to set several parameters. Available parameters
-  depend on the algorithm, check algorithms documentation.
+  Optional parameter for the DCOP algorithm, given as string
+  ``name:value``.
+  This option may be used multiple times to set several parameters.
+  Available parameters depend on the algorithm,
+  check :ref:`algorithms documentation<implementation_reference_algorithms>`.
 
 ``--distribution <distribution>`` / ``-d <distribution>``
   Either a :ref:`distribution algorithm<implementation_reference_distributions>`
@@ -146,10 +148,10 @@ def set_parser(subparsers):
                         help='algorithm for solving the dcop')
 
     parser.add_argument('-p', '--algo_params',
-                        type=str,
-                        nargs='*',
-                        help='Parameters for the algorithm , given as '
-                             'name:value. Several parameter can be given.')
+                        type=str,  action='append',
+                        help='Optional parameters for the algorithm, given as '
+                             'name:value. Use this option several times '
+                             'to set several parameters.')
 
     parser.add_argument('--address', type=str, default=None,
                         help="IP address the orchestrator will listen on. If "
