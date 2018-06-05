@@ -9,4 +9,5 @@ Reference
 
   reference/computations
   reference/algorithms
+  reference/distributions
 
