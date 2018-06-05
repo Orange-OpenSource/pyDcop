@@ -144,8 +144,9 @@ this point has a cost of 0.1::
 Examples
 ^^^^^^^^
 
-For more interesting results, we use a bigger DCOP in these samples.
-It's a graph coloring problem with 20 variables, generated with the
+For more interesting results, we use a bigger DCOP in these samples:
+:download:`graph_coloring_50.yaml<graph_coloring_50.yaml>`
+It's a graph coloring problem with 50 variables, generated with the
 :ref:`generate command<pydcop_commands_generate>` :
 
 Solving with MGM (stooping after 20 cycles), collecting metrics on every cycle
@@ -153,20 +154,20 @@ change::
 
   pydcop solve --algo mgm --algo_params stop_cycle:20 \
                --collect_on cycle_change --run_metric ./metrics.csv \
-               graph_coloring_20.yaml
+               graph_coloring_50.yaml
 
 Solving with MGM during 5 seconds, collecting metrics every 0.2 second::
 
   pydcop -t 5  solve --algo mgm --collect_on period --period 0.2 \
                      --run_metric ./metrics_on_period.csv \
-                     graph_coloring_20.yaml
+                     graph_coloring_50.yaml
 
 Solving with MGM during 5 seconds, collecting metrics every time a new value
 is selected::
 
   pydcop -t 5  solve --algo mgm  --collect_on value_change \
                      --run_metric ./metrics.csv \
-                     graph_coloring_20.yaml
+                     graph_coloring_50.yaml
 
 
 Plotting the results
@@ -178,12 +179,46 @@ csv files, it's very easy to generate graphs for these metrics using
 any of the commonly used plot utility like `gnu-plot <http://gnuplot.info/>`_,
 `R <https://www.r-project.org/>`_, `matplotlib <https://matplotlib.org/>`_, etc.
 
-matplot lib example.
+For example, if you generate cycle metrics when solving the graph coloring
+dcop with MGM::
 
-For course, before running this exemple, you need to install matplotlib:
+  pydcop solve --algo mgm --algo_params stop_cycle:20 \
+               --collect_on cycle_change \
+               --run_metric ./metrics_cycle.csv \
+               graph_coloring_50.yaml
+
+This should give you a metric file similar to
+:download:`this one<metrics_cycle.csv>`.
+You can now plot the cost of the solution over cycles.
+Notice that the cost is always decreasing, as MGM is monotonous::
+
+  import matplotlib.pyplot as plt
+  import numpy as np
+
+  data = np.genfromtxt('metrics_cycle.csv', delimiter=',',
+                       names=['t', 'cycle', 'cost', 'violation' ,
+                              'msg_count', 'msg_size', 'status'])
+
+  fig, ax = plt.subplots()
+  ax.plot(data['t'], data['cost'], label='cost MGM')
+  ax.set(xlabel='cycle', ylabel='cost')
+  ax.grid()
+  plt.title("MGM cost")
+
+  fig.savefig("mgm_cost.png", bbox_inches='tight')
+  plt.legend()
+  plt.show()
+
+.. figure:: mgm_cost.png
+    :align: center
+    :alt: mgm solution cost
+    :figclass: align-center
+
+    MGM solution cost over 20 cycles.
+
+For course, before running this example, you need to install matplotlib::
 
   pip install matplotlib
-
 
 
 Logs

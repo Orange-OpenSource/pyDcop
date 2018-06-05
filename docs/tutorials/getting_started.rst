@@ -78,7 +78,7 @@ this DCOP with the
 This should output a result simular to this::
 
   {
-    // Rather long list of infomration, not included here ....
+    // Rather long list of information, not included here ....
     "assignment": {
       "v1": "R",
       "v2": "G",
