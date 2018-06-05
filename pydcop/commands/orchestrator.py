@@ -117,6 +117,8 @@ using the  ``adhoc`` algorithm::
 import json
 import logging
 import sys
+import threading
+import traceback
 
 import multiprocessing
 from importlib import import_module
@@ -174,9 +176,10 @@ def set_parser(subparsers):
 orchestrator = None
 start_time = 0
 
+timeout_stopped = False
 
-def run_cmd(args):
-    logger.debug('dcop command "solve" with arguments {} '.format(args))
+def run_cmd(args, timer=None, timeout=None):
+    logger.debug('dcop command "orchestrator" with arguments {} '.format(args))
 
     dcop_yaml_files = args.dcop_files
 
@@ -204,7 +207,6 @@ def run_cmd(args):
             communication_load=algo_module.communication_load)
     else:
         distribution = load_dist_from_file(args.distribution)
-        logger.debug('Distribution Computation graph: %s ', distribution)
 
     logger.info('Dcop distribution : {}'.format(distribution))
 
@@ -225,12 +227,24 @@ def run_cmd(args):
     orchestrator = Orchestrator(algo, cg, distribution, comm, dcop,
                                 infinity)
 
-    start_time = time()
-    orchestrator.start()
-    orchestrator.deploy_computations()
-    orchestrator.run()
-    # orchestrator.join()
+    try:
+        start_time = time()
+        orchestrator.start()
+        orchestrator.deploy_computations()
+        orchestrator.run(timeout=timeout)
+        if not timeout_stopped:
+            if orchestrator.status == "TIMEOUT":
+                _results('TIMEOUT')
+                sys.exit(0)
+            else:
+                _results('FINISHED')
+                sys.exit(0)
 
+    except Exception as e:
+        logger.error(e, exc_info=1)
+        orchestrator.stop_agents(5)
+        orchestrator.stop()
+        _results('ERROR')
 
 def on_force_exit(sig, frame):
     print('FORCE EXIT')
@@ -247,25 +261,25 @@ def on_force_exit(sig, frame):
     print(json.dumps(output, sort_keys=True, indent='  '))
 
 
-def _results():
-    sol = orchestrator.current_solution()[0]
-    assignment = {k: sol[k][0] for k in sol if sol[k]}
-    cost = orchestrator.current_global_cost()[0]
-    duration = time() - start_time
-    return assignment, cost, duration
-
-
 def on_timeout():
-    orchestrator.stop_agents()
+    logger.debug('cli timeout ')
+    # Timeout should have been handled by the orchestrator, if the cli timeout
+    # has been reached, something is probably wrong : dump threads.
+    for th in threading.enumerate():
+        print(th)
+        traceback.print_stack(sys._current_frames()[th.ident])
+        print()
+
+    if orchestrator is None:
+        logger.debug("cli timeout with no orchestrator ?" )
+        return
+    global timeout_stopped
+    timeout_stopped = True
+
+    orchestrator.stop_agents(20)
     orchestrator.stop()
-    assignment, cost, duration = _results()
-    output = {
-        'status': 'TIMEOUT',
-        'assignment': assignment,
-        'costs':  cost,
-        'duration': duration
-    }
-    print(json.dumps(output, sort_keys=True, indent='  '))
+    _results('TIMEOUT')
+    sys.exit(0)
 
 
 def _load_modules(dist, algo):
@@ -292,3 +306,18 @@ def _load_modules(dist, algo):
 def _error(msg):
     print('Error: {}'.format(msg))
     sys.exit(2)
+
+
+def _results(status):
+    """
+    Outputs results and metrics on stdout and trace last metrics in csv
+    files if requested.
+
+    :param status:
+    :return:
+    """
+
+    metrics = orchestrator.end_metrics()
+    metrics['status'] = status
+    print(json.dumps(metrics, sort_keys=True, indent='  '))
+
