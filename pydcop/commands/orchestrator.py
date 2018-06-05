@@ -44,6 +44,7 @@ Synopsis
 
   pydcop orchestrator --algo <algo> [--algo_params <params>]
                       --distribution <distribution>
+                      [--address <ip_addr>] [--port <port>]
                       <dcop_files>
 
 
@@ -82,6 +83,15 @@ Options
   Either a distribution algorithm ('oneagent', 'adhoc', 'ilp_fgdp', etc.) or
   the path to a yaml file containing the distribution
 
+``--address <ip_address>``
+  Optional IP address the orchestrator will listen on.
+  If not given we try to use the primary IP address.
+
+``--port <port>``
+  Optional port the orchestrator will listen on.
+  If not given we try to use port 9000.
+
+
 ``<dcop_files>``
   One or several paths to the files containing the dcop. If several paths are
   given, their content is concatenated as used a the yaml definition for the
@@ -90,8 +100,10 @@ Options
 Examples
 --------
 
-Running an orchestrator for 5 seconds, to solve a graph coloring DCOP with
-``maxsum``. Computations are distributed using the ``adhoc`` algorithm::
+Running an orchestrator for 5 seconds (on default IP and port),
+to solve a graph coloring DCOP with ``maxsum``.
+Computations are distributed
+using the  ``adhoc`` algorithm::
 
   pydcop --timeout 5 orchestrator -a maxsum -d adhoc graph_coloring.yaml
 
@@ -131,15 +143,24 @@ def set_parser(subparsers):
     parser.add_argument('-a', '--algo',
                         choices=algorithms,
                         help='algorithm for solving the dcop')
+
     parser.add_argument('-p', '--algo_params',
                         type=str,
                         nargs='*',
-                        help='parameters for the algorithm , given as '
+                        help='Parameters for the algorithm , given as '
                              'name:value. Several parameter can be given.')
+
+    parser.add_argument('--address', type=str, default=None,
+                        help="IP address the orchestrator will listen on. If "
+                             "not given we try to use the primary IP address.")
+
+    parser.add_argument('--port', type=int, default=None,
+                        help="Port the orchestrator will listen on. If "
+                             "not given we try to use port 9000.")
 
     parser.add_argument('-d', '--distribution',
                         choices=['oneagent', 'adhoc', 'ilp_fgdp'],
-                        help='algorithm for distributing the computation '
+                        help='Algorithm for distributing the computation '
                              'graph')
 
 
@@ -191,8 +212,9 @@ def run_cmd(args):
     infinity = 10000
 
     global orchestrator, start_time
-    port = 9000
-    comm = HttpCommunicationLayer(('127.0.0.1', port))
+    port = args.port if args.port else 9000
+    addr = args.address if args.address else None
+    comm = HttpCommunicationLayer((addr, port))
     orchestrator = Orchestrator(algo, cg, distribution, comm, dcop,
                                 infinity)
 
