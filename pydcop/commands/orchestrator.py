@@ -246,19 +246,16 @@ def run_cmd(args, timer=None, timeout=None):
         orchestrator.stop()
         _results('ERROR')
 
+
 def on_force_exit(sig, frame):
     print('FORCE EXIT')
+    # Avoid blocking if stopping when all agents have not registered yet
+    if not orchestrator.mgt.all_registered.is_set():
+        orchestrator.mgt.all_registered.set()
     orchestrator.stop_agents(10)
     orchestrator.stop()
-    assignment, cost, duration = _results()
-
-    output = {
-        'status': 'STOPPED',
-        'assignment': assignment,
-        'costs':  cost,
-        'duration': duration
-    }
-    print(json.dumps(output, sort_keys=True, indent='  '))
+    _results('STOPPED')
+    sys.exit(0)
 
 
 def on_timeout():
