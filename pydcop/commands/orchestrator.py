@@ -97,7 +97,8 @@ Options
 
 ``<dcop_files>``
   One or several paths to the files containing the dcop. If several paths are
-  given, their content is concatenated as used a the yaml definition for the
+  given, their content is concatenated as used a the
+  :ref:`yaml definition<usage_file_formats_dcop>` for the
   DCOP.
 
 Examples
