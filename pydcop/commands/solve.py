@@ -116,7 +116,7 @@ Options
   Name of the dcop algorithm, e.g. 'maxsum', 'dpop', 'dsa', etc.
 
 ``--algo_params <params>`` / ``-p <params>``
-  Optional parameter(s) for the DCOP algorithm, given as string
+  Optional parameter for the DCOP algorithm, given as string
   ``name:value``.
   This option may be used multiple times to set several parameters.
   Available parameters depend on the algorithm,
