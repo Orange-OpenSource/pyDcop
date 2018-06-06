@@ -130,5 +130,5 @@ version on all machines, reinstalling it, etc.
 
 When running a large system, one needs to automate this kind of tasks.
 To help you with this, we provide as set of ansible playbooks that automates
-the installation process. See the :ref`Provisioning <usage_provisioning>`
+the installation process. See the :ref:`Provisioning<usage_provisioning>`
 guide for full details.
