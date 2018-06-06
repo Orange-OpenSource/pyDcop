@@ -1,0 +1,6 @@
+# $HOME/.pip/pip.conf
+[global]
+index-url = http://{{controller_proxy_addr}}:{{pip_cache_port}}/root/pypi/+simple/
+
+[search]
+index = http://{{controller_proxy_addr}}:{{pip_cache_port}}/root/pypi/

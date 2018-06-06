@@ -10,6 +10,7 @@ API.
    usage/cli_ref
    usage/fileformat_ref
    usage/api_ref
+   usage/provisioning
 
 
 Most common use-cases

@@ -44,3 +44,8 @@ installed as a dependency by `pip`). For example, on an Ubuntu/Debian system::
     sudo apt-get install python3-setuptools
     sudo apt-get install python3-pip
 
+
+.. note::  When installing pyDCOP over many machines (or virtual machines),
+  for a really distributed system, we recommend automating the process.
+  We provide ansible playbook that can help you with this task.
+  See the guide :ref:`usage_provisioning`.

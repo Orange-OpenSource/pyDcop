@@ -1,0 +1,53 @@
+all:
+  children:
+    agents:
+      hosts:
+        agent1: 
+            ansible_host: 192.168.0.160
+            # ansible_host: 192.168.1.14            
+            # ansible_host: 10.194.58.160 
+            ansible_connection: ssh 
+            ansible_user: pierre 
+
+            # Very insecure: plain text password & auto-accept host fingerprint
+            # Does not matter in our case, if it does for you, use ansible's 
+            # vault.
+            ansible_ssh_user: pierre
+            ansible_ssh_pass: test
+            ansible_ssh_extra_args: -oStrictHostKeyChecking=no
+
+            # Ubuntu 18.04 only has python3 installed by default, and ansible 
+            # defaults to 2.
+            ansible_python_interpreter: /usr/bin/python3 
+
+            ansible_become_pass: test
+
+            # Use the name of the host ?
+            agt_name: a1
+        
+        agent2: 
+            agt_name: a2
+        
+
+
+      vars: 
+
+        # address and port for the apt and proxy servers
+        # you MUST change the controller_proxy_addr
+        # controller_proxy_addr: 10.194.58.59
+        # controller_proxy_addr: 192.168.1.13
+        controller_proxy_addr: 192.168.0.63
+
+        # These ports are usually ok if you used devpi and ACNG defaults.
+        apt_cache_port: 3142
+        pip_cache_port: 3141
+
+        # Path to pyDOCP sources, clone github repository to have these sources.
+        # Note: do NOT forget the trailing '/' !!
+        pydcop_local_src: /home/pierre/Projects/These/github/pyDcop/
+
+        # Path to pyDOCP-ui sources
+        # Note: do NOT forget the trailing '/' !!
+        pydcop_ui_local_src: /home/pierre/Projects/These/pydcop-ui/
+
+    

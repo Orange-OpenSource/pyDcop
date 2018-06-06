@@ -1,0 +1,101 @@
+---
+# ansible playbook to deploy pydcop
+
+
+
+- hosts: all
+  # vars: 
+  #   controller_proxy_addr: 192.0.1.242
+  #   apt_cache_port: 30
+  #   pip_cache_port: 31
+
+  tasks:
+  
+  # TODO: point apt to local mirror 
+  # Use variable for proxy ip in template
+  - name: Proxy for apt
+    become: true
+    template:
+      src: ./resources/apt_proxy.j2
+      dest: /etc/apt/apt.conf.d/00aptproxy 
+
+  - name: Ensures pip conf dir exists
+    file: 
+      path: ~/.pip
+      state: directory      
+
+  - name: setup proxy for pip
+    template:
+      src: ./resources/pip_proxy.j2
+      dest: ~/.pip/pip.conf 
+
+  - name: Install Chromium 
+    become: true
+    # Install chromium, is actually only needed when running the gui on
+    # the agent, but we do it anyway as it is the most common case
+    apt:
+      pkg: chromium-browser
+      state: present
+
+  - name: Install glpk
+    # GLPK is an LP solver used for some distribution methods
+    become: true
+    apt: 
+      pkg: glpk-utils 
+      state: present
+      
+  - name: ensure python 3.5 min
+    apt: 
+      pkg=python3
+      state=present
+
+  - name: ensure pip3 is available
+    become: true
+    apt: 
+      pkg=python3-pip 
+      state=present
+
+  - name: Update pydcop sources
+    # Use rsync to update the pydcop copy on the target host
+    # I've tried using the synchronize module, no luck :(
+
+    # Once again, this is absolutely unsecure (sshpass with password in clear 
+    # text). If this a problem for you, use key-authentification for ssh !
+    shell: "sshpass -p '{{ansible_ssh_pass}}' \
+            rsync -arcP --delete --exclude='.git' \
+            {{ pydcop_local_src }} \
+            {{ansible_ssh_user}}@{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}:~/pyDcop"    
+    delegate_to: localhost
+
+  - name: install pydcop
+    command: "sudo pip3 install --trusted-host {{controller_proxy_addr}} ~/pyDcop"
+
+  - name: copy pydcop-ui files
+    shell: "sshpass -p '{{ansible_ssh_pass}}' \
+            rsync -arcP --delete --exclude='.git' \
+            {{ pydcop_ui_local_src }}/dist \
+            {{ansible_ssh_user}}@{{hostvars[inventory_hostname]['ansible_default_ipv4']['address']}}:~/pyDcop-ui"    
+    delegate_to: localhost
+
+  - name: copy service file
+    become: true  
+    template:
+      src: "./resources/pydcop.service"
+      dest: "/etc/systemd/system"
+
+  - name: copy service start script
+    become: true
+    template:
+      src: "./resources/pydcop.sh"
+      dest: "/etc/systemd/system"
+      mode: "u=xrw,g=r,o=r"
+      owner: "{{ansible_ssh_user}}"
+      group: "{{ansible_ssh_user}}"      
+      
+  - name: Start pydcop service
+    service:
+      name: pydcop
+      state: restarted
+    become: yes
+      
+  # TODO : reboot only if change ? 
