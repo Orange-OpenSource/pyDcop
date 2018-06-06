@@ -7,3 +7,4 @@ Concepts
 
    concepts/graph_model
    concepts/distribution
+   concepts/resilient_dcop
