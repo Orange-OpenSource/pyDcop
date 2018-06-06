@@ -45,6 +45,9 @@ Synopsis
   pydcop orchestrator --algo <algo> [--algo_params <params>]
                       --distribution <distribution>
                       [--address <ip_addr>] [--port <port>]
+                      [--collect_on <collect_mode>] [--period <p>]
+                      [--run_metrics <file>]
+                      [--end_metrics <file>]
                       <dcop_files>
 
 
@@ -87,6 +90,28 @@ Options
   the path to a yaml file containing the distribution.
   If not given, ``oneagent`` is used.
 
+``--mode <mode>`` / ``-m``
+    Indicated if agents must be run as threads (default) or processes.
+    either ``thread`` or ``process``
+
+``--collect_on <collect_mode>`` / ``-c``
+    Metric collection mode, one of ``value_change``, ``cycle_change``,
+    ``period``.
+    See :ref:`tutorials_analysing_results` for details.
+
+``--period <p>``
+    When using ``--collect_on period``, the period in second for metrics
+    collection.
+    See :ref:`tutorials_analysing_results` for details.
+
+``--run_metrics <file>``
+    File to store store metrics.
+    See :ref:`tutorials_analysing_results` for details.
+
+``--end_metrics <file>``
+    End metrics (i.e. when the solve process stops) will be appended to this
+    file (in csv).
+
 ``--address <ip_address>``
   Optional IP address the orchestrator will listen on.
   If not given we try to use the primary IP address.
@@ -116,9 +141,13 @@ using the  ``adhoc`` algorithm::
 
 import json
 import logging
+import os
 import sys
 import threading
 import traceback
+from functools import partial
+from queue import Queue, Empty
+from threading import Thread
 
 import multiprocessing
 from importlib import import_module
@@ -156,14 +185,6 @@ def set_parser(subparsers):
                              'name:value. Use this option several times '
                              'to set several parameters.')
 
-    parser.add_argument('--address', type=str, default=None,
-                        help="IP address the orchestrator will listen on. If "
-                             "not given we try to use the primary IP address.")
-
-    parser.add_argument('--port', type=int, default=None,
-                        help="Port the orchestrator will listen on. If "
-                             "not given we try to use port 9000.")
-
     parser.add_argument('-d', '--distribution',
                         default='oneagent',
                         choices=['oneagent', 'adhoc', 'ilp_fgdp'],
@@ -172,16 +193,137 @@ def set_parser(subparsers):
                              'given the `oneagent` will be used (one '
                              'computation for each agent)')
 
+    parser.add_argument('-c', '--collect_on',
+                        choices=['value_change', 'cycle_change', 'period'],
+                        default='value_change',
+                        help='When should a "new" assignment be observed')
+
+    parser.add_argument('--period', type=float,
+                        default=None,
+                        help='Period for collecting metrics. only available '
+                             'when using --collect_on period. Defaults to 1 '
+                             'second if not specified')
+
+    parser.add_argument('--run_metrics', type=str,
+                        default=None,
+                        help="Use this option to regularly store the data "
+                             "in a csv file.")
+
+    parser.add_argument('--end_metrics', type=str,
+                        default=None,
+                        help="Use this option to append the metrics of the "
+                             "end of the run to a csv file.")
+
+    parser.add_argument('--address', type=str, default=None,
+                        help="IP address the orchestrator will listen on. If "
+                             "not given we try to use the primary IP address.")
+
+    parser.add_argument('--port', type=int, default=None,
+                        help="Port the orchestrator will listen on. If "
+                             "not given we try to use port 9000.")
 
 orchestrator = None
 start_time = 0
 
+# Files for logging metrics
+columns = {
+    'cycle_change': ['cycle', 'time', 'cost', 'violation', 'msg_count',
+                     'msg_size', 'status'],
+    'value_change': ['time', 'cycle', 'cost', 'violation', 'msg_count',
+                     'msg_size', 'status'],
+    'period': ['time', 'cycle', 'cost', 'violation', 'msg_count', 'msg_size',
+               'status']
+}
+
+collect_on = None
+run_metrics = None
+end_metrics = None
+
 timeout_stopped = False
+output_file = None
+
+
+def add_csvline(file, mode, metrics):
+    data = [metrics[c] for c in columns[mode]]
+    line = ','.join([str(d) for d in data])
+
+    with open(file, mode='at', encoding='utf-8') as f:
+        f.write(line)
+        f.write('\n')
+
+
+def collect_tread(collect_queue: Queue, csv_cb):
+    while True:
+        try:
+            t, metrics = collect_queue.get()
+
+            if csv_cb is not None:
+                csv_cb(metrics)
+
+        except Empty:
+            pass
+        # FIXME : end of run ?
+
+
+def prepare_metrics_files(run, end, mode):
+    """
+    Prepare files for storing metrics, if requested.
+    Returns a cb that can be used to log metrics in the run_metrics file.
+    """
+    global run_metrics, end_metrics
+    if run is not None:
+        run_metrics = run
+        # delete run_metrics file if it exists, create intermediate
+        # directory if needed
+        if os.path.exists(run_metrics):
+            os.remove(run_metrics)
+        elif not os.path.exists(os.path.dirname(run_metrics)):
+            os.makedirs(os.path.dirname(run_metrics))
+        # Add column labels in file:
+        headers = ','.join(columns[mode])
+        with open(run_metrics, 'w', encoding='utf-8') as f:
+            f.write(headers)
+            f.write('\n')
+        csv_cb = partial(add_csvline, run_metrics, mode)
+    else:
+        csv_cb = None
+
+    if end is not None:
+        end_metrics = end
+        if not os.path.exists(os.path.dirname(end_metrics)):
+            os.makedirs(os.path.dirname(end_metrics))
+        # Add column labels in file:
+        if not os.path.exists(end_metrics):
+            headers = ','.join(columns[mode])
+            with open(end_metrics, 'w', encoding='utf-8') as f:
+                f.write(headers)
+                f.write('\n')
+
+    return csv_cb
+
 
 def run_cmd(args, timer=None, timeout=None):
     logger.debug('dcop command "orchestrator" with arguments {} '.format(args))
 
+    global collect_on, output_file
+    output_file = args.output
+    collect_on = args.collect_on
+
     dcop_yaml_files = args.dcop_files
+
+    output_file = args.output
+    collect_on = args.collect_on
+
+    period = None
+    if args.collect_on == 'period':
+        period = 1 if args.period is None else args.period
+    else:
+        if args.period is not None:
+            _error('Cannot use "period" argument when collect_on is not '
+                   '"period"')
+
+    csv_cb = prepare_metrics_files(args.run_metrics, args.end_metrics,
+                                   collect_on)
 
     if args.distribution in ['oneagent', 'adhoc', 'ilp_fgdp']:
         dist_module, algo_module, graph_module = _load_modules(
@@ -220,12 +362,21 @@ def run_cmd(args, timer=None, timeout=None):
     # FIXME
     infinity = 10000
 
+    # Setup metrics collection
+    collector_queue = Queue()
+    collect_t = Thread(target=collect_tread,
+                       args=[collector_queue, csv_cb],
+                       daemon=True)
+    collect_t.start()
+
     global orchestrator, start_time
     port = args.port if args.port else 9000
     addr = args.address if args.address else None
     comm = HttpCommunicationLayer((addr, port))
     orchestrator = Orchestrator(algo, cg, distribution, comm, dcop,
-                                infinity)
+                                infinity, collector= collector_queue,
+                                collect_moment=args.collect_on,
+                                collect_period=args.period)
 
     try:
         start_time = time()
@@ -316,5 +467,16 @@ def _results(status):
 
     metrics = orchestrator.end_metrics()
     metrics['status'] = status
+
+    global end_metrics, run_metrics
+    if end_metrics is not None:
+        add_csvline(end_metrics, collect_on, metrics)
+    if run_metrics is not None:
+        add_csvline(run_metrics, collect_on, metrics)
+
+    if output_file:
+        with open(output_file, encoding='utf-8', mode='w') as fo:
+                fo.write(json.dumps(metrics, sort_keys=True, indent='  '))
+
     print(json.dumps(metrics, sort_keys=True, indent='  '))
 
