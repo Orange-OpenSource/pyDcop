@@ -68,8 +68,18 @@ current DCOP solution (with associated cost) in yaml.
 See Also
 --------
 
-:ref:`pydcop_commands_agent`
+**Commands:** :ref:`pydcop_commands_agent`, :ref:`pydcop_commands_solve`
 
+**Tutorials:** :ref:`tutorials_analysing_results` and
+:ref:`tutorials_deploying_on_machines`
+
+
+Output
+------
+
+This commands outputs the end results of the solve process.
+A detailed description of this output is described in the
+:ref:`tutorials_analysing_results` tutorial.
 
 Options
 -------
@@ -89,10 +99,6 @@ Options
   (``oneagent``, ``adhoc``, ``ilp_fgdp``, etc.) or
   the path to a yaml file containing the distribution.
   If not given, ``oneagent`` is used.
-
-``--mode <mode>`` / ``-m``
-    Indicated if agents must be run as threads (default) or processes.
-    either ``thread`` or ``process``
 
 ``--collect_on <collect_mode>`` / ``-c``
     Metric collection mode, one of ``value_change``, ``cycle_change``,
@@ -136,7 +142,15 @@ using the  ``adhoc`` algorithm::
 
   pydcop --timeout 5 orchestrator -a maxsum -d adhoc graph_coloring.yaml
 
+Running an orchestrator that collects metrics every 0.2 second and run
+the :ref:`MGM algorithm<implementation_reference_algorithms_mgm>`
+on agents for 20 cycles::
 
+  pydcop -v 3 orchestrator --algo mgm --algo_param stop_cycle:20 \\
+                           --collect_on period --period 0.2 \\
+                           --run_metrics ./orch_metrics_period.csv \\
+                           --address 192.168.1.2 --port 10000 \\
+                           graph_coloring_3agts.yaml
 """
 
 import json
