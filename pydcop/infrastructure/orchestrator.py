@@ -120,7 +120,8 @@ class Orchestrator(object):
                  dcop: DCOP,
                  infinity=float('inf'),
                  collector: Queue=None,
-                 collect_moment: str='value_change'):
+                 collect_moment: str='value_change',
+                 collect_period: float=None):
         self._own_agt = Agent(ORCHESTRATOR, comm)
         self.directory = Directory(self._own_agt.discovery)
         self._own_agt.add_computation(self.directory.directory_computation)
@@ -143,7 +144,8 @@ class Orchestrator(object):
 
         self.mgt = AgentsMgt(algo, cg, agent_mapping, dcop,
                              self._own_agt, self, infinity, collector=collector,
-                             collect_moment=collect_moment)
+                             collect_moment=collect_moment,
+                             collect_period=collect_period)
 
     @property
     def address(self):
@@ -363,6 +365,8 @@ class Orchestrator(object):
 ################################################################################
 #  Orchestration messages definition
 
+SetMetricsModeMessage = message_type('metrics_mode', ['mode', 'period'])
+
 DeployMessage = message_type('deploy', ['comp_def'])
 
 RunAgentMessage = message_type('run_computations', ['computations'])
@@ -415,7 +419,6 @@ AgentRemovedMessage = message_type('agent_removed', [])
 
 RepairDoneMessage = message_type('repair_done',
                                  ['agent', 'selected_computations'])
-
 
 class RepairRunMessage(Message):
     """
@@ -553,7 +556,8 @@ class AgentsMgt(MessagePassingComputation):
                  orchestrator_agent: Agent, orchestrator: Orchestrator,
                  infinity=float('inf'),
                  collector: Queue=None,
-                 collect_moment: str='value_change'):
+                 collect_moment: str='value_change',
+                 collect_period: float=None):
         super().__init__(ORCHESTRATOR_MGT)
         self._orchestrator_agent = orchestrator_agent
         self._orchestrator = orchestrator
@@ -579,6 +583,7 @@ class AgentsMgt(MessagePassingComputation):
         }
 
         self._collect_moment = collect_moment
+        self._collect_period = collect_period
         self._collector = collector
 
         self._nb_computations = 0
@@ -684,6 +689,11 @@ class AgentsMgt(MessagePassingComputation):
         if evt == 'agent_added':
             self.logger.info('Receiving registration %s from agent %s', evt,
                              agent)
+            # setup metrics collection on agent.
+            self._send_mgt_msg(
+                agent, SetMetricsModeMessage(self._collect_moment,
+                                             self._collect_period))
+
             missing = []
             for agt in self.initial_dist.agents:
                 try:

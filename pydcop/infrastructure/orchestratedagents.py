@@ -45,7 +45,7 @@ from pydcop.infrastructure.orchestrator import DeployMessage, RunAgentMessage, \
     ValueChangeMessage, CycleChangeMessage, ComputationFinishedMessage, \
     MetricsMessage, StopAgentMessage, RepairReadyMessage, \
     SetupRepairMessage, RepairRunMessage, ComputationReplicatedMessage, \
-    RepairDoneMessage, ResumeMessage, AgentRemovedMessage
+    RepairDoneMessage, ResumeMessage, AgentRemovedMessage, SetMetricsModeMessage
 
 ORCHESTRATOR = 'orchestrator'
 ORCHESTRATOR_MGT = '_mgt_orchestrator'
@@ -97,8 +97,11 @@ class OrchestratedAgent(ResilientAgent):
 
         self.metrics_on = metrics_on
         if metrics_on == 'period':
-            self.set_periodic_action(metrics_period,
-                                     self._mgt_computation.send_metrics)
+            self.set_metrics_period(metrics_period)
+
+    def set_metrics_period(self, metrics_period):
+        self.set_periodic_action(metrics_period,
+                                 self._mgt_computation.send_metrics)
 
     def _on_start(self):
         """
@@ -162,6 +165,7 @@ class OrchestrationComputation(MessagePassingComputation):
         self.discovery = agent.discovery
         self.logger = logging.getLogger('pydcop.agent.mgt.' + agent.name)
         self._handlers = {
+            'metrics_mode': self._on_metrics_mode,
             'deploy': self._on_deploy_computations,
             'replication': self._on_replication,
             'run_computations' : self._on_run_computations,
@@ -172,7 +176,6 @@ class OrchestrationComputation(MessagePassingComputation):
             'stop': self._on_stop_request,
             # When requested to leave, simply stop
             'agent_removed': self._on_stop_request
-
         }
 
     @property
@@ -193,6 +196,14 @@ class OrchestrationComputation(MessagePassingComputation):
         Called when receiving an management message.
         """
         self._handlers[msg.type](sender, msg, t)
+
+    def _on_metrics_mode(self, sender: str, msg: SetMetricsModeMessage,
+                         t: float):
+        self.logger.debug('Setting metrics mode from message %s', msg.mode)
+        self.agent.metrics_on = msg.mode
+        if msg.mode == 'period':
+            self.agent.set_metrics_period(msg.period)
+        self.agent.metrics_on = msg.mode
 
     def _on_replication(self, sender: str, msg: ReplicateComputationsMessage,
                         t: float):
