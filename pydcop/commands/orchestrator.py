@@ -289,10 +289,13 @@ def prepare_metrics_files(run, end, mode):
         run_metrics = run
         # delete run_metrics file if it exists, create intermediate
         # directory if needed
+
         if os.path.exists(run_metrics):
             os.remove(run_metrics)
-        elif not os.path.exists(os.path.dirname(run_metrics)):
-            os.makedirs(os.path.dirname(run_metrics))
+        else:
+            f_dir = os.path.dirname(run_metrics)
+            if f_dir and  not os.path.exists(f_dir):
+                os.makedirs(f_dir)
         # Add column labels in file:
         headers = ','.join(columns[mode])
         with open(run_metrics, 'w', encoding='utf-8') as f:
