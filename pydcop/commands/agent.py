@@ -89,7 +89,7 @@ Options
   The address of the orchestrator as <ip>:<port>
 
 ``--address <ip_address>``
-  Optional IP address the orchestrator will listen on.
+  Optional IP address the agent will listen on.
   If not given we try to use the primary IP address.
 
 ``-p <start_port>`` / ``--port <start_port>``
