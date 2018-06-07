@@ -64,8 +64,8 @@ machines
 (actually it can also launch several agents,
 see the :ref:`detailed command documentation<pydcop_commands_agent>`).
 Initially, this agent does not know anything about the DCOP (variables,
-constraints,etc. ).
-It only as the address of an **orchestrator**,
+constraints, etc. ).
+It only knows the address of an **orchestrator**,
 which is responsible for sending DCOP information
 to all agents in the system::
 
@@ -75,7 +75,7 @@ to all agents in the system::
 Example
 ^^^^^^^
 
-Instead of using solve, you can run the very simple DCPO used in
+Instead of using solve, you can run the very simple DCOP used in
 :ref:`the first tutorial<tutorials_getting_started>` on different machines.
 For easier setup, we reduces the agents number to 3 in this file :
 :download:`graph_coloring_3agts.yaml`.
@@ -100,7 +100,7 @@ commands to run 5 agents that all use the orchestrator started before
   # Machine 3 runs agent a3
   pydcop -v 3 agent -n a3 -p 9001 --orchestrator 192.168.1.10:9000
 
-Each agent receives the responsibility for one of the variable frm the DCOP
+Each agent receives the responsibility for one of the variables from the DCOP
 and runs MGM for 20 cycles.
 Once each agent has performed 20 cycles, the agents and the orchestrator
 commands return.
@@ -117,7 +117,7 @@ Provisioning pyDCOP
 You may have noticed that the previous section silently assumed that pyDCOP
 was installed on every machine you want to use in your system.
 Indeed, we use the ``pydcop`` command line application, which is only available
-if you have installed pyDCOP !
+if you have installed pyDCOP!
 
 Of course, you can simply follow the
 :ref:`installation instructions<installation>` to install manually pyDCOP on
