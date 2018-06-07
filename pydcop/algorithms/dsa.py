@@ -33,7 +33,7 @@
 DSA : Distributed Stochastic algorithm
 --------------------------------------
 
-Distributed Stochastic Algorithms :cite:`Zhang2005` is a synchronous, stochastic,
+Distributed Stochastic Algorithms :cite:`zhang_distributed_2005` is a synchronous, stochastic,
 local search DCOP algorithm.
   
 Algorithm Parameters
@@ -41,7 +41,7 @@ Algorithm Parameters
 
 **variant**
   'A', 'B' or 'C' ; the variant of the algorithm,
-  as defined in :cite:`Zhang2005` . Defaults to B
+  as defined in :cite:`zhang_distributed_2005` . Defaults to B
 
 **probability**
   probability of changing a value. Defaults to 0.7

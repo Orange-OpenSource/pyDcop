@@ -81,7 +81,8 @@ this typically falls under the category of NP-hard problems.
 For all these reasons, the distribution of computations on agents is
 an interesting topic, which is implemented in pyDCOP through distribution
 methods.
-See :cite:`Rust2016` :cite:`Rust2017` :cite:`Rust2018` for background and
+See :cite:`rust_using_2016` :cite:`rust_deployment_2017` and
+:cite:`rust_self-organized_2018` for background and
 details on the deployment and distribution of computations in a DCOP.
 
 pyDCOP currently implements several distribution methods, you can find the
