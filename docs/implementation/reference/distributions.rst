@@ -5,7 +5,7 @@
 pydcop.distribution
 ===================
 
-A distribution method is used to decide which agent hosts each computation.
+A **distribution** method is used to decide which agent hosts each computation.
 
 
 Distribution methods are implemented in ``pydcop.distribution``.
@@ -14,7 +14,9 @@ Distribution methods are implemented in ``pydcop.distribution``.
 A distribution method computes the allocation
 of a set computations to a set of agents.
 
-List of distribution methods currently implemented in pyDCOP:
+See :ref:`concepts_distribution` for more details on the distribution concept.
+
+pyDCOP currently provides the following distribution methods :
 
 .. toctree::
   :maxdepth: 1
@@ -30,8 +32,24 @@ Implementing a distribution method
 
 To implement a new distribution method, one must:
 
-  * create a new module in ``pydcop.distribution``, named after the distribution method
+  * create a new module in ``pydcop.distribution``,
+    named after the distribution method
   * define the following methods in this file:
-    * ``distribute``
+
+    * ``distribute``, which returns a Distribution object
+    * ``distribution_cost``, which return the cost of a distribution. If your
+      distribution algorithm does define a notion of cost, you can simply
+      return 0 (like the ``oneagent`` distribution)
+
+  * additionally, for dynamic distribution, you can also provide these methods:
+
     * ``distribute_remove``
     * ``distribute_add``
+
+
+Base classes
+------------
+
+.. autoclass:: pydcop.distribution.oneagent.Distribution
+  :members:
+
