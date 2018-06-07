@@ -31,12 +31,13 @@
 
 import json
 import logging
+import socket
 from collections import namedtuple, defaultdict
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from queue import Empty, PriorityQueue
 from threading import Thread
 from time import perf_counter
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Optional
 
 import requests
 from requests.exceptions import ConnectionError
@@ -263,27 +264,56 @@ class InProcessCommunicationLayer(CommunicationLayer):
         return 'Comm({})'.format(self.messaging)
 
 
+def find_local_ip():
+    # from https://stackoverflow.com/a/28950776/261821
+    # public domain/free for any use as stated in comments
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
+
+
 class HttpCommunicationLayer(CommunicationLayer):
     """
     This class implements the CommunicationLayer protocol.
 
     It uses an http server and client to send and receive messages.
 
+    Parameters
+    ----------
+    address_port: optional tuple (str, int)
+        The IP address and port this HttpCommunicationLayer will be
+        listening on.
+        If the ip address or the port are not given ,we try to use the
+        primary IP address (i.e. the one with a default route) and listen on
+        port 9000.
+
+    on_error: str
+        Indicates how error when sending a message will be
+        handled, possible value are 'ignore', 'retry', 'fail'
+
     """
 
-    def __init__(self, address, on_error='ignore'):
-        """
-
-        :param address: a tuple ( ip, port)
-        :param messaging:
-        :param on_error: Indicates how error when sending a message will be
-        handled, possible value are 'ignore', 'retry', 'fail'
-        """
+    def __init__(self, address_port: Optional[Tuple[str, int]]=None,
+                 on_error: Optional[str]='ignore'):
         super().__init__(on_error)
+        if not address_port:
+            self._address = find_local_ip(), 9000
+        else :
+            ip_addr, port = address_port
+            ip_addr = ip_addr if ip_addr else find_local_ip()
+            port = port if port else 9000
+            self._address = ip_addr, port
 
         self.logger = logging.getLogger(
             'infrastructure.communication.HttpCommunicationLayer')
-        self._address = tuple(address)
         self._start_server()
 
     def shutdown(self):
@@ -462,6 +492,8 @@ class Messaging(object):
         self.last_msg_time = 0
         self.msg_queue_count = 0
 
+        self._shutdown = False
+
     @property
     def communication(self)-> CommunicationLayer:
         return self._comm
@@ -538,6 +570,9 @@ class Messaging(object):
             MSG_ALGO. Used to send messages with an higher priority first.
         on_error: ??
         """
+        if self._shutdown:
+            return
+
         msg_type = MSG_ALGO if msg_type is None else msg_type
         try:
             dest_agent = self.discovery.computation_agent(dest_computation)
@@ -590,6 +625,16 @@ class Messaging(object):
 
             self._comm.send_msg(self._local_agent, dest_agent, full_msg,
                                 on_error=on_error)
+
+    def shutdown(self):
+        """Shutdown messaging
+
+        No new message will be sent and any new message posted will be
+        silently dropped.
+        However it is still possible to call ``next_msg`` to empty the queue
+        and handle all message received before ``shutdown` was called.
+        """
+        self._shutdown = True
 
     def _on_computation_registration(self, evt: str, computation: str,
                                      agent: str):

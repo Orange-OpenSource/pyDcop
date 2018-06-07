@@ -55,39 +55,68 @@ Synopsis
 Description
 -----------
 
-The ``solve`` command is a shorthand for the ``agent`` and ``orchestrator``
-commands,
-it solves a DCOP on the local machine, automatically creating the
-orchestrator and the agents as specified in the dcop definitions.
+The ``solve`` command is a shorthand for the
+:ref:`agent<pydcop_commands_agent>` and
+:ref:`orchestrator<pydcop_commands_orchestrator>`
+commands.
+It solves a DCOP on the local machine, automatically creating all the agents
+as specified in the dcop definitions and the orchestrator
+(required for bootstrapping and collecting metrics and results).
 
-Using ``solve`` all agents run in the same machine and using ``--mode thread``
-communicate in memory (without network), which scales easily to more than
-100 agents.
+When using ``solve`` all agents run on the same machine.  Depending on the
+``--mode`` parameter, agents will be created as threads (lightweight)
+or as process (heavier, but better parallelism on a multi-core cpu).
+Using ``--mode thread`` (the default) agents communicate in memory (without
+network), which scales easily to more than 100 agents.
 
-Depending on the ``--mode`` parameter, agents will be
-created as threads (lightweight) or as process (heavier, but better
-parallelism on a multi-core cpu).
 
 Notes
------
-
-Depending on the DCOP algorithm, the solve process may or may not automatically.
+------
+Depending on the DCOP algorithm, the solve process may or may not stop
+automatically.
 For example, :ref:`DPOP<implementation_reference_algorithms_dpop>`
 has a clear termination condition and the command will return once this
 condition is reached.
 On the other hand, some other algorithm like
 :ref:`MaxSum<implementation_reference_algorithms_maxsum>` have
-no clear termination condition
-(several options are available,
-which could be passed as argument to the algorithm).
+no clear termination condition.
 
-For these algorithm you need to use the global
+Some algorithm have an optional termination condition, which can be passed
+as an argument to the algorithm.
+With :ref:`MGM<implementation_reference_algorithms_mgm>` for example,
+you can use ``--algo_params stop_cycle:<cycle_count>`` ::
+
+  pydcop solve --algo mgm --algo_params stop_cycle:20 \\
+               --collect_on cycle_change --run_metric ./metrics.csv \\
+               graph_coloring_50.yaml
+
+For algorithms with no termination condition, you should use the global
 ``--timeout`` option.
-You can also stop the process manually with ``CTRL+C``.
+Note that the ``--timeout`` is used as a timeout for the solve process only.
+Bootstrapping the system and gathering metrics take additional time,
+which is not accounted for in the timeout.
+This means that the solve command may take more time to return
+than the time set with the global ``--timeout`` option.
 
-Agents are only stopped once they have handled all messages already
-present in their message queue : this means that even a force stop can take
-some time.
+You can always stop the process manually with ``CTRL+C``.
+Here again, the system may take a few seconds to stop.
+
+See Also
+--------
+
+**Commands:** :ref:`pydcop_commands_agent`, :ref:`pydcop_commands_orchestrator`
+
+**Tutorials:** :ref:`tutorials_analysing_results` and
+:ref:`tutorials_deploying_on_machines`
+
+
+Output
+------
+
+This commands outputs the end results of the solve process.
+A detailed description of this output is described in the
+:ref:`tutorials_analysing_results` tutorial.
+
 
 Options
 -------
@@ -96,36 +125,44 @@ Options
   Name of the dcop algorithm, e.g. 'maxsum', 'dpop', 'dsa', etc.
 
 ``--algo_params <params>`` / ``-p <params>``
-  Parameters (optional) for the DCOP algorithm, given as string "name:value".
-  May be used multiple times to set several parameters. Available parameters
-  depend on the algorithm, check algorithms documentation.
+  Optional parameter for the DCOP algorithm, given as string
+  ``name:value``.
+  This option may be used multiple times to set several parameters.
+  Available parameters depend on the algorithm,
+  check :ref:`algorithms documentation<implementation_reference_algorithms>`.
 
 ``--distribution <distribution>`` / ``-d <distribution>``
-  Either a distribution algorithm ('oneagent', 'adhoc', 'ilp_fgdp', etc.) or
-  the path to a yaml file containing the distribution
+  Either a :ref:`distribution algorithm<implementation_reference_distributions>`
+  (``oneagent``, ``adhoc``, ``ilp_fgdp``, etc.) or
+  the path to a yaml file containing the distribution.
+  If not given, ``oneagent`` is used.
 
 ``--mode <mode>`` / ``-m``
     Indicated if agents must be run as threads (default) or processes.
-    either ``'thread'`` or ``'process'``
+    either ``thread`` or ``process``
 
 ``--collect_on <collect_mode>`` / ``-c``
-    Metric collection mode, one of ``'value_change'``, ``'cycle_change'``,
-    ``'period'``.
+    Metric collection mode, one of ``value_change``, ``cycle_change``,
+    ``period``.
+    See :ref:`tutorials_analysing_results` for details.
 
 ``--period <p>``
     When using ``--collect_on period``, the period in second for metrics
     collection.
+    See :ref:`tutorials_analysing_results` for details.
 
 ``--run_metrics <file>``
     File to store store metrics.
+    See :ref:`tutorials_analysing_results` for details.
 
 ``--end_metrics <file>``
     End metrics (i.e. when the solve process stops) will be appended to this
-    file.
+    file (in csv).
 
 ``<dcop_files>``
   One or several paths to the files containing the dcop. If several paths are
-  given, their content is concatenated as used a the yaml definition for the
+  given, their content is concatenated as used a the
+  :ref:`yaml definition<usage_file_formats_dcop>` for the
   DCOP.
 
 
@@ -140,6 +177,12 @@ need to be stopped with CTRL+C::
     dcop.py -t 5 solve --algo maxsum  graph_coloring1.yaml
 
 
+Solving with MGM, with two algorithm parameter and a log configuration file::
+
+  pydcop --log log.conf solve --algo mgm --algo_params stop_cycle:20 \\
+                              --algo_params break_mode:random  \\
+                              graph_coloring.yaml \\
+
 """
 
 import json
@@ -147,6 +190,8 @@ import logging
 import os
 import multiprocessing
 import sys
+import threading
+import traceback
 from functools import partial
 from queue import Queue, Empty
 from threading import Thread
@@ -160,7 +205,6 @@ from pydcop.infrastructure.run import run_local_thread_dcop, \
 
 
 logger = logging.getLogger('pydcop.cli.solve')
-
 
 def set_parser(subparsers):
 
@@ -180,9 +224,10 @@ def set_parser(subparsers):
                         choices=algorithms, required=True,
                         help='The algorithm for solving the dcop')
     parser.add_argument('-p', '--algo_params',
-                        type=str, nargs='*',
-                        help='Optional parameters for the algorithm , given as '
-                             'name:value. Several parameters can be given.')
+                        type=str,  action='append',
+                        help='Optional parameters for the algorithm, given as '
+                             'name:value. Use this option several times '
+                             'to set several parameters.')
 
     parser.add_argument('-d', '--distribution', type=str,
                         default='oneagent',
@@ -231,12 +276,11 @@ INFINITY = None
 # Files for logging metrics
 columns = {
     'cycle_change': ['cycle', 'time', 'cost', 'violation', 'msg_count',
-                     'msg_size',
-                     'active_ratio', 'status'],
+                     'msg_size', 'status'],
     'value_change': ['time', 'cycle', 'cost', 'violation', 'msg_count',
-                     'msg_size', 'active_ratio', 'status'],
+                     'msg_size', 'status'],
     'period': ['time', 'cycle', 'cost', 'violation', 'msg_count', 'msg_size',
-               'active_ratio', 'status']
+               'status']
 }
 
 collect_on = None
@@ -244,6 +288,7 @@ run_metrics = None
 end_metrics = None
 
 timeout_stopped = False
+output_file = None
 
 
 def add_csvline(file, mode, metrics):
@@ -280,8 +325,10 @@ def prepare_metrics_files(run, end, mode):
         # directory if needed
         if os.path.exists(run_metrics):
             os.remove(run_metrics)
-        elif not os.path.exists(os.path.dirname(run_metrics)):
-            os.makedirs(os.path.dirname(run_metrics))
+        else:
+            f_dir = os.path.dirname(run_metrics)
+            if f_dir and not os.path.exists(f_dir):
+                os.makedirs(f_dir)
         # Add column labels in file:
         headers = ','.join(columns[mode])
         with open(run_metrics, 'w', encoding='utf-8') as f:
@@ -305,14 +352,14 @@ def prepare_metrics_files(run, end, mode):
     return csv_cb
 
 
-def run_cmd(args, timer=None):
+def run_cmd(args, timer=None, timeout=None):
     logger.debug('dcop command "solve" with arguments {}'.format(args))
 
-    global INFINITY
+    global INFINITY, collect_on, output_file
     INFINITY = args.infinity
-
-    global collect_on
+    output_file = args.output
     collect_on = args.collect_on
+
     period = None
     if args.collect_on == 'period':
         period = 1 if args.period is None else args.period
@@ -387,12 +434,16 @@ def run_cmd(args, timer=None):
 
     try:
         orchestrator.deploy_computations()
-        orchestrator.run()
+        orchestrator.run(timeout=timeout)
         if timer:
             timer.cancel()
         if not timeout_stopped:
-            _results('FINISHED')
-            sys.exit(0)
+            if orchestrator.status == "TIMEOUT":
+                _results('TIMEOUT')
+                sys.exit(0)
+            else:
+                _results('FINISHED')
+                sys.exit(0)
 
         # in case it did not stop, dump remaining threads
 
@@ -404,12 +455,23 @@ def run_cmd(args, timer=None):
 
 
 def on_timeout():
+    logger.debug('cli timeout ')
+    # Timeout should have been handled by the orchestrator, if the cli timeout
+    # has been reached, something is probably wrong : dump threads.
+    for th in threading.enumerate():
+        print(th)
+        traceback.print_stack(sys._current_frames()[th.ident])
+        print()
+
     if orchestrator is None:
+        logger.debug("cli timeout with no orchestrator ?" )
         return
     global timeout_stopped
     timeout_stopped = True
     # Stopping agents can be rather long, we need a big timeout !
+    logger.debug('stop agent on cli timeout ')
     orchestrator.stop_agents(20)
+    logger.debug('stop orchestrator on cli timeout ')
     orchestrator.stop()
     _results('TIMEOUT')
     sys.exit(0)
@@ -431,6 +493,7 @@ def _results(status):
     :param status:
     :return:
     """
+
     metrics = orchestrator.end_metrics()
     metrics['status'] = status
     global end_metrics, run_metrics
@@ -438,6 +501,11 @@ def _results(status):
         add_csvline(end_metrics, collect_on, metrics)
     if run_metrics is not None:
         add_csvline(run_metrics, collect_on, metrics)
+
+    if output_file:
+        with open(output_file, encoding='utf-8', mode='w') as fo:
+                fo.write(json.dumps(metrics, sort_keys=True, indent='  '))
+
     print(json.dumps(metrics, sort_keys=True, indent='  '))
 
 

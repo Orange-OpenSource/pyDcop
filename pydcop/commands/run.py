@@ -115,9 +115,10 @@ def set_parser(subparsers):
                         choices=algorithms,
                         help='algorithm for solving the dcop')
     parser.add_argument('-p', '--algo_params',
-                        type=str, nargs='*',
-                        help='parameters for the algorithm , given as '
-                             'name:value. Several parameters can be given.')
+                        type=str, action='append',
+                        help='Optional parameters for the algorithm, given as '
+                             'name:value. Use this option several times '
+                             'to set several parameters.')
 
     parser.add_argument('-d', '--distribution', required=True,
                         help='distribution of the computations on agents, '
@@ -129,9 +130,10 @@ def set_parser(subparsers):
     #                    help='distribution of the computations replicas on '
     #                         'agents, as a yaml file ')
 
-    parser.add_argument('-r', '--replication_method', required=True,
+    parser.add_argument('-r', '--replication_method',
+                        default='dist_ucs_hostingcosts',
                         help='replication method')
-    parser.add_argument('-k', '--ktarget', required=True, type=int,
+    parser.add_argument('-k', '--ktarget', default=3, type=int,
                         help='Requested resiliency level')
 
     parser.add_argument('-s', '--scenario', required=True,
@@ -179,7 +181,7 @@ run_metrics = None
 end_metrics = None
 
 
-def run_cmd(args, timer):
+def run_cmd(args, timer, timeout):
     logger.debug('dcop command "run" with arguments {}'.format(args))
 
     global INFINITY

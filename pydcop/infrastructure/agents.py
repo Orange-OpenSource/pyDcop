@@ -120,6 +120,8 @@ class Agent(object):
         self.discovery = Discovery(self._name, self.address)
         self._comm.discovery = self.discovery
         self._messaging = Messaging(name, comm)
+        self.discovery.discovery_computation.message_sender = \
+            self._messaging.post_msg
 
         # Ui server
         self._ui_port = ui_port
@@ -128,6 +130,7 @@ class Agent(object):
         self.t = Thread(target=self._run, name='thread_'+name)
         self.t.daemon = daemon
         self._stopping = threading.Event()
+        self._shutdown = threading.Event()
         self._running = False
         # _idle means that we have finished to handle all incoming messages
         self._idle = False
@@ -326,7 +329,6 @@ class Agent(object):
         self._start_t = perf_counter()
         self.t.start()
 
-
     def run(self, computations: Optional[Union[str, List[str]]]=None):
         """
         Run computations hosted on this agent.
@@ -374,7 +376,7 @@ class Agent(object):
             self._run_t = perf_counter()
 
         on_start_t = perf_counter()
-        for c in self._computations.values():
+        for c in list(self._computations.values()):
             if computations is None:
                 if c.is_running:
                     self.logger.debug('Do not start computation %s, already '
@@ -403,6 +405,20 @@ class Agent(object):
             used as a reference when computing various time-related metrics.
         """
         return self._run_t
+
+    def clean_shutdown(self):
+        """
+        Perform a clean shutdown of the agent.
+
+        All pending messages are handled before stopping the agent thread.
+
+        This method returns immediately, use `join` to wait until the agent's
+        thread has stopped.
+
+        """
+        self.logger.debug('Clean shutdown requested')
+        self._shutdown.set()
+        self._messaging.shutdown()
 
     def stop(self):
         """
@@ -572,8 +588,6 @@ class Agent(object):
         """
         self.logger.debug('on_start for {}'.format(self.name))
 
-        self.discovery.discovery_computation.message_sender = \
-            self._messaging.post_msg
         self._computations[self.discovery.discovery_computation.name] = \
             self.discovery.discovery_computation
         while True:
@@ -634,6 +648,9 @@ class Agent(object):
             self._ui_server.stop()
 
         try:
+            # Wait a bit to make sure that the stopped message can reach the
+            # orchestrator before unregistration.
+            sleep(0.5)
             self.discovery.unregister_agent(self.name)
         except UnreachableAgent:
             # when stopping the agent, the orchestrator / directory might have
@@ -671,13 +688,21 @@ class Agent(object):
         dest.on_message(sender_name, msg, t)
 
     def metrics(self):
-        idle = 0 if self._run_t is None else self._run_t - self.t_active
+        if self._run_t is None:
+            activity_ratio = 0
+        else:
+            total_t = perf_counter() - self._run_t
+            activity_ratio = self.t_active / (total_t)
+        own_computations = { c.name for c in self.computations()}
         m = {
-            'count_ext_msg': dict(self._messaging.count_ext_msg),
-            'size_ext_msg': dict(self._messaging.size_ext_msg),
-            'last_msg_time': self._messaging.last_msg_time,
-            'active': self.t_active,
-            'idle': idle,
+            'count_ext_msg': {k: v
+                              for k, v in self._messaging.count_ext_msg.items()
+                              if k in own_computations},
+            'size_ext_msg': {k: v
+                             for k, v in self._messaging.size_ext_msg.items()
+                             if k in own_computations},
+            # 'last_msg_time': self._messaging.last_msg_time,
+            'activity_ratio': activity_ratio,
             'cycles': {c.name: c.cycle_count for c in self.computations()}
         }
         return m
@@ -714,6 +739,10 @@ class Agent(object):
                 full_msg, t = self._messaging.next_msg(0.05)
                 if full_msg is None:
                     self._idle = True
+                    if self._shutdown.is_set():
+                        self.logger.info("No message during shutdown, "
+                                         "stopping agent thread")
+                        break
                 else:
 
                     current_t = perf_counter()
@@ -738,7 +767,7 @@ class Agent(object):
                 if self._start_t is not None \
                         and self._periodic_cb is not None \
                         and ct - last_cb_time >= self._period:
-                    self.logger.warning('periodic cb %s %s ', ct, last_cb_time)
+                    self.logger.info('periodic cb %s %s ', ct, last_cb_time)
                     self._periodic_cb()
                     last_cb_time = ct
 

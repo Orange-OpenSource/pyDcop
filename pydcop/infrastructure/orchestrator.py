@@ -120,7 +120,8 @@ class Orchestrator(object):
                  dcop: DCOP,
                  infinity=float('inf'),
                  collector: Queue=None,
-                 collect_moment: str='value_change'):
+                 collect_moment: str='value_change',
+                 collect_period: float=None):
         self._own_agt = Agent(ORCHESTRATOR, comm)
         self.directory = Directory(self._own_agt.discovery)
         self._own_agt.add_computation(self.directory.directory_computation)
@@ -132,6 +133,8 @@ class Orchestrator(object):
         self.logger = self._own_agt.logger
         self.dcop = dcop
 
+        self.status = 'OK'
+
         # For scenario execution
         self._events_iterator = None
         self._event_timer = None  # type: threading.Timer
@@ -141,7 +144,8 @@ class Orchestrator(object):
 
         self.mgt = AgentsMgt(algo, cg, agent_mapping, dcop,
                              self._own_agt, self, infinity, collector=collector,
-                             collect_moment=collect_moment)
+                             collect_moment=collect_moment,
+                             collect_period=collect_period)
 
     @property
     def address(self):
@@ -243,8 +247,7 @@ class Orchestrator(object):
         start their computations. If the agents are not ready, the orchestrator
         automatically waits until agents are ready (i.e. computations have
         been deployed).
-        This methods returns immediately, if you need to wait until the run
-        is finished, especially when using a timeout, use wait_ready.
+
 
         Parameters
         ----------
@@ -262,17 +265,25 @@ class Orchestrator(object):
         self._mgt_method('_orchestrator_run_computations', None)
 
         if timeout is not None:
+            self.logger.info('Setting timer for %s timeour ', timeout)
             self._timeout_timer = threading.Timer(timeout,
                                                   self._on_timeout)
+            self._timeout_timer.daemon = True
             self._timeout_timer.start()
             self.mgt.ready_to_run = threading.Event()
+        else:
+            self.logger.info('Not timeout, stop with ctrl+c or on algo end ')
 
         if scenario is not None:
+            self.logger.info('Setting scenario ')
             self._events_iterator = iter(scenario)
             self._process_event()
+        else:
+            self.logger.info('No scenario ')
 
         self.mgt.wait_stop_agents()
-        self.stop()
+        self._own_agt.clean_shutdown()
+        self._own_agt.join()
 
     def stop_agents(self, timeout: float):
         self.logger.info('Requesting all agents to stop')
@@ -296,7 +307,7 @@ class Orchestrator(object):
         return self.mgt.current_solution()
 
     def end_metrics(self):
-        return self.mgt.global_metrics('END', perf_counter())
+        return self.mgt.global_metrics('END', self.mgt.last_agt_stop_time)
 
     def wait_ready(self):
         """Blocks until the Orchestrator is ready to perform another action.
@@ -341,16 +352,20 @@ class Orchestrator(object):
     def _mgt_method(self, method: str, arg: Any):
         self.messaging.post_msg(
             ORCHESTRATOR_MGT, ORCHESTRATOR_MGT,
-            Message(method, arg), msg_type=MSG_MGT)
+            Message(method, arg), msg_type=5)
 
     def _on_timeout(self):
+        """Run timeout callback"""
+        self.status = "TIMEOUT"
+        self.logger.info("Timeout, requesting agents to stop")
         self.stop_agents(5)
-        self.stop()
         self.mgt.ready_to_run.set()
 
 
 ################################################################################
 #  Orchestration messages definition
+
+SetMetricsModeMessage = message_type('metrics_mode', ['mode', 'period'])
 
 DeployMessage = message_type('deploy', ['comp_def'])
 
@@ -404,7 +419,6 @@ AgentRemovedMessage = message_type('agent_removed', [])
 
 RepairDoneMessage = message_type('repair_done',
                                  ['agent', 'selected_computations'])
-
 
 class RepairRunMessage(Message):
     """
@@ -542,7 +556,8 @@ class AgentsMgt(MessagePassingComputation):
                  orchestrator_agent: Agent, orchestrator: Orchestrator,
                  infinity=float('inf'),
                  collector: Queue=None,
-                 collect_moment: str='value_change'):
+                 collect_moment: str='value_change',
+                 collect_period: float=None):
         super().__init__(ORCHESTRATOR_MGT)
         self._orchestrator_agent = orchestrator_agent
         self._orchestrator = orchestrator
@@ -568,10 +583,18 @@ class AgentsMgt(MessagePassingComputation):
         }
 
         self._collect_moment = collect_moment
+        self._collect_period = collect_period
         self._collector = collector
 
         self._nb_computations = 0
         self.start_time = None
+
+        # last_agt_stop_time is the perf_counter() time from the last
+        # received stopped message from an agent.
+        # A the end of a run, this can be used to identify the real end of the
+        # solve process (as unregistration from discovery can have delay and
+        # thus cannot be used to get an accurate end time)
+        self.last_agt_stop_time = None
 
         # Used to store stae of agent: replication | repair_setup |
         # repair_ready | repair_done
@@ -587,7 +610,7 @@ class AgentsMgt(MessagePassingComputation):
         # metrics
         # Storing metrics for agent across several cycles :
         # Dict cycle->agent->metrics or value
-        self._current_cycle = 1
+        self._current_cycle = 0
         self._agt_cycle_metrics = defaultdict(lambda: {})
         self._agent_cycle_values = defaultdict(lambda: {})
         # used to detect the end of a cycle
@@ -666,6 +689,11 @@ class AgentsMgt(MessagePassingComputation):
         if evt == 'agent_added':
             self.logger.info('Receiving registration %s from agent %s', evt,
                              agent)
+            # setup metrics collection on agent.
+            self._send_mgt_msg(
+                agent, SetMetricsModeMessage(self._collect_moment,
+                                             self._collect_period))
+
             missing = []
             for agt in self.initial_dist.agents:
                 try:
@@ -828,7 +856,7 @@ class AgentsMgt(MessagePassingComputation):
         self._emit_metrics(t)
 
     def _on_agent_stopped_msg(self, sender: str, msg: AgentStoppedMessage,
-                              _: float):
+                              reception_time: float):
         self.logger.debug('Received stopped from %s : %s - %s', msg.agent,
                           dict(msg.metrics), sender)
         try:
@@ -837,6 +865,7 @@ class AgentsMgt(MessagePassingComputation):
         except ValueError:
             self.logger.warning('Stopped message for an unexpected agent: %s ',
                                 msg.agent)
+        self.last_agt_stop_time = reception_time
 
     def _on_computation_end_msg(self, sender: str,
                                 msg: ComputationFinishedMessage, _: float):
@@ -1085,8 +1114,12 @@ class AgentsMgt(MessagePassingComputation):
 
     def global_metrics(self, current_status, t):
 
+        if t is None:
+            t = perf_counter()
+
         # Current global cost
         agent_values = self._agent_cycle_values[self._current_cycle]
+
         assignment = {k: agent_values[k][0] for k in agent_values
                       if agent_values[k]}
         # only keep dcop variable to compute the solution cost
@@ -1107,31 +1140,21 @@ class AgentsMgt(MessagePassingComputation):
 
         # msg stats and activity ratio
         msg_count, msg_size = 0, 0
-        activity = 0
+        agt_cycles = []
         for agt in self._agt_cycle_metrics[self._current_cycle]:
             agt_metrics = self._agt_cycle_metrics[self._current_cycle][agt]
             try:
-                for v in agt_metrics['count_ext_msg']:
-                    msg_count += agt_metrics['count_ext_msg'][v]
-                for v in agt_metrics['size_ext_msg']:
-                    msg_size += agt_metrics['size_ext_msg'][v]
-                activity += agt_metrics['active'] / \
-                    (agt_metrics['active'] + agt_metrics['idle'])
+                msg_count += sum( agt_metrics['count_ext_msg'][v]
+                                  for v in agt_metrics['count_ext_msg'])
+                msg_size += sum(agt_metrics['size_ext_msg'][v]
+                                for v in agt_metrics['size_ext_msg'])
+                agt_cycles += [agt_metrics['cycles'][v]
+                                    for v in agt_metrics['cycles']]
             except KeyError:
                 self.logger.warning(
                     'Incomplete metrics for computation %s : %s ',
                     agt, agt_metrics)
-            except ZeroDivisionError:
-                self.logger.warning(
-                    'Incomplete metrics for computation %s : %s ',
-                    agt, agt_metrics)
-
-
-        if self._agt_cycle_metrics[self._current_cycle]:
-            active_ratio = activity / len(self._agt_cycle_metrics[
-                                          self._current_cycle])
-        else:
-            active_ratio = None
+        max_cycle = max(agt_cycles, default=0)
 
         total_time = t - self.start_time if self.start_time is not None else 0
 
@@ -1143,8 +1166,7 @@ class AgentsMgt(MessagePassingComputation):
             'time': total_time,
             'msg_count': msg_count,
             'msg_size': msg_size,
-            'active_ratio': active_ratio,
-            'cycle': self._current_cycle,
+            'cycle': max_cycle,
             'agt_metrics': self._agt_cycle_metrics[self._current_cycle]
         }
 

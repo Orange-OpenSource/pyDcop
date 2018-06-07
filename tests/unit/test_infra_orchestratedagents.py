@@ -52,8 +52,9 @@ from pydcop.infrastructure.orchestratedagents import OrchestratedAgent
 @pytest.fixture
 def orchestrated_agent():
     a1_def = AgentDef('a1')
+    fake_address = MagicMock()
     agt = OrchestratedAgent(a1_def, InProcessCommunicationLayer(),
-                            'fake_address')
+                            fake_address)
     # As we don't create an orchestrator, catch message sending
     agt._messaging.post_msg = MagicMock()
     yield agt
@@ -69,6 +70,7 @@ def test_start_orchestrated_agent_starts_mgt(orchestrated_agent):
     # OrchestratedAgent
     assert not orchestrated_agent.is_running
     orchestrated_agent.start()
+    sleep(0.1)
     assert orchestrated_agent.is_running
     assert orchestrated_agent._mgt_computation.is_running
     assert orchestrated_agent._mgt_computation.name == '_mgt_a1'

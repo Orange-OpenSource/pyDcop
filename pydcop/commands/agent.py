@@ -43,7 +43,8 @@ Synopsis
 
 ::
 
-  pydcop agent --names <names> --port <start_port>
+  pydcop agent --names <names>
+               [--address <ip_address>] --port <start_port>
                --orchestrator <orchestrator_address>
                [--uiport <start_uiport>]
                [--restart]
@@ -53,9 +54,9 @@ Description
 -----------
 
 Starts one or several agents. No orchestrator is started, you must start it
-separately  using the ``pydcop orchestrator`` command. The orchestrator might
-be started after or before the agents, if it is not reachable when starting the
-agents, they will wait until it is available.
+separately  using the `:ref:`pydcop_commands_orchestrator` command.
+The orchestrator might be started after or before the agents, if it is not
+reachable when starting the agents, they will wait until it is available.
 
 All agents are started in the same process and communicate with one another
 using an embedded http server (each agent has its own http server). You can
@@ -72,7 +73,9 @@ number of agents.
 See Also
 --------
 
-:ref:`pydcop_commands_orchestrator`
+**Command:** :ref:`pydcop_commands_orchestrator`
+
+**Tutorial:** :ref:`tutorials_deploying_on_machines`
 
 
 Options
@@ -84,6 +87,10 @@ Options
 
 ``--orchestrator <orchestrator_address>``
   The address of the orchestrator as <ip>:<port>
+
+``--address <ip_address>``
+  Optional IP address the agent will listen on.
+  If not given we try to use the primary IP address.
 
 ``-p <start_port>`` / ``--port <start_port>``
   The port on which the agent will listen for messages. If several agents
@@ -138,6 +145,9 @@ def set_parser(subparsers):
                         help='The name of the agent(s). This must match the '
                              'name of the agents expected by the '
                              'orchestrator.')
+    parser.add_argument('--address', type=str, default=None,
+                        help="IP address the orchestrator will listen on. If "
+                             "not given we try to use the primary IP address.")
     parser.add_argument('-p', '--port', type=int,
                         help='The port on which the agent will listen for '
                              'messages. If several agents names are started '
@@ -166,7 +176,7 @@ def run_cmd(args):
     if args.restart:
         while not force_stopped:
             agents = start_agents(names, o_addr, int(o_port),
-                                  args.uiport, args.port)
+                                  args.uiport, args.address, args.port)
 
             # block until all agents have finished
             for agent in agents:
@@ -179,7 +189,7 @@ def run_cmd(args):
 
     else:
         agents = start_agents(names, o_addr, int(o_port),
-                              args.uiport, args.port)
+                              args.uiport, args.address, args.port)
 
 
 def on_force_exit(_, __):
@@ -190,7 +200,7 @@ def on_force_exit(_, __):
         agent.stop()
 
 
-def start_agents(names: List[str], o_addr, o_port, u_port, a_port):
+def start_agents(names: List[str], o_addr, o_port, u_port, a_addr, a_port):
     """
     Start orchestrated agents.
 
@@ -204,6 +214,8 @@ def start_agents(names: List[str], o_addr, o_port, u_port, a_port):
         the names of the agents
     u_port: int
         start port for ui
+    a_addr: str
+        IP address the agent will listen on
     a_port: int
         start port for agents (messages)
     o_addr
@@ -228,7 +240,7 @@ def start_agents(names: List[str], o_addr, o_port, u_port, a_port):
                 'Starting agent {} on port {} without ui-server '.format(
                     a, a_port))
 
-        comm = HttpCommunicationLayer(('127.0.0.1', a_port))
+        comm = HttpCommunicationLayer((a_addr, a_port))
         agt_def = AgentDef(a)
         agent = OrchestratedAgent(agt_def, comm, (o_addr, o_port),
                                   ui_port=u_port)

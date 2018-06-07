@@ -1,6 +1,0 @@
-
-Bibliography
-============
-
-
-.. bibliography:: biblio.bib
