@@ -63,10 +63,9 @@ Documentation
 
    installation
    tutorials
-   concepts
    usage
-   algorithms
    implementation
+   algorithms
    zbibliography
 
 
