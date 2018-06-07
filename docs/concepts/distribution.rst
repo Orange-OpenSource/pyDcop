@@ -1,7 +1,7 @@
 
 .. _concepts_distribution:
 
-DCOP Computations distribution
+DCOP computation distribution
 ==============================
 
 

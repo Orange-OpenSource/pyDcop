@@ -48,13 +48,13 @@ As a classical constraint graph can only represents binary variable,
 pyDCOP uses an hyper-graph, where hyper-edges can represent n-ary constraints.
 
 The kind of graph is used by algorithms like
-:ref:`MGM <implementation_reference_algorithms_mgm>`
+:ref:`MGM <implementation_reference_algorithms_mgm>`,
 :ref:`DSA <implementation_reference_algorithms_dsa>`, etc.
 
 Factor graph
 ------------
 
-A factor graph is a bipartite graph where...
+A factor graph is a undirected bipartite graph in which vertices represent variables and constraints (called factors), and an edge exists between a variable and a constraint if the variable is in the scope of the constraint.
 
 This kind of graph is used by
 :ref:`MaxSum <implementation_reference_algorithms_maxsum>` and

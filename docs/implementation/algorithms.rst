@@ -192,7 +192,7 @@ Distribution and deployment
 ----------------------------
 
 Your module must also provide a a few predefined utility methods, used to
-build and deploy your algorithm, and may define some optional method, used for
+build and deploy your algorithm, and may define some optional methods, used for
 deployment and distribution.
 
 The module of your algorithm **must** also have an attribute named ``GRAPH_TYPE`` which
