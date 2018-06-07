@@ -4,6 +4,8 @@
 pyDCOP file formats
 ===================
 
+.. _usage_file_formats_dcop:
+
 DCOP file format
 ----------------
 

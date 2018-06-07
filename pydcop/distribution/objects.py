@@ -37,17 +37,16 @@ class Distribution(object):
     """
     This object is a convenient representation of a distribution with
     methods for querying it (has_computation, agent_for, etc.)
+
+    Parameters
+    ----------
+    mapping: mapping: Dict[str, List[str]]
+        A dict  agent name: [computation names]. Basic validity checks are
+        performed to ensure that the same computation is not hosted on
+        several agents.
+
     """
-
-
     def __init__(self, mapping: Dict[str, List[str]]):
-        """
-        Build a distribution from a mapping fro agent to  hosted computations.
-        
-        Basic validity checks are performed.
-
-        :param mapping: a dict  agent name: [computation names]
-        """
         # { agent_name : {list of comp_name]}
         self._mapping = mapping  # type: Dict[str, List[str]]
         # {comp_name : agent_name }
@@ -68,7 +67,8 @@ class Distribution(object):
 
         Returns
         -------
-        the list of the names of agents used in this distribution.
+        agents list:
+            The list of the names of agents used in this distribution.
 
         """
         return list(self._mapping)
@@ -80,8 +80,9 @@ class Distribution(object):
 
         Returns
         -------
-        A list containing the names of the computations distributed in this
-        distribution.
+        computations list:
+            A list containing the names of the computations distributed in this
+            distribution.
         """
         return [c for l in self._mapping.values() for c in l]
 
@@ -91,7 +92,8 @@ class Distribution(object):
 
         Returns
         -------
-        A dict associating a list of computation names to each agent name.
+        Dict[str, List[str]]:
+            A dict associating a list of computation names to each agent name.
         """
         return dict(self._mapping)
 
@@ -105,7 +107,8 @@ class Distribution(object):
 
         Returns
         -------
-        the name of the agent hosting this computation.
+        str:
+            the name of the agent hosting this computation.
         """
         if computation not in self._computation_agent:
             raise KeyError('No computation {} in this distribution'.format(
@@ -117,7 +120,7 @@ class Distribution(object):
         """
         Computations hosted on an agent.
 
-        If theis agent is not used in the distribution (its name is not known),
+        If the agent is not used in the distribution (its name is not known),
         returns an empty list.
 
         Parameters
@@ -127,7 +130,7 @@ class Distribution(object):
 
         Returns
         =======
-        List[str]
+        List[str]:
             The list of computations hosted by this agent.
         """
         try:
@@ -137,20 +140,34 @@ class Distribution(object):
 
     def has_computation(self, computation: str):
         """
-        
-        :param computation: 
-        :return: True if this computation is part of the distribution 
+
+        Parameters
+        ----------
+        computation: str
+            computation name
+
+        Returns
+        -------
+        Boolean:
+            True if this computation is part of the distribution
         """
         return computation in self._computation_agent
 
     def host_on_agent(self, agent: str, computations: List[str]):
         """
+        Host several computations on an agent.
+
         Modify the distribution by adding computations to be hosted on agent.
-        If this agent name is unknown, it s is added, otherwise the mist of 
+        If this agent name is unknown, it is added, otherwise the list of
         computations is added to the computations already hosted by this agent.
-        
-        :param agent: an agent name 
-        :param computations: a list of computation names
+
+        Parameters
+        ----------
+        agent: str
+            an agent name
+        computations: List[str]
+            A list of computation names
+
         """
         for v in computations:
             if v in self._computation_agent:
@@ -164,6 +181,22 @@ class Distribution(object):
             self._computation_agent[v] = agent
 
     def is_hosted(dist, computations: Union[str, Iterable[str]]):
+        """
+        Indicates if some computations are hosted.
+
+        This methods does not care on which agent the computations are hosted.
+
+        Parameters
+        ----------
+        computations: List[str]
+            A list of computation names
+
+        Returns
+        -------
+        Boolean:
+            True if all computations are hosted.
+
+        """
         if isinstance(computations, str):
             computations = [computations]
         for computation in computations:

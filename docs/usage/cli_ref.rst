@@ -1,4 +1,7 @@
 
+
+.. _usage_cli_ref:
+
 pyDCOP command line reference
 =============================
 
@@ -31,12 +34,15 @@ Additionally, some options apply to many commands and must be given
 **before** the command, for example in the following ``-t`` and ``-v`` are
 **global options** and ``--algo`` is an option of the ``solve`` command::
 
-  pydcop -t 5 -v 3 solve --algo maxsum  graph_coloring1.yaml
+  pydcop -t 5 -v 3 solve --algo maxsum  graph_coloring.yaml
 
 pydcop supports the following global options::
 
   pydcop [--version] [--timeout <timeout>] [--verbosity <level>]
          [--log <log_conf_file>]
+
+
+.. _usage_cli_ref_options:
 
 ``--version``
   Outputs pydcop version and exits.
@@ -60,7 +66,11 @@ pydcop supports the following global options::
   The following sample file can be used as a starting point to build your own
   custom log configuration : :download:`log.conf<cli/log.conf>`.
 
-
+Additionally the ``--help`` / ``-h`` option can always be used both as a
+global option and as a command option.
+Calling ``pydcop --help`` outputs a general help for pyDCOP command line
+interface, with a list of available commands.
+``pydcop <command> --help`` outputs help for this specific command.
 
 
 

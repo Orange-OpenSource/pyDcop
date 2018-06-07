@@ -1,3 +1,7 @@
+
+.. _tutorials_getting_started:
+
+
 Getting started
 ===============
 
@@ -6,9 +10,10 @@ This small tutorial will guide you to solve your first DCOP using pyDCOP.
 Solving your first DCOP
 -----------------------
 
-Once you have installed pyDCOP (and activated the python venv you have
-installed it in), create a text file ``graph_coloring.py`` with following
-content::
+Once you have
+:ref:`installed pyDCOP<installation>`
+(and activated the python venv you have installed it in),
+create a text file ``graph_coloring.py`` with following content::
 
     name: graph coloring
     objective: min
@@ -58,19 +63,22 @@ content::
     agents: [a1, a2, a3, a4, a5]
 
 You don't need for the moment to understand everything in this file, it's
-enough to know that this represents a graph coloring problem, modelled as a
+enough to know that it represents a `graph coloring problem`__, modeled as a
 DCOP with 3 variables (this example is taken from :cite:`Farinelli2008`).
+
+__  https://en.wikipedia.org/wiki/Graph_coloring
 
 Now you can simply run the following command to
 :ref:`solve<pydcop_commands_solve>`
 this DCOP with the
-:ref:`dpop algorithm<implementation_reference_algorithms_dpop>`::
+:ref:`DPOP algorithm<implementation_reference_algorithms_dpop>`::
 
-  pydcop solve -algo dpop  graph_coloring.yaml
+  pydcop solve --algo dpop graph_coloring.yaml
 
 This should output a result simular to this::
 
   {
+    // Rather long list of information, not included here ....
     "assignment": {
       "v1": "R",
       "v2": "G",
@@ -78,39 +86,29 @@ This should output a result simular to this::
     },
     "cost": -0.1,
     "cycle": 1,
-    "msg_count": 49,
-    "msg_size": 16,
+    "msg_count": 4,
+    "msg_size": 8,
     "status": "FINISHED",
-    "time": 0.006229691000044113,
+    "time": 0.008432154994807206,
     "violation": 0
   }
 
-Congratulation, you have solve your first DCOP using pyDCOP !!
 
-Of course you can solve it with any other dcop algorithm implemented by
+Congratulations, you have solved your first DCOP using pyDCOP !!
+
+Of course, you can solve it with any other DCOP algorithm implemented by
 pyDCOP. Some algorithms have no default termination condition, in this case
 you can stop the execution with ``CTRL+C`` or use the ``--timeout`` option::
 
-  pydcop  --timeout 3 solve -algo mgm  graph_coloring.yaml
+  pydcop --timeout 3 solve --algo mgm graph_coloring.yaml
 
 You may notice that with this command the assignment in the result is not
-always the same and not always the result we fuond using dpop.
-This is because mgm is a *local search* algorithm, which can be trapped in a
-local minima.
-On the other hand dpop is a *complete algorithm* and will always return the
-optimal assignment (if your problem is small enough to use dpop on it !).
+always the same and not always the result we found using DPOP.
+This is because :ref:`MGM<implementation_reference_algorithms_mgm>` is
+a *local search* algorithm, which can be trapped in a
+local minimum.
+On the other hand DPOP is a *complete algorithm* and will always return the
+optimal assignment (if your problem is small enough to use DPOP on it !).
 
-
-Analysing results
------------------
-
-
-
-
-
-
-Analysing results
-
-* end results
-* run-time metrics
-* plotting the results
+Now that you have run your first DCOP, you can head to the next tutorial to
+learn how to :ref:`analyse the results<tutorials_analysing_results>`.

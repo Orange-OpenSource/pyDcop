@@ -1,4 +1,7 @@
 
+.. _installation:
+
+
 Installation
 ============
 
@@ -28,8 +31,8 @@ To generate documentation, you need to install the corresponding dependencies::
 
 Additionally, for computations distribution, pyDCOP uses the
 `glpk <https://www.gnu.org/software/glpk/>`_ linear program solver, which must
-be installed on the system (as it is not a python library ,which could be
-installed as a dependency by `pip`). For example, on an ubuntu / debian system::
+be installed on the system (as it is not a python library, which could be
+installed as a dependency by `pip`). For example, on an Ubuntu/Debian system::
 
   sudo apt-get install glpk-utils
 
@@ -41,3 +44,8 @@ installed as a dependency by `pip`). For example, on an ubuntu / debian system::
     sudo apt-get install python3-setuptools
     sudo apt-get install python3-pip
 
+
+.. note::  When installing pyDCOP over many machines (or virtual machines),
+  for a really distributed system, we recommend automating the process.
+  We provide ansible playbook that can help you with this task.
+  See the guide :ref:`usage_provisioning`.

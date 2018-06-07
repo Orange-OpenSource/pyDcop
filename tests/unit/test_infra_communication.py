@@ -432,11 +432,11 @@ class TestHttpCommLayer(object):
 
         comm2.discovery.register_computation('c1', 'a1', ('127.0.0.1', 10001))
 
-        def raise_unknown(s, d, m):
+        def raise_unknown(*args):
             raise UnknownComputation('test')
         comm2.messaging.post_msg = MagicMock(side_effect=raise_unknown)
 
-        with pytest.raises(UnreachableAgent):
+        with pytest.raises(UnknownComputation):
             comm1.send_msg(
                 'a1', 'a2',
                 ComputationMessage('c1', 'c2', Message('a1', 't1'), MSG_ALGO),
@@ -449,7 +449,7 @@ class TestHttpCommLayer(object):
 
         comm2.discovery.register_computation('c1', 'a1', ('127.0.0.1', 10001))
 
-        def raise_unknown(s, d, m):
+        def raise_unknown(*args):
             raise UnknownComputation('test')
         comm2.messaging.post_msg = MagicMock(side_effect=raise_unknown)
 

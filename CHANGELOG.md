@@ -11,13 +11,29 @@ pyDCOP v0.1.2 [Unreleased]
 - New `--version` global option on cli.
 - `--graph` option may be omitted in `distribute` cli command, when `--algo`
  is given.
+-- `--output` is now supported by the `solve` cli command 
 - Add a lot of documentation : usage, command line reference, etc. 
-
+- termination detection in solve command: the command returns if all 
+  computations have finished.
+- Clean shutdown mechanism for orchestrator, agents, and messaging   
 
 ### Fixed
 - When stopping an agent, the ws-sever (for ui) was not closed properly.
 - Issues causing delays when stopping the orchestrator.
+- Invalid metrics containing management computations instead of agents.
+- Avoid some crashes during metrics computations (when stopping the system 
+  when metrics are not ready yet).
+- Activity ratio computation was wrong.
+- Bugs with end metric computations (cycle and time).
+- Bug with solve and run command when collecting lots of metrics (would 
+  not honor the timeout)   
 
+## Modified
+- domain type is now optional (in API and yaml DCOP format)
+- agents can be given as a list or a dict in yaml
+- the number and size of technical computations (mgt, discovery, etc.)  is not 
+  output in metrics 
+- new mechanism for defining algorithms parameters   
 
 pyDCOP v0.1.0 - 2018-05-04
 --------------------------

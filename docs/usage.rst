@@ -10,6 +10,7 @@ API.
    usage/cli_ref
    usage/fileformat_ref
    usage/api_ref
+   usage/provisioning
 
 
 Most common use-cases
@@ -25,10 +26,10 @@ Solving a static DCOP::
 
 Running a DCOP (continuously)::
 
-  pydcop -t 360 --log log.conf run -a maxsum
-         --scenario scenario.yaml
-         -d dist_dcop_100.yaml
-         -m thread
+  pydcop -t 360 --log log.conf run -a maxsum \
+         --scenario scenario.yaml \
+         -d dist_dcop_100.yaml \
+         -m thread \
          dcop_100.yaml
 
 
@@ -46,8 +47,8 @@ Running a DCOP on several computers
 
 ::
 
-  pydcop -v 3 agent -n a<num> -p 900<num>
-                    --orchestrator <orchestrator_ip>
+  pydcop -v 3 agent -n a<num> -p 900<num> \
+                    --orchestrator <orchestrator_ip> \
                     --uiport 10001
 
 

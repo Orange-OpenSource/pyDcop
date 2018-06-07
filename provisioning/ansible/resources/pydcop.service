@@ -1,0 +1,12 @@
+[Unit]
+Description=Start pydcop
+After=graphical.target
+
+[Service]
+User={{ansible_ssh_user}}
+ExecStart=/etc/systemd/system/pydcop.sh
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=control-group
+
+[Install]
+Alias=pydcop.service

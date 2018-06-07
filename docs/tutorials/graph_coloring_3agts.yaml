@@ -1,0 +1,46 @@
+name: graph coloring
+objective: min
+
+domains:
+  colors:
+    values: [R, G]
+
+variables:
+  v1:
+    domain: colors
+  v2:
+    domain: colors
+  v3:
+    domain: colors
+
+constraints:
+    pref_1:
+      type: extensional
+      variables: v1
+      values:
+        -0.1: R
+        0.1: G
+
+    pref_2:
+      type: extensional
+      variables: v2
+      values:
+        -0.1: G
+        0.1: R
+
+    pref_3:
+      type: extensional
+      variables: v3
+      values:
+        -0.1: G
+        0.1: R
+
+    diff_1_2:
+      type: intention
+      function: 10 if v1 == v2 else 0
+
+    diff_2_3:
+      type: intention
+      function: 10 if v3 == v2 else 0
+
+agents: [a1, a2, a3]

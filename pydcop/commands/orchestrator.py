@@ -44,6 +44,10 @@ Synopsis
 
   pydcop orchestrator --algo <algo> [--algo_params <params>]
                       --distribution <distribution>
+                      [--address <ip_addr>] [--port <port>]
+                      [--collect_on <collect_mode>] [--period <p>]
+                      [--run_metrics <file>]
+                      [--end_metrics <file>]
                       <dcop_files>
 
 
@@ -64,8 +68,18 @@ current DCOP solution (with associated cost) in yaml.
 See Also
 --------
 
-:ref:`pydcop_commands_agent`
+**Commands:** :ref:`pydcop_commands_agent`, :ref:`pydcop_commands_solve`
 
+**Tutorials:** :ref:`tutorials_analysing_results` and
+:ref:`tutorials_deploying_on_machines`
+
+
+Output
+------
+
+This commands outputs the end results of the solve process.
+A detailed description of this output is described in the
+:ref:`tutorials_analysing_results` tutorial.
 
 Options
 -------
@@ -74,33 +88,80 @@ Options
   Name of the dcop algorithm, e.g. 'maxsum', 'dpop', 'dsa', etc.
 
 ``--algo_params <params>`` / ``-p <params>``
-  Parameters (optional) for the DCOP algorithm, given as string "name:value".
-  May be used multiple times to set several parameters. Available parameters
-  depend on the algorithm, check algorithms documentation.
+  Optional parameter for the DCOP algorithm, given as string
+  ``name:value``.
+  This option may be used multiple times to set several parameters.
+  Available parameters depend on the algorithm,
+  check :ref:`algorithms documentation<implementation_reference_algorithms>`.
 
 ``--distribution <distribution>`` / ``-d <distribution>``
-  Either a distribution algorithm ('oneagent', 'adhoc', 'ilp_fgdp', etc.) or
-  the path to a yaml file containing the distribution
+  Either a :ref:`distribution algorithm<implementation_reference_distributions>`
+  (``oneagent``, ``adhoc``, ``ilp_fgdp``, etc.) or
+  the path to a yaml file containing the distribution.
+  If not given, ``oneagent`` is used.
+
+``--collect_on <collect_mode>`` / ``-c``
+    Metric collection mode, one of ``value_change``, ``cycle_change``,
+    ``period``.
+    See :ref:`tutorials_analysing_results` for details.
+
+``--period <p>``
+    When using ``--collect_on period``, the period in second for metrics
+    collection.
+    See :ref:`tutorials_analysing_results` for details.
+
+``--run_metrics <file>``
+    File to store store metrics.
+    See :ref:`tutorials_analysing_results` for details.
+
+``--end_metrics <file>``
+    End metrics (i.e. when the solve process stops) will be appended to this
+    file (in csv).
+
+``--address <ip_address>``
+  Optional IP address the orchestrator will listen on.
+  If not given we try to use the primary IP address.
+
+``--port <port>``
+  Optional port the orchestrator will listen on.
+  If not given we try to use port 9000.
 
 ``<dcop_files>``
   One or several paths to the files containing the dcop. If several paths are
-  given, their content is concatenated as used a the yaml definition for the
+  given, their content is concatenated as used a the
+  :ref:`yaml definition<usage_file_formats_dcop>` for the
   DCOP.
 
 Examples
 --------
 
-Running an orchestrator for 5 seconds, to solve a graph coloring DCOP with
-``maxsum``. Computations are distributed using the ``adhoc`` algorithm::
+Running an orchestrator for 5 seconds (on default IP and port),
+to solve a graph coloring DCOP with ``maxsum``.
+Computations are distributed
+using the  ``adhoc`` algorithm::
 
   pydcop --timeout 5 orchestrator -a maxsum -d adhoc graph_coloring.yaml
 
+Running an orchestrator that collects metrics every 0.2 second and run
+the :ref:`MGM algorithm<implementation_reference_algorithms_mgm>`
+on agents for 20 cycles::
 
+  pydcop -v 3 orchestrator --algo mgm --algo_param stop_cycle:20 \\
+                           --collect_on period --period 0.2 \\
+                           --run_metrics ./orch_metrics_period.csv \\
+                           --address 192.168.1.2 --port 10000 \\
+                           graph_coloring_3agts.yaml
 """
 
 import json
 import logging
+import os
 import sys
+import threading
+import traceback
+from functools import partial
+from queue import Queue, Empty
+from threading import Thread
 
 import multiprocessing
 from importlib import import_module
@@ -131,26 +192,155 @@ def set_parser(subparsers):
     parser.add_argument('-a', '--algo',
                         choices=algorithms,
                         help='algorithm for solving the dcop')
+
     parser.add_argument('-p', '--algo_params',
-                        type=str,
-                        nargs='*',
-                        help='parameters for the algorithm , given as '
-                             'name:value. Several parameter can be given.')
+                        type=str,  action='append',
+                        help='Optional parameters for the algorithm, given as '
+                             'name:value. Use this option several times '
+                             'to set several parameters.')
 
     parser.add_argument('-d', '--distribution',
+                        default='oneagent',
                         choices=['oneagent', 'adhoc', 'ilp_fgdp'],
-                        help='algorithm for distributing the computation '
-                             'graph')
+                        help='A yaml file with the distribution or algorithm '
+                             'for distributing the computation graph, if not '
+                             'given the `oneagent` will be used (one '
+                             'computation for each agent)')
 
+    parser.add_argument('-c', '--collect_on',
+                        choices=['value_change', 'cycle_change', 'period'],
+                        default='value_change',
+                        help='When should a "new" assignment be observed')
+
+    parser.add_argument('--period', type=float,
+                        default=None,
+                        help='Period for collecting metrics. only available '
+                             'when using --collect_on period. Defaults to 1 '
+                             'second if not specified')
+
+    parser.add_argument('--run_metrics', type=str,
+                        default=None,
+                        help="Use this option to regularly store the data "
+                             "in a csv file.")
+
+    parser.add_argument('--end_metrics', type=str,
+                        default=None,
+                        help="Use this option to append the metrics of the "
+                             "end of the run to a csv file.")
+
+    parser.add_argument('--address', type=str, default=None,
+                        help="IP address the orchestrator will listen on. If "
+                             "not given we try to use the primary IP address.")
+
+    parser.add_argument('--port', type=int, default=None,
+                        help="Port the orchestrator will listen on. If "
+                             "not given we try to use port 9000.")
 
 orchestrator = None
 start_time = 0
 
+# Files for logging metrics
+columns = {
+    'cycle_change': ['cycle', 'time', 'cost', 'violation', 'msg_count',
+                     'msg_size', 'status'],
+    'value_change': ['time', 'cycle', 'cost', 'violation', 'msg_count',
+                     'msg_size', 'status'],
+    'period': ['time', 'cycle', 'cost', 'violation', 'msg_count', 'msg_size',
+               'status']
+}
 
-def run_cmd(args):
-    logger.debug('dcop command "solve" with arguments {} '.format(args))
+collect_on = None
+run_metrics = None
+end_metrics = None
+
+timeout_stopped = False
+output_file = None
+
+
+def add_csvline(file, mode, metrics):
+    data = [metrics[c] for c in columns[mode]]
+    line = ','.join([str(d) for d in data])
+
+    with open(file, mode='at', encoding='utf-8') as f:
+        f.write(line)
+        f.write('\n')
+
+
+def collect_tread(collect_queue: Queue, csv_cb):
+    while True:
+        try:
+            t, metrics = collect_queue.get()
+
+            if csv_cb is not None:
+                csv_cb(metrics)
+
+        except Empty:
+            pass
+        # FIXME : end of run ?
+
+
+def prepare_metrics_files(run, end, mode):
+    """
+    Prepare files for storing metrics, if requested.
+    Returns a cb that can be used to log metrics in the run_metrics file.
+    """
+    global run_metrics, end_metrics
+    if run is not None:
+        run_metrics = run
+        # delete run_metrics file if it exists, create intermediate
+        # directory if needed
+
+        if os.path.exists(run_metrics):
+            os.remove(run_metrics)
+        else:
+            f_dir = os.path.dirname(run_metrics)
+            if f_dir and  not os.path.exists(f_dir):
+                os.makedirs(f_dir)
+        # Add column labels in file:
+        headers = ','.join(columns[mode])
+        with open(run_metrics, 'w', encoding='utf-8') as f:
+            f.write(headers)
+            f.write('\n')
+        csv_cb = partial(add_csvline, run_metrics, mode)
+    else:
+        csv_cb = None
+
+    if end is not None:
+        end_metrics = end
+        if not os.path.exists(os.path.dirname(end_metrics)):
+            os.makedirs(os.path.dirname(end_metrics))
+        # Add column labels in file:
+        if not os.path.exists(end_metrics):
+            headers = ','.join(columns[mode])
+            with open(end_metrics, 'w', encoding='utf-8') as f:
+                f.write(headers)
+                f.write('\n')
+
+    return csv_cb
+
+
+def run_cmd(args, timer=None, timeout=None):
+    logger.debug('dcop command "orchestrator" with arguments {} '.format(args))
+
+    global collect_on, output_file
+    output_file = args.output
+    collect_on = args.collect_on
 
     dcop_yaml_files = args.dcop_files
+
+    output_file = args.output
+    collect_on = args.collect_on
+
+    period = None
+    if args.collect_on == 'period':
+        period = 1 if args.period is None else args.period
+    else:
+        if args.period is not None:
+            _error('Cannot use "period" argument when collect_on is not '
+                   '"period"')
+
+    csv_cb = prepare_metrics_files(args.run_metrics, args.end_metrics,
+                                   collect_on)
 
     if args.distribution in ['oneagent', 'adhoc', 'ilp_fgdp']:
         dist_module, algo_module, graph_module = _load_modules(
@@ -176,7 +366,6 @@ def run_cmd(args):
             communication_load=algo_module.communication_load)
     else:
         distribution = load_dist_from_file(args.distribution)
-        logger.debug('Distribution Computation graph: %s ', distribution)
 
     logger.info('Dcop distribution : {}'.format(distribution))
 
@@ -190,53 +379,72 @@ def run_cmd(args):
     # FIXME
     infinity = 10000
 
-    global orchestrator, start_time
-    port = 9000
-    comm = HttpCommunicationLayer(('127.0.0.1', port))
-    orchestrator = Orchestrator(algo, cg, distribution, comm, dcop,
-                                infinity)
+    # Setup metrics collection
+    collector_queue = Queue()
+    collect_t = Thread(target=collect_tread,
+                       args=[collector_queue, csv_cb],
+                       daemon=True)
+    collect_t.start()
 
-    start_time = time()
-    orchestrator.start()
-    orchestrator.deploy_computations()
-    orchestrator.run()
-    # orchestrator.join()
+    global orchestrator, start_time
+    port = args.port if args.port else 9000
+    addr = args.address if args.address else None
+    comm = HttpCommunicationLayer((addr, port))
+    orchestrator = Orchestrator(algo, cg, distribution, comm, dcop,
+                                infinity, collector= collector_queue,
+                                collect_moment=args.collect_on,
+                                collect_period=args.period)
+
+    try:
+        start_time = time()
+        orchestrator.start()
+        orchestrator.deploy_computations()
+        orchestrator.run(timeout=timeout)
+        if not timeout_stopped:
+            if orchestrator.status == "TIMEOUT":
+                _results('TIMEOUT')
+                sys.exit(0)
+            else:
+                _results('FINISHED')
+                sys.exit(0)
+
+    except Exception as e:
+        logger.error(e, exc_info=1)
+        orchestrator.stop_agents(5)
+        orchestrator.stop()
+        _results('ERROR')
 
 
 def on_force_exit(sig, frame):
     print('FORCE EXIT')
+    # Avoid blocking if stopping when all agents have not registered yet
+    if not orchestrator.mgt.all_registered.is_set():
+        orchestrator.mgt.all_registered.set()
     orchestrator.stop_agents(10)
     orchestrator.stop()
-    assignment, cost, duration = _results()
-
-    output = {
-        'status': 'STOPPED',
-        'assignment': assignment,
-        'costs':  cost,
-        'duration': duration
-    }
-    print(json.dumps(output, sort_keys=True, indent='  '))
-
-
-def _results():
-    sol = orchestrator.current_solution()[0]
-    assignment = {k: sol[k][0] for k in sol if sol[k]}
-    cost = orchestrator.current_global_cost()[0]
-    duration = time() - start_time
-    return assignment, cost, duration
+    _results('STOPPED')
+    sys.exit(0)
 
 
 def on_timeout():
-    orchestrator.stop_agents()
+    logger.debug('cli timeout ')
+    # Timeout should have been handled by the orchestrator, if the cli timeout
+    # has been reached, something is probably wrong : dump threads.
+    for th in threading.enumerate():
+        print(th)
+        traceback.print_stack(sys._current_frames()[th.ident])
+        print()
+
+    if orchestrator is None:
+        logger.debug("cli timeout with no orchestrator ?" )
+        return
+    global timeout_stopped
+    timeout_stopped = True
+
+    orchestrator.stop_agents(20)
     orchestrator.stop()
-    assignment, cost, duration = _results()
-    output = {
-        'status': 'TIMEOUT',
-        'assignment': assignment,
-        'costs':  cost,
-        'duration': duration
-    }
-    print(json.dumps(output, sort_keys=True, indent='  '))
+    _results('TIMEOUT')
+    sys.exit(0)
 
 
 def _load_modules(dist, algo):
@@ -263,3 +471,29 @@ def _load_modules(dist, algo):
 def _error(msg):
     print('Error: {}'.format(msg))
     sys.exit(2)
+
+
+def _results(status):
+    """
+    Outputs results and metrics on stdout and trace last metrics in csv
+    files if requested.
+
+    :param status:
+    :return:
+    """
+
+    metrics = orchestrator.end_metrics()
+    metrics['status'] = status
+
+    global end_metrics, run_metrics
+    if end_metrics is not None:
+        add_csvline(end_metrics, collect_on, metrics)
+    if run_metrics is not None:
+        add_csvline(run_metrics, collect_on, metrics)
+
+    if output_file:
+        with open(output_file, encoding='utf-8', mode='w') as fo:
+                fo.write(json.dumps(metrics, sort_keys=True, indent='  '))
+
+    print(json.dumps(metrics, sort_keys=True, indent='  '))
+

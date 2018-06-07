@@ -32,6 +32,7 @@
 import unittest
 
 import numpy as np
+import pytest
 
 import pydcop.dcop.relations
 import pydcop.utils
@@ -217,5 +218,92 @@ class FindArgOptimalTestCase(unittest.TestCase):
         self.assertIn(4, values)
         self.assertIn(5, values)
         self.assertEqual(c, 2)
+
+
+################################################################################
+
+
+def test_check_type_by_string():
+    algorithms.is_of_type_by_str(2, 'int')
+    algorithms.is_of_type_by_str(2.5, 'float')
+    algorithms.is_of_type_by_str('foo', 'str')
+
+
+def test_check_type_by_string_invalid_type():
+    assert not algorithms.is_of_type_by_str(2, "str")
+    assert not algorithms.is_of_type_by_str("2.5", 'float')
+    assert not algorithms.is_of_type_by_str(.25, 'int')
+
+
+def test_is_valid_param_value():
+    param_def = algorithms.AlgoParameterDef('p', 'str', ['a', 'b'], 'b')
+
+    assert 'b' == algorithms.check_param_value('b', param_def)
+    assert 'a' == algorithms.check_param_value('a', param_def)
+
+    with pytest.raises(ValueError):
+        algorithms.check_param_value('invalid_value', param_def)
+
+################################################################################
+
+@pytest.fixture
+def algo_param_defs():
+    yield [
+        algorithms.AlgoParameterDef('param1', 'str',
+                                    ['val1', 'val2'], 'val1'),
+        algorithms.AlgoParameterDef('param2', 'int', None, None),
+
+    ]
+
+
+def test_algo_parameters_all_defaults(algo_param_defs):
+    default_params = algorithms.prepare_algo_params({}, algo_param_defs)
+    assert 'param1' in default_params
+    assert default_params['param1'] == 'val1'
+
+    assert 'param2' in default_params
+    assert default_params['param2'] == None
+
+
+def test_algo_parameters_with_valid_str_param(algo_param_defs):
+    params = algorithms.prepare_algo_params({'param1' : 'val2'},
+                                            algo_param_defs)
+    assert 'param1' in params
+    assert params['param1'] == 'val2'
+
+def test_algo_parameters_with_valid_int_param(algo_param_defs):
+
+    params = algorithms.prepare_algo_params({'param2' : 5},
+                                            algo_param_defs)
+    assert 'param2' in params
+    assert params['param2'] == 5
+
+
+def test_algo_parameters_with_all_params(algo_param_defs):
+    params = algorithms.prepare_algo_params(
+        {'param1' : 'val2', 'param2': 10},
+        algo_param_defs
+    )
+    assert 'param1' in params
+    assert params['param1'] == 'val2'
+    assert 'param2' in params
+    assert params['param2'] == 10
+
+
+def test_algo_parameters_with_int_conversion(algo_param_defs):
+    params = algorithms.prepare_algo_params({'param2': '10'}, algo_param_defs)
+
+    assert params['param2'] == 10
+
+def test_algo_parameters_with_invalid_param(algo_param_defs):
+    with pytest.raises(ValueError):
+        algorithms.prepare_algo_params({'invalid_param' : 'foo'},
+                                       algo_param_defs)
+
+
+def test_algo_parameters_with_invalid_value(algo_param_defs):
+    with pytest.raises(ValueError):
+        algorithms.prepare_algo_params({'break_mode' : 'invalid'},
+                                       algo_param_defs)
 
 

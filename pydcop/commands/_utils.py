@@ -38,8 +38,10 @@ from importlib import import_module
 
 import sys
 from queue import Queue, Empty
+from types import FunctionType
 from typing import List
 
+from pydcop.algorithms import prepare_algo_params
 from pydcop.algorithms.objects import AlgoDef
 
 logger = logging.getLogger('pydcop')
@@ -51,11 +53,20 @@ def build_algo_def(algo_module, algo_name: str, objective,
     Build the AlgoDef, which contains the full algorithm specification (
     name, objective and parameters)
 
-    :param algo_module:
-    :param algo_name:
-    :param objective:
-    :param cli_params:
-    :return:
+    Parameters
+    ----------
+    algo_module: module object
+        the module containing the algorithm
+    algo_name: str
+        name of the algorithm
+    objective: str
+        'min' or 'max'
+    cli_params: dict
+        dict containing parameters for the algorithm
+
+    Returns
+    -------
+    algorithm definition, as an ``AlgoDef`` object.
     """
 
     # Parameters for the algorithm:
@@ -70,16 +81,38 @@ def build_algo_def(algo_module, algo_name: str, objective,
             logger.info('Using default parameters for %s', algo_name)
 
         try:
-            algo_params = algo_module.algo_params(params)
-            return AlgoDef(algo_name, objective, **algo_params)
+
+            if isinstance(algo_module.algo_params, FunctionType):
+                # FIXME: remove once all algorithms use the new param mechanism
+                # with prepare_algo_params
+                return AlgoDef(algo_name, objective,
+                               **algo_module.algo_params(params))
+            else:
+                return AlgoDef(algo_name, objective,
+                               **prepare_algo_params(params,
+                                                     algo_module.algo_params))
+
         except Exception as e:
-            _error(e)
+            if isinstance(algo_module.algo_params, list):
+                param_msgs = []
+                for param_def in algo_module.algo_params:
+                    valid_values = '' if param_def.values is None \
+                        else 'values: {}'.format(param_def.values)
+                    param_msg = "  * {} ({}) default : {}  {} ".format(
+                        param_def.name, param_def.type,
+                        param_def.default_value, valid_values)
+                    param_msgs.append(param_msg)
+                msg = str(e)
+                msg += '\nAvailable parameters for {}:\n'.format(algo_name)
+                msg += '\n'.join(param_msgs)
+                _error(msg)
+            else:
+                _error(e)
 
     else:
         if cli_params:
             _error('Algo {} does not support any parameter'.format(algo_name))
         return AlgoDef(algo_name, objective)
-
 
 
 # Files for logging metrics
@@ -108,7 +141,7 @@ def prepare_metrics_files(run, end, mode):
         elif not os.path.exists(os.path.dirname(run_metrics)):
             os.makedirs(os.path.dirname(run_metrics))
         # Add column labels in file:
-        headers = ','.join(columns[mode])
+        headers = ', '.join(columns[mode])
         with open(run_metrics, 'w', encoding='utf-8') as f:
             f.write(headers)
             f.write('\n')
@@ -131,7 +164,7 @@ def prepare_metrics_files(run, end, mode):
 
 def add_csvline(file, mode, metrics):
     data = [metrics[c] for c in columns[mode]]
-    line = ','.join([str(d) for d in data])
+    line = ', '.join([str(d) for d in data])
 
     with open(file, mode='at', encoding='utf-8') as f:
         f.write(line)
