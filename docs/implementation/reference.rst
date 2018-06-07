@@ -10,4 +10,6 @@ Reference
   reference/computations
   reference/algorithms
   reference/distributions
+  reference/dcop
+  reference/agents
 
