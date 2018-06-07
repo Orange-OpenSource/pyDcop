@@ -33,14 +33,15 @@
 DBA : Distributed Breakout Algorithm
 ------------------------------------
 
-The Distributed Breakout algorithm [Yokoo1996]_ is a local-search algorithm,
+The Distributed Breakout algorithm :cite:`Yokoo1996` is a local-search
+algorithm,
 built as a a distributed version of the Breakout algorithm for CSP
-[Morris1993]_. It is meant to solve distributed constraints satisfaction
+:cite:`Morris1993`.
+It is meant to solve distributed constraints satisfaction
 problems (and not optimization problems).
 
-See also "Distributed breakout algorithm for distributed constraint
-optimization problems - DBArelax" for DBA for optimization
-(Weixiong Zhang and Lars Wittenburg, 2003)
+See also :cite:`Wittenburg2003` on using DBA for optimization
+problems.
 
 Algorithm Parameters
 ^^^^^^^^^^^^^^^^^^^^
