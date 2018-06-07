@@ -15,10 +15,10 @@ ansible playbook for this, along with some advices.
 General principle
 -----------------
 
-In the following sections, we use the terme **controller** to name the
-computer that is used to initiate and drive the installation of pyDCOp on
-other machines, called **agent-machine** (as they will be used to run pyDCOP
-agents).
+In the following sections, we use the term **controller** to name the
+computer that is used to initiate and drive the installation of pyDCOP on
+other machines, which are called **agent-machine** (as they will be used to run
+pyDCOP agents).
 
 When provisioning a set of machines, the **controller** will
 contacts each **agent-machines** (using ssh) and make sure pyDCOP and all its
@@ -39,7 +39,7 @@ See `The official installation guide for more details <https://docs.ansible
   <http://docs.ansible.com/ansible/latest/user_guide/windows_faq
   .html#can-ansible-run-on-windows>`_
   or `with Cygwin <http://www.oznetnerd.com/installing-ansible-windows/>`_.
-  Another option is to use linux virtual machine as a controller.
+  Another option is to use a linux virtual machine as a controller.
 
 Installing without internet connection
 --------------------------------------
