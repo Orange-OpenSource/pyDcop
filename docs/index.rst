@@ -67,7 +67,7 @@ Documentation
    usage
    algorithms
    implementation
-   bibliography
+   zbibliography
 
 
 Contributing
