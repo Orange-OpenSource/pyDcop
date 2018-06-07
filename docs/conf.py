@@ -114,6 +114,9 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 
+numfig = True
+
+
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
