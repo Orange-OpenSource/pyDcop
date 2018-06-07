@@ -51,6 +51,8 @@ The kind of graph is used by algorithms like
 :ref:`MGM <implementation_reference_algorithms_mgm>`
 :ref:`DSA <implementation_reference_algorithms_dsa>`, etc.
 
+.. _concept_factor_graph:
+
 Factor graph
 ------------
 

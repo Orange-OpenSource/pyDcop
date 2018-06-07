@@ -23,7 +23,37 @@ distribution replicates this traditional hypothesis in pyDCOP
 and might be enough if you do not care about distribution issues and
 simply want to develop or benchmark classical DCOP algorithms.
 
-However, these assumptions do not hold on many real world problems.
+However, some DCOP algorithms (for example MaxSum) not only define computations
+for variable, but also for constraints.
+These computations then form a
+:ref:`factor graph <concept_factor_graph>`
+like the one on :numref:`factor_graph`:
+
+.. _factor_graph:
+.. figure:: factor_graph.png
+  :width: 50%
+  :align: center
+  :alt: factor graph
+  :figclass: align-center
+
+  Sample factor graph with 4 variables and 5 constraints
+
+In this situation, one must also assign factor-computation to agent, and
+there is no obvious mapping. :numref:`fg_dist`: is a possible distribution
+of this factor graph on 3 agents but is obvously not the only possible one.
+
+.. _fg_dist:
+.. figure:: fg_distribution.png
+  :width: 60%
+  :align: center
+  :alt: factor graph
+  :figclass: align-center
+
+  One possible distribution of the factor graph on agents
+
+
+And even with algorithm that only define computations for variables,
+the standard assumptions do not hold on many real world problems.
 Agents typically maps to physical computers or devices
 and the number of these devices is not necessarily equal
 to the number of decision variables in the DCOP.
@@ -33,7 +63,6 @@ of this particular device)
 while some other variables might simply be used to model
 an abstract concept in the problem and have no real relationship
 with physical devices.
-
 
 Finally the placement of computations on the agents has an important impact on
 the performance characteristics of the global system:
