@@ -72,7 +72,7 @@ Documentation
 Contributing
 ------------
 
-We welcome contribution, especially the implementation of DCOP algorithms 
+We welcome contributions, especially the implementation of DCOP algorithms
 (novel or well-known). Join us on  
 `GitHub <https://github.com/Orange-OpenSource/pyDcop>`_.
 
