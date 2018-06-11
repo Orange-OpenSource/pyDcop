@@ -52,7 +52,7 @@ of this factor graph on 3 agents but is obvously not the only possible one.
   One possible distribution of the factor graph on agents
 
 
-And even with algorithm that only define computations for variables,
+And even with algorithms that only define computations for variables,
 the standard assumptions do not hold on many real world problems.
 Agents typically maps to physical computers or devices
 and the number of these devices is not necessarily equal

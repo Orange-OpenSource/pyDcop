@@ -10,10 +10,9 @@ When solving a DCOP, The first step performed by pyDCOP is to build a graph
 of computations.
 This **computation graph**  must not be confused with the constraints graph ;
 while they may sometime be similar.
-The constraints graph is stricly a graph representation of the
+The constraints graph is strictly a graph representation of the
 Constraints Optimization Problem (COP) while the **computation graph**
 depends on the method (aka algorithm) used to solve this problem.
-
 
 A computation graph is a graph
 where vertices represent **computations**
