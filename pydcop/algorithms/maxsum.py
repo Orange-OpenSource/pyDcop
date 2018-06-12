@@ -609,7 +609,7 @@ class VariableAlgo(VariableComputation):
         # with. { factor : {domain value : cost }}
         self._costs = {}
 
-        self.logger = logging.getLogger('pydcop.maxsum.' + variable.name)
+        self.logger = logging.getLogger('pydcop.algo.maxsum.' + variable.name)
         self.cycle_logger = logging.getLogger('cycle')
         self._is_stable = False
         self._prev_messages = defaultdict(lambda: (None, 0))
