@@ -372,7 +372,7 @@ def run_cmd(args, timer=None, timeout=None):
     csv_cb = prepare_metrics_files(args.run_metrics, args.end_metrics,
                                    collect_on)
 
-    if args.distribution in ['oneagent', 'adhoc', 'ilp_fgdp']:
+    if args.distribution in ['oneagent', 'adhoc', 'ilp_fgdp', 'heur_comhost']:
         dist_module, algo_module, graph_module = _load_modules(args.distribution,
                                                                args.algo)
     else:

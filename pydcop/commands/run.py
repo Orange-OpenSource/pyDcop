@@ -300,7 +300,7 @@ def run_cmd(args, timer=None, timeout=None):
     dcop = load_dcop_from_file(args.dcop_files)
 
 
-    if args.distribution in ['oneagent', 'adhoc', 'ilp_fgdp']:
+    if args.distribution in ['oneagent', 'adhoc', 'ilp_fgdp', 'heur_comhost']:
         dist_module, algo_module, graph_module = _load_modules(args.distribution,
                                                                args.algo)
     else:

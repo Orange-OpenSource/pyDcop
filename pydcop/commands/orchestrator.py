@@ -201,7 +201,8 @@ def set_parser(subparsers):
 
     parser.add_argument('-d', '--distribution',
                         default='oneagent',
-                        choices=['oneagent', 'adhoc', 'ilp_fgdp'],
+                        choices=['oneagent', 'adhoc', 'ilp_fgdp',
+                                 'heur_comhost'],
                         help='A yaml file with the distribution or algorithm '
                              'for distributing the computation graph, if not '
                              'given the `oneagent` will be used (one '
