@@ -195,8 +195,8 @@ def algo_params(params: Dict[str, str]):
     """
     maxsum_params = {
         'infinity': 10000,
-        'stability': 0.1
-        # TODO 'damping': 0
+        'stability': 0.1,
+        'damping': 0
     }
     if 'infinity' in params:
         try:
@@ -214,7 +214,13 @@ def algo_params(params: Dict[str, str]):
         except:
             raise ValueError("'stability' parameter for MaxSum a float <1 ")
 
-    remaining_params = set(params) - {'infinity', 'stability'}
+    if 'damping' in params:
+        try:
+            maxsum_params['damping'] = float(params['damping'])
+        except:
+            raise TypeError("'damping' parameter for Max-Sum must be an int")
+
+    remaining_params = set(params) - {'infinity', 'stability', 'damping'}
     if remaining_params:
         raise ValueError('Unknown parameter(s) for Max-Sum : {}'
                          .format(remaining_params))
@@ -614,6 +620,9 @@ class VariableAlgo(VariableComputation):
         self._is_stable = False
         self._prev_messages = defaultdict(lambda: (None, 0))
 
+        self.damping = comp_def.algo.params['damping']
+        self.logger.info('Running maxsum with damping %s', self.damping)
+
     @property
     def domain(self):
         # Return a copy of the domain to make sure nobody modifies it.
@@ -865,13 +874,26 @@ class VariableAlgo(VariableComputation):
         # more cycles to stabilize
         # return {d: c for d, c in msg_costs.items() if c != INFINITY}
 
+
+
         # Normalize costs with the average cost, to avoid exploding costs
         avg_cost = sum_cost/len(msg_costs)
         normalized_msg_costs = {d: c-avg_cost
                                 for d, c in msg_costs.items()
                                 if c != INFINITY}
+        msg_costs = normalized_msg_costs
 
-        return normalized_msg_costs
+        prev_costs, count = self._prev_messages[factor_name]
+        damped_costs = {}
+        if prev_costs is not None:
+            for d, c in msg_costs.items():
+                damped_costs[d] = self.damping * prev_costs[d] \
+                                  + (1-self.damping) * c
+            self.logger.warning('damping : replace %s with %s',
+                                msg_costs, damped_costs)
+            msg_costs = damped_costs
+
+        return msg_costs
 
     def __str__(self):
         return 'MaxsumVariable(' + self._v.name + ')'
