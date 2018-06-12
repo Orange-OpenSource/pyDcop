@@ -406,7 +406,7 @@ class UCSReplication(MessagePassingComputation):
             self.logger.info('Request for replications of all computations %s -'
                              ' %s', computations, k_target)
             computations = [c for c in self.computations]
-            
+
         if not computations:
             self.logger.info('No computation to replicate for %s ', self.name)
             self.replication_done(dict(deepcopy(self._replica_hosts)))

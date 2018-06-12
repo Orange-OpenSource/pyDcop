@@ -190,7 +190,8 @@ def run_local_thread_dcop(algo: AlgoDef,
     comm = InProcessCommunicationLayer()
     orchestrator = Orchestrator(algo, cg, distribution, comm, dcop, infinity,
                                 collector=collector,
-                                collect_moment=collect_moment)
+                                collect_moment=collect_moment,
+                                collect_period=period)
     orchestrator.start()
 
     # Create and start all agents.
@@ -223,7 +224,8 @@ def run_local_process_dcop(algo: AlgoDef, cg: ComputationGraph,
     comm = HttpCommunicationLayer(('127.0.0.1', port))
     orchestrator = Orchestrator(algo, cg, distribution, comm, dcop, infinity,
                                 collector=collector,
-                                collect_moment=collect_moment)
+                                collect_moment=collect_moment,
+                                collect_period=period)
     orchestrator.start()
 
     # Create and start all agents.

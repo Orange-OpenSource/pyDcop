@@ -56,6 +56,7 @@ from pydcop.commands import run
 cli_timer = None
 TIMEOUT_SLACK = 40
 
+
 def main():
 
     parser = argparse.ArgumentParser(description='pydcop')

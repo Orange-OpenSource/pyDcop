@@ -248,7 +248,6 @@ class Orchestrator(object):
         automatically waits until agents are ready (i.e. computations have
         been deployed).
 
-
         Parameters
         ----------
         scenario: Scenario
@@ -317,7 +316,7 @@ class Orchestrator(object):
 
         Notes
         -----
-        When calling `wait_ready` after `run()` with a tiemou, you may be
+        When calling `wait_ready` after `run()` with a timeout, you may be
         blocked for a longer time than the timeout, as orchestrator also wait
         until all agents have stopped.
 

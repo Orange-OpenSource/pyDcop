@@ -723,6 +723,8 @@ class Agent(object):
         cb: Callable
             a callback with no argument
         """
+        assert period != None
+        assert cb != None
         self._periodic_cb = cb
         self._period = period
         return cb
@@ -858,7 +860,8 @@ class ResilientAgent(Agent):
             # replicate, by the ReplicateComputationsMessage
             self._replication_level = None
 
-            # register notification for when all computations have been replicated.
+            # Register notification for when all computations have been
+            # replicated.
             self.replication_comp.replication_done = notify_wrap(
                 self.replication_comp.replication_done,
                 self._on_replication_done)
