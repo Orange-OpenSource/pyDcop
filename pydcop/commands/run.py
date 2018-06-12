@@ -183,7 +183,8 @@ end_metrics = None
 timeout_stopped = False
 output_file = None
 
-def run_cmd(args, timer, timeout):
+
+def run_cmd(args, timer=None, timeout=None):
     logger.debug('dcop command "run" with arguments {}'.format(args))
 
     global INFINITY, collect_on, output_file
@@ -232,6 +233,7 @@ def run_cmd(args, timer, timeout):
     else:
         distribution = load_dist_from_file(args.distribution)
     logger.debug('Distribution Computation graph: %s ', distribution)
+
     algo = build_algo_def(algo_module, args.algo, dcop.objective,
                          args.algo_params)
 
@@ -271,8 +273,17 @@ def run_cmd(args, timer, timeout):
         orchestrator.deploy_computations()
         orchestrator.start_replication(args.ktarget)
         if orchestrator.wait_ready():
-            orchestrator.run(scenario)
-        # orchestrator.run(scenario) # FIXME
+            orchestrator.run(scenario, timeout=timeout)
+            if timer:
+                timer.cancel()
+            if not timeout_stopped:
+                if orchestrator.status == "TIMEOUT":
+                    _results('TIMEOUT')
+                    sys.exit(0)
+                elif orchestrator.status != 'STOPPED':
+                    _results('FINISHED')
+                    sys.exit(0)
+
     except Exception as e:
         logger.error(e, exc_info=1)
         print(e)
@@ -316,11 +327,23 @@ def _results(status):
 def on_timeout():
     if orchestrator is None:
         return
+    # Timeout should have been handled by the orchestrator, if the cli timeout
+    # has been reached, something is probably wrong : dump threads.
+    for th in threading.enumerate():
+        print(th)
+        traceback.print_stack(sys._current_frames()[th.ident])
+        print()
+    if orchestrator is None:
+        logger.debug("cli timeout with no orchestrator ?" )
+        return
+    global timeout_stopped
+    timeout_stopped = True
+
     # Stopping agents can be rather long, we need a big timeout !
     orchestrator.stop_agents(20)
     orchestrator.stop()
     _results('TIMEOUT')
-
+    sys.exit(0)
 
 def on_force_exit(sig, frame):
     if orchestrator is None:
@@ -329,7 +352,7 @@ def on_force_exit(sig, frame):
     orchestrator.stop_agents(5)
     orchestrator.stop()
     _results('STOPPED')
-    for th in threading.enumerate():
-        print(th)
-        traceback.print_stack(sys._current_frames()[th.ident])
-        print()
+    # for th in threading.enumerate():
+    #     print(th)
+    #     traceback.print_stack(sys._current_frames()[th.ident])
+    #     print()
