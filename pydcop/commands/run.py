@@ -43,22 +43,116 @@ Synopsis
 
 ::
 
-  pydcop run
+  pydcop run --algo <algo> [--algo_params <params>]
+               [--distribution <distribution>]
+               [--replication_method <replication method>]
+               [--ktarget <resiliency_level>]
+               [--mode <mode>]
+               [--collect_on <collect_mode>]
+               [--period <p>]
+               [--run_metrics <file>]
+               [--end_metrics <file>]
+               --scenario <scenario_file>
+               <dcop_files>
 
 Description
 -----------
-the run command run a dcop, it is generally used for dynamic dcop where
+The ``run`` command run a dcop, it is generally used for dynamic dcop where
 various events can occur during the life of the system.
+
+
+Most options are basically the same than the options of the
+:ref:`pydcop_commands_solve` command.
+The main differences are the optional options for resilent DCOP :
+``--ktarget`` and ``--replication method`` and the scenario that contains
+events.
+See :ref:`usage_file_formats_scenario` for information on the scenario file
+format.
+
+
+When using the ``run``  command, you should use the global
+``--timeout`` option.
+Note that the ``--timeout`` is used as a timeout for the solve process only.
+Bootstrapping the system and gathering metrics take additional time,
+which is not accounted for in the timeout.
+This means that the run command may take more time to return
+than the time set with the global ``--timeout`` option.
+
+You can always stop the process manually with ``CTRL+C``.
+Here again, the system may take a few seconds to stop.
+
+See Also
+--------
+
+**Commands:** :ref:`pydcop_commands_solve`, :ref:`pydcop_commands_distribute`
+
+**Tutorials:** :ref:`tutorials_analysing_results` and
+:ref:`tutorials_dynamic_dcops`
 
 
 Options
 -------
 
-TODO
+``--algo <dcop_algorithm>`` / ``-a <dcop_algorithm>``
+  Name of the dcop algorithm, e.g. 'maxsum', 'dpop', 'dsa', etc.
+
+``--algo_params <params>`` / ``-p <params>``
+  Optional parameter for the DCOP algorithm, given as string
+  ``name:value``.
+  This option may be used multiple times to set several parameters.
+  Available parameters depend on the algorithm,
+  check :ref:`algorithms documentation<implementation_reference_algorithms>`.
+
+``--distribution <distribution>`` / ``-d <distribution>``
+  Either a :ref:`distribution algorithm<implementation_reference_distributions>`
+  (``oneagent``, ``adhoc``, ``ilp_fgdp``, etc.) or
+  the path to a yaml file containing the distribution
+  (see :ref:`yaml format<usage_file_formats_dist>`).
+  If not given, ``oneagent`` is used.
+
+``--mode <mode>`` / ``-m``
+    Indicated if agents must be run as threads (default) or processes.
+    either ``thread`` or ``process``
+
+``--collect_on <collect_mode>`` / ``-c``
+    Metric collection mode, one of ``value_change``, ``cycle_change``,
+    ``period``.
+    See :ref:`tutorials_analysing_results` for details.
+
+``--period <p>``
+    When using ``--collect_on period``, the period in second for metrics
+    collection.
+    See :ref:`tutorials_analysing_results` for details.
+
+``--run_metrics <file>``
+    File to store store metrics.
+    See :ref:`tutorials_analysing_results` for details.
+
+``--replication_method <replication method>``
+    Optional replication method. Defaults to ``replication method``, which is
+    the only replication method currently implemented in pyDCOP.
+
+``--ktarget <resiliency_level>``
+    Optional replication level (aka number of replicas for each computation).
+    Defaults to 3
+
+``--scenario <scenario_files>``
+  Path to the files containing the scenario.
+  :ref:`yaml definition<usage_file_formats_scenario>` for the format.
+
+``<dcop_files>``
+  One or several paths to the files containing the dcop. If several paths are
+  given, their content is concatenated as used a the
+  :ref:`yaml definition<usage_file_formats_dcop>` for the
+  DCOP.
+
 
 
 Examples
 --------
+
+Run the DCOP from the file ``dcop.yaml``, using the initial ditribution from
+``dist.yaml``
 
 ::
     pydcop -v 2 run --algo dsa  \
@@ -69,8 +163,8 @@ Examples
                     --replication dist_ucs_hostingcosts \
                     --collect_on period
                     --period 1
-                    --run_metrics  run_dcop.csv
-                    --end_metrics  several_runs.csv
+                    --run_metrics run_dcop.csv
+                    dcop.yaml
 
 """
 import json
