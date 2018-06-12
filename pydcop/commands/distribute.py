@@ -195,12 +195,14 @@ def run_cmd(args):
         algo_module = load_algo_module(args.algo)
 
     if args.graph is not None:
+        graph_type = args.graph
         graph_module = load_graph_module(args.graph)
         # Check that the graph model and the algorithm are compatible:
         if algo_module is not None and algo_module.GRAPH_TYPE != args.graph:
             _error('Incompatible graph model and algorithm')
     elif algo_module is not None:
         graph_module = load_graph_module(algo_module.GRAPH_TYPE)
+        graph_type = algo_module.GRAPH_TYPE
     else:
         _error('You must pass at leat --graph or --algo option')
 
@@ -239,7 +241,7 @@ def run_cmd(args):
             'inputs': {
                 'dist_algo': args.distribution,
                 'dcop': args.dcop_files,
-                'graph': args.graph,
+                'graph': graph_type,
                 'algo': args.algo,
             },
             'distribution': dist,
