@@ -441,7 +441,7 @@ def run_cmd(args, timer=None, timeout=None):
             if orchestrator.status == "TIMEOUT":
                 _results('TIMEOUT')
                 sys.exit(0)
-            else:
+            elif orchestrator.status != 'STOPPED':
                 _results('FINISHED')
                 sys.exit(0)
 
@@ -480,6 +480,7 @@ def on_timeout():
 def on_force_exit(sig, frame):
     if orchestrator is None:
         return
+    orchestrator.status = 'STOPPED'
     orchestrator.stop_agents(5)
     orchestrator.stop()
     _results('STOPPED')

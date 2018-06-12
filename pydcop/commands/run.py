@@ -309,6 +309,7 @@ def on_timeout():
 def on_force_exit(sig, frame):
     if orchestrator is None:
         return
+    orchestrator.status = 'STOPPED'
     orchestrator.stop_agents(5)
     orchestrator.stop()
     _results('STOPPED')
