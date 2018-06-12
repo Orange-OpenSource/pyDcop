@@ -40,6 +40,8 @@ a quick description of the format:
   set of agents.
 
 
+.. _usage_file_formats_distribution:
+
 Distribution file format
 ------------------------
 
@@ -66,6 +68,8 @@ See this file for an sample distribution file :
   automatically generated for the DCOP using the requested method.
 
 
+.. _usage_file_formats_replication:
+
 Replication file format
 -----------------------
 
@@ -77,6 +81,9 @@ given as a yaml file.
 See this file for an replica distribution file :
 :download:`replica_dist_format.yml<file_formats/replica_dist_format.yml>`.
 
+
+
+.. _usage_file_formats_scenario:
 
 Scenario file format
 --------------------
