@@ -151,19 +151,15 @@ Options
 Examples
 --------
 
-Run the DCOP from the file ``dcop.yaml``, using the initial ditribution from
-``dist.yaml``
+Runnig the DCOP from the file ``dcop.yaml``, using the initial ditribution from
+``dist.yaml`` ::
 
-::
-    pydcop -v 2 run --algo dsa  \
-                    --algo_params variant:B \
-                    --distribution  dist.yaml \
-                    --replica_dist  replica_dist.yaml \
-                    --scenario scenario.yaml \
-                    --replication dist_ucs_hostingcosts \
-                    --collect_on period
-                    --period 1
-                    --run_metrics run_dcop.csv
+    pydcop -v 2 run --algo dsa  \\
+                    --distribution dist.yaml \\
+                    --scenario scenario.yaml \\
+                    --collect_on period \\
+                    --period 1 \\
+                    --run_metrics run_dcop.csv \\
                     dcop.yaml
 
 """
