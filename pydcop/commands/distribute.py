@@ -43,7 +43,7 @@ Synopsis
 --------
 ::
 
-    pydcop distribute --dist <distribution_method>
+    pydcop distribute --distribution <distribution_method>
                       [--graph <graph_model>]
                       [--algo <dcop_algorithm>] <dcop-files>
 
@@ -69,7 +69,7 @@ See Also
 Options
 -------
 
-``--dist <distribution_method>`` / ``-d <distribution_method>``
+``--distribution <distribution_method>`` / ``-d <distribution_method>``
   The distribution algorithm (``oneagent``, ``adhoc``, ``ilp_fgdp``, etc.,
   see :ref:`concepts_distribution`).
 
@@ -165,7 +165,7 @@ def set_parser(subparsers):
                                  'constraints_hypergraph'],
                         help='graphical model for dcop computations')
 
-    parser.add_argument('-d', '--dist',
+    parser.add_argument('-d', '--distribution',
                         choices=['oneagent', 'adhoc', 'ilp_fgdp',
                                  'ilp_compref', 'heur_comhost'],
                         required=True,
@@ -188,7 +188,7 @@ def run_cmd(args):
     logger.info('loading dcop from {}'.format(dcop_yaml_files))
     dcop = load_dcop_from_file(dcop_yaml_files)
 
-    dist_module = load_distribution_module(args.dist)
+    dist_module = load_distribution_module(args.distribution)
 
     algo_module, graph_module = None, None
     if args.algo is not None:
@@ -237,7 +237,7 @@ def run_cmd(args):
 
         result = {
             'inputs': {
-                'dist_algo': args.dist,
+                'dist_algo': args.distribution,
                 'dcop': args.dcop_files,
                 'graph': args.graph,
                 'algo': args.algo,
