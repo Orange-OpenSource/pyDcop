@@ -135,6 +135,7 @@ Options
   Either a :ref:`distribution algorithm<implementation_reference_distributions>`
   (``oneagent``, ``adhoc``, ``ilp_fgdp``, etc.) or
   the path to a yaml file containing the distribution.
+  (see :ref:`yaml format<usage_file_formats_dist>`.)
   If not given, ``oneagent`` is used.
 
 ``--mode <mode>`` / ``-m``
