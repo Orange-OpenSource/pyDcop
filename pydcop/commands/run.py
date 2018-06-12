@@ -206,14 +206,13 @@ def run_cmd(args, timer, timeout):
     logger.info('loading dcop from {}'.format(args.dcop_files))
     dcop = load_dcop_from_file(args.dcop_files)
 
-    logger.info('Loading distribution from {}'.format(args.distribution))
-    distribution = load_dist_from_file(args.distribution)
 
-    # FIXME: load replica dist from file and pass to orchestrator
-    # logger.info('Loading replica distribution from {}'.format(
-    #     args.distribution))
-    # replica_dist = load_replica_dist_from_file(args.replica_dist)
-    # logger.info('Dcop distribution : %s', replica_dist)
+    if args.distribution in ['oneagent', 'adhoc', 'ilp_fgdp']:
+        dist_module, algo_module, graph_module = _load_modules(args.distribution,
+                                                               args.algo)
+    else:
+        dist_module, algo_module, graph_module = _load_modules(None,
+                                                               args.algo)
 
     logger.info('loading scenario from {}'.format(args.scenario))
     scenario = load_scenario_from_file(args.scenario)
@@ -221,6 +220,16 @@ def run_cmd(args, timer, timeout):
     logger.info('Building computation graph ')
     cg = graph_module.build_computation_graph(dcop)
 
+    logger.info('Distributing computation graph ')
+    if dist_module is not None:
+        distribution = dist_module.\
+            distribute(cg, dcop.agents.values(),
+                       hints=dcop.dist_hints,
+                       computation_memory=algo_module.computation_memory,
+                       communication_load=algo_module.communication_load)
+    else:
+        distribution = load_dist_from_file(args.distribution)
+    logger.debug('Distribution Computation graph: %s ', distribution)
     algo = build_algo_def(algo_module, args.algo, dcop.objective,
                          args.algo_params)
 
