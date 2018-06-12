@@ -1,0 +1,44 @@
+
+# In case the scenario was generated automatically, the parameters used for
+# generation
+inputs:
+  origin: hand-made
+
+# Ordered list of events and delays.
+# The scenario should always start with a delay, although that is not
+# mandatory.
+events:
+
+# The first delay only start once initial replication is finished, does not need to be very long
+  - id: w1
+    delay: 30
+
+# An event is a list of actions that happens simultaneously:
+  - id: e1
+    actions:
+      - type: remove_agent
+        agent: a008
+        agent: a010
+
+  - id: w2
+    delay: 10
+
+  - id: e2
+    actions:
+      - type: remove_agent
+        agent: a012
+        agent: a006
+
+  - id: w3
+    delay: 10
+ 
+  - id: e3
+    actions:
+      - type: remove_agent
+        agent: a002
+        agent: a001
+        
+  - id: w5
+    delay: 20
+    
+ 
