@@ -118,12 +118,11 @@ def build_algo_def(algo_module, algo_name: str, objective,
 # Files for logging metrics
 columns = {
     'cycle_change': ['cycle', 'time', 'cost', 'violation', 'msg_count',
-                     'msg_size',
-                     'active_ratio', 'status'],
+                     'msg_size', 'status'],
     'value_change': ['time', 'cycle', 'cost', 'violation', 'msg_count',
-                     'msg_size', 'active_ratio', 'status'],
+                     'msg_size', 'status'],
     'period': ['time', 'cycle', 'cost', 'violation', 'msg_count', 'msg_size',
-               'active_ratio', 'status']
+               'status']
 }
 
 def prepare_metrics_files(run, end, mode):
@@ -138,8 +137,10 @@ def prepare_metrics_files(run, end, mode):
         # directory if needed
         if os.path.exists(run_metrics):
             os.remove(run_metrics)
-        elif not os.path.exists(os.path.dirname(run_metrics)):
-            os.makedirs(os.path.dirname(run_metrics))
+        else:
+            f_dir = os.path.dirname(run_metrics)
+            if f_dir and not os.path.exists(f_dir):
+                os.makedirs(f_dir)
         # Add column labels in file:
         headers = ', '.join(columns[mode])
         with open(run_metrics, 'w', encoding='utf-8') as f:
