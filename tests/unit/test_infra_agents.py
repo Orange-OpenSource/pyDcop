@@ -286,7 +286,8 @@ def test_pause_several_computations(agent):
 def test_periodic_action(agent):
     cb = agent.set_periodic_action(0.1, MagicMock())
     agent.start()
-    sleep(0.55)
-    assert len(list(cb.mock_calls)) == 5
+    sleep(0.25)
+    # Depending on the start instant, the cb might be called 2 or 3 times:
+    assert 2 <=len(list(cb.mock_calls)) <= 3
 
 
