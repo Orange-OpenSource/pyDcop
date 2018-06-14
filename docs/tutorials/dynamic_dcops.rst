@@ -84,11 +84,11 @@ Running the dynamic DCOP
 
 We can now run our dynamic DCOP using the following command::
 
-  pydcop -t 120 --log log.conf run
-         --algo maxsum --algo_params damping:0.9
-         --collect_on value_change --run_metric metrics_value_maxsum.csv
-         --distribution heur_comhost
-         --scenario scenario_2.yaml
+  pydcop -t 120 --log log.conf run \
+         --algo maxsum --algo_params damping:0.9 \
+         --collect_on value_change --run_metric metrics_value_maxsum.csv \
+         --distribution heur_comhost \
+         --scenario scenario_2.yaml \
          graph_coloring_20.yaml
 
 When running this command, the following steps are performed :

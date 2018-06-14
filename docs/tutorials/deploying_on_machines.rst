@@ -83,7 +83,7 @@ For easier setup, we reduces the agents number to 3 in this file :
 
 First launch the orchestrator on a machine::
 
-  pydcop -v 3 orchestrator --algo mgm --algo_param stop_cycle:20 \\
+  pydcop -v 3 orchestrator --algo mgm --algo_param stop_cycle:20 \
                            graph_coloring_3agts.yaml
 
 You must check in the logs the ip address and port the orchestrator is
