@@ -60,6 +60,22 @@ Other actions could be:
 Currently pyDCOP has a partial implementation for these kinds of events,
 which are not yet available through the command line interface.
 
+Also, pyDCOP implementation *simulates* dynamic DCOPs,
+which allows evaluating algorithms (for resilient DCOP for example) but does
+entirely support a real dynamic behavior
+where events happen in the environment
+and are *sensed* at agent level.
+
+The consequence it that removing an agent can only be done through a scenario:
+if you manually remove an agent from the system
+(by stopping it's ``pydcop agent`` command)
+the computations will not be migrated and the system will malfunction.
+Supporting removal like this would require a distributed *discovery mechanism*,
+with *keep alive* messages, in order to be able to detect when an agent
+is not available.
+This mechanism is not (yet) implemented in pyDCOP and all events are injected
+through the orchestrator.
+
 
 Resiliency and replication
 --------------------------
