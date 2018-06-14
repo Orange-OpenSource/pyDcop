@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-data = np.genfromtxt('metrics_value_maxsm.csv', delimiter=',', 
+data = np.genfromtxt('metrics_value_maxsum.csv', delimiter=',', 
                      names=['t', 'cycle', 'cost', 'violation' , 
                             'msg_count', 'msg_size', 'status'])
 
