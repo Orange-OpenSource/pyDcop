@@ -89,9 +89,11 @@ controller::
 Note: the `devpi` server must be started every time we need to need to perform
 a deployment. Once finished you may stop it::
 
-  devpi-server --start --init --host=0.0.0.0
+  devpi-server --start --host=0.0.0.0
   ...
   devpi-server --stop
+
+You can check that devpi is online : http://127.0.0.1:3141/
 
 
 Agent-machines
@@ -101,7 +103,11 @@ You can use any computer as an agent-machine, however we recommend using
 linux-based machines (Macs should work and windows can work too, but this
 guide might require some tweaking).
 The main requirement for ansible is that your agent-machine must have an ssh
-server.
+server. 
+The command ``sudo`` must be available and your user must be able to use 
+(i.e. be in the sudoer list, 
+simply adding it to the sudo group usually does the trick
+``adduser dcop sudo``)
 
 As we generally do not have lots of machines available, agents-machines
 are generally implemented using Virtual Machines (VM) or cheap single-board
@@ -168,8 +174,12 @@ Once you have properly configured your host file, you can simply run
 ansible-playbook to apply the operations on all your agent-machines.
 The playbook is in ``pyDcop/provisioning/ansible/``::
 
-    ansible-playbook -i hosts-conf.yaml pydcop-playbook.yml
+    ansible-playbook --inventory hosts-conf.yaml pydcop-playbook.yml
 
 If the process fails on some machines, you can safely restart it as ansible
 keeps track of the progress.
 
+You can also run the playbook on a subset of the hosts defined in your 
+configuration file, by using the ``--limit`` option:
+
+    ansible-playbook --inventory hosts-conf.yaml --limit a2 pydcop-playbook.yml
