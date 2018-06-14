@@ -13,6 +13,6 @@ API.
    usage/provisioning
 
 
-See the :ref:`tutorials<_tutorials>` for an introduction to the most common
+See the :ref:`tutorials<tutorials>` for an introduction to the most common
 use-cases and commands.
 
