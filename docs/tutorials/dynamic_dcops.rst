@@ -5,30 +5,31 @@
 Dynamic DCOPs
 =============
 
-All the DCOPs we have seen in previous tutorial are *static DCOP* :
+All the DCOPs we have seen in previous tutorial are *static DCOPs* :
 the problem definition (variables and constraints)
-and the set of agents are supposed to be stable during the solve process.
+and the set of agents are supposed to be stable during the solving process.
 
 However, as for most distributed systems,
-DCOP are often used on problems where the environment is dynamic in nature.
-Agents may enter of leave the system at any time,
+DCOPs are often used on problems where the environment is dynamic in nature.
+Agents may enter or leave the system at any time,
 the problem itself may evolve *while* it is been worked on,
 and the system needs to adapt to these changes.
 We call such problems **dynamic DCOP**
-(see. :ref:`concepts_resilient_dcop`)
+(see. :ref:`concepts_resilient_dcop`).
 
 The :ref:`solve<pydcop_commands_solve>` command deals with static DCOP,
 the :ref:`run<pydcop_commands_run>` command supports running **dynamic DCOP**.
 
 
-DCOP and Scenario
+DCOP and scenario
 -----------------
 
 Running a dynamic DCOP requires injecting events in the system,
 otherwise it would be the exact same thing as running a static DCOP
 using the :ref:`solve<pydcop_commands_solve>` command.
 
-pyDCOP defines the notion of a scenario, which is an ordered collection of
+In order to run and evaluate DCOP solution methods in dynamic environments,
+pyDCOP defines the notion of **scenario**, which is an ordered collection of
 events that are injected in the system while it is running.
 Scenario can be :ref:`written in yaml<usage_file_formats_scenario>`.
 Each event in the scenario is either a **delay**,
@@ -48,10 +49,10 @@ the agent a008 is removed after a 30 seconds delay::
 
 
 Removing an agent is the only action supported at the moment
-(but that should change soon !) .
+(but that should change soon!) .
 Other actions could be:
 
-* changing a  constraint value table (the cost of the constraint for a given
+* changing a constraint value table (the cost of the constraint for a given
   assignment)
 * modifying the scope and arity of a constraint
 * changing the value of a *read-only* variable
@@ -72,7 +73,7 @@ when injecting ``remove_agent`` events, and the system would stop working
 properly.
 The resiliency level and replication method can be selected
 when using the :ref:`run<pydcop_commands_run>`  command,
-but for now, you don't need to bother with these as sane default values are
+but for now, you don't need to bother with these as safe default values are
 provided.
 
 For more information on resiliency, replication and reparation, see
@@ -84,11 +85,11 @@ Running the dynamic DCOP
 
 We can now run our dynamic DCOP using the following command::
 
-  pydcop -t 120 --log log.conf run
-         --algo maxsum --algo_params damping:0.9
-         --collect_on value_change --run_metric metrics_value_maxsum.csv
-         --distribution heur_comhost
-         --scenario scenario_2.yaml
+  pydcop -t 120 --log log.conf run \
+         --algo maxsum --algo_params damping:0.9 \
+         --collect_on value_change --run_metric metrics_value_maxsum.csv \
+         --distribution heur_comhost \
+         --scenario scenario_2.yaml \
          graph_coloring_20.yaml
 
 When running this command, the following steps are performed :
@@ -117,7 +118,7 @@ You can try it on your computer using the following files:
   used when computing the distribution
 * scenario: :download:`scenario_2.yaml<dynamic_dcop_res/scenario_2.yaml>`
   this scenario contains 3 events, where
-* log configuration file, :download:`log.conf<dynamic_dcop_res/log.conf>`
+* log configuration file: :download:`log.conf<dynamic_dcop_res/log.conf>`
 
 Results
 -------

@@ -35,14 +35,16 @@ In any case, the orchestrator never participates in the coordination process,
 which stays fully decentralised.
 
 The :ref:`orchestrator<pydcop_commands_orchestrator>` command
-looks very much like the solve :ref:`solve command<pydcop_commands_solve>` ;
+looks very much like the :ref:`solve command<pydcop_commands_solve>` ;
 it takes a DCOP yaml file as input and
 supports the same ``--algo``, ``--ditribution``
 options.
-The main difference is that the orchestrator command only launch an orchestator,
+The main difference is that the orchestrator command only launches an orchestrator,
 which then waits for agents to enter the system.
 The DCOP algorithm will only be started
-once all required agents have been started::
+once all required agents have been started.
+
+For example, using :download:`this graph coloring problem definition file<graph_coloring_3agts.yaml>`, you can start an orchestrator::
 
   pydcop -v 3 orchestrator --algo mgm --algo_param stop_cycle:20 \
                            graph_coloring_3agts.yaml
@@ -59,8 +61,8 @@ than with the :ref:`solve command<pydcop_commands_solve>` command.
 Agents
 ^^^^^^
 
-The :ref:`agent<pydcop_commands_agent>` command launch an agent on the local
-machines
+The :ref:`agent<pydcop_commands_agent>` command launches an agent on the local
+machine
 (actually it can also launch several agents,
 see the :ref:`detailed command documentation<pydcop_commands_agent>`).
 Initially, this agent does not know anything about the DCOP (variables,
@@ -83,15 +85,15 @@ For easier setup, we reduces the agents number to 3 in this file :
 
 First launch the orchestrator on a machine::
 
-  pydcop -v 3 orchestrator --algo mgm --algo_param stop_cycle:20 \\
+  pydcop -v 3 orchestrator --algo mgm --algo_param stop_cycle:20 \
                            graph_coloring_3agts.yaml
 
 You must check in the logs the ip address and port the orchestrator is
 listening on, or you can set it using ``--address`` and ``--port``
 
-Now launch on 5 different machines (or virtual machines) the following
-commands to run 5 agents that all use the orchestrator started before
-(make sure you give them the right IP address and port !)::
+Now launch on 3 different machines (or virtual machines) the following
+commands to run 3 agents that all use the orchestrator started before
+(make sure you give them the right IP address and port!)::
 
   # Machine 1 runs agent a1
   pydcop -v 3 agent -n a1 -p 9001 --orchestrator 192.168.1.10:9000

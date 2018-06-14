@@ -32,8 +32,8 @@ settings of your problem.
 In this tutorial, we will present one way of modelling a target tracking
 problem as a DCOP.
 
-Target tracking
----------------
+Example: Target tracking problem
+--------------------------------
 
 Detecting and tracking mobile objects is a problem with many real applications
 like surveillance and robot navigation, for example.
@@ -42,7 +42,7 @@ as possible.
 
 The system is made of several sensor scattered in space.
 Each sensor, for example a small Doppler effect sensor,
-can only scan a fixed radius around it-self at any given time ;
+can only scan a fixed radius around itself at any given time;
 it has to select with area it operates on.
 
 In an open environment,
@@ -67,8 +67,8 @@ To achieve this goal, sensors can act on several parameters:
 * selecting when to switch on and off
 
 
-DCOP model
-----------
+Example: Target tracking DCOP model
+-----------------------------------
 
 Each sensor is controlled by one agent,
 which decides the sector the sensor is scanning.
@@ -79,7 +79,7 @@ Let :math:`S = \{ S_1, ... S_n \}` be the set of **n sensors**.
 Each agent :math:`S_i` can select the area
 to scan among **k sectors** :math:`s_i = \{ s_i^1, ... s_i^k \}`.
 
-The agents plan their action over a horizon T made of
+The agents plan their action over a horizon :math:`T` made of
 :math:`|T| = t` time slots.
 For each time slot,
 each agent :math:`S_i` has to select one
@@ -87,9 +87,9 @@ action : either scan one of it's :math:`s_i^j` sectors or sleep.
 
 The :math:`s_i^k` are our **decision variables**,
 whose value represents the sector scanned by a sensor at a given time.
-These variables take their value from a Domain
+These variables take their value from a domain
 :math:`D = \{ 1, ... t\}` ;
-when the variable :math:`s_i^k` take the value :math:`t`,
+when the variable :math:`s_i^k` takes the value :math:`t`,
 it means that the sensor :math:`S_i` will scan the sector :math:`s_i^k`
 during the time slot :math:`t`.
 
@@ -111,7 +111,7 @@ For this we define a function :math:`w` between a pair of sectors
 where :math:`w(s_i^p, s_j^q)` is the surface of the area common to these two
 sectors.
 Then we use this function to define constraints :eq:`conflict` between sectors,
-where the cost of the constraints is this area,
+where the cost of the constraints is this surface,
 if the sensors of these two sector at scanning at the same time.
 
 
@@ -130,7 +130,7 @@ as a DCOP
 :math:`\langle \mathcal{A}, \mathcal{X}, \mathcal{D}, \mathcal{C}, \mu \rangle`
 , where:
 
-* :math:`\mathcal{A} =  \{ S_1, ... S_n \}` is the set of sensors ;
+* :math:`\mathcal{A} =  \{ S_1, ... S_n \}` is the set of sensors;
 * :math:`\mathcal{X} = \{ s_i^p\}, \quad S_i \in \mathcal{A}, \quad 0 \leq p \leq k`
   is the set of variables, for the k sectors of these n sensors;
 * :math:`\mathcal{D} = \{0,...t\}` is the domain for these variable, made of the
@@ -138,20 +138,19 @@ as a DCOP
 * :math:`\mathcal{C}` is the set of constraints over these variables, made of
   constraints :eq:`all_diff` and :eq:`conflict`;
 * :math:`\mu` is a mapping function that assign each :math:`s_i^p` variable
-  to the agent :math:`S_i`
+  to the agent :math:`S_i`.
 
-We can now use a DCOP algorithm to solve this problem is a distributed
+We can now use a DCOP algorithm to solve this problem in a distributed
 manner.
-Of course, the choice of the algorithm depends on the problem en environment
-characteristics ; given that sensors have limited cpu and memory and that
+Of course, the choice of the algorithm depends on the problem and the environment
+characteristics; given that sensors have limited cpu and memory and that
 the communication channel has a low bandwidth,
-lightweight local seach algorithm like DSA and MGM are good candidate.
+lightweight local search algorithm like DSA and MGM are good candidates.
 The original article this model comes from, :cite:`zhang_analysis_2003`,
 evaluates DSA and DBA and shows that,
 if controlled properly, DSA is significantly superior to DBA,
 finding better solutions with less computational cost
 and communication overhead.
-
 
 
 .. note:: In order to keep this tutorial short and relatively easy to read,
