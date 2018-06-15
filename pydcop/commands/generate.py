@@ -132,11 +132,96 @@ def set_parser(main_subparsers):
                                                    'want to generate')
     # parser.set_defaults(func=run_cmd)
 
+    parser_graph_coloring(subparsers)
+
+    parser_mixed_problem(subparsers)
+
+    parser_ising_soft(subparsers)
+
+    parser_iot_problem(subparsers)
+
+
+def parser_iot_problem(subparsers):
+    parser = subparsers.add_parser('iot',
+                                   help='generate a DCOP modelling a '
+                                        'typical IoT problem. All constraints '
+                                        'are binary and cost are random.')
+    parser.set_defaults(func=generate_iot)
+    parser.add_argument('-d', '--domain', type=int, required=True,
+                        help='domain of the variables domain: 0, 1, ..., d-1')
+    parser.add_argument('-n', '--num', type=int, required=True,
+                        help='number of variables in the graph')
+    # parser.add_argument('-p', '--p', type=float, required=True,
+    #                     help='probability of edge creation')
+    parser.add_argument('-r', '--range', type=int, default=10,
+                        help='range of the constraints values')
+    # parser.add_argument('-a', '--agents', type=int, required=True,
+    #                     help='number of agents')
+
+
+def parser_ising_soft(subparsers):
+    parser = subparsers.add_parser('ising_soft',
+                                   help='Generates a random problem with soft '
+                                        'constraints and an ising-based '
+                                        'constraints graph')
+    parser.set_defaults(func=generate_ising)
+    parser.add_argument('-s', '--size', type=int, required=True,
+                        help='size of the izing graph (which will contains s*s '
+                             'variables and 2*s*s constraints)')
+    parser.add_argument('-r', '--range', type=int, required=True,
+                        help='range of the variables domain: 0, 1, ..., r-1')
+    parser = subparsers.add_parser('small_world',
+                                   help='generate a DCOP with a small world '
+                                        'constraint graph. All constraints '
+                                        'are binary and cost are random.')
+    parser.set_defaults(func=generate_small_world)
+    parser.add_argument('-d', '--domain', type=int, required=True,
+                        help='domain of the variables domain: 0, 1, ..., d-1')
+    parser.add_argument('-n', '--num', type=int, required=True,
+                        help='number of variables in the graph')
+    # parser.add_argument('-p', '--p', type=float, required=True,
+    #                     help='probability of edge creation')
+    parser.add_argument('-r', '--range', type=int, default=10,
+                        help='range of the constraints values')
+    # parser.add_argument('-a', '--agents', type=int, required=True,
+    #                     help='number of agents')
+
+
+def parser_mixed_problem(subparsers):
+    parser = subparsers.add_parser('mixed_problem',
+                                   help='generate a DCOP graph coloring '
+                                        'problem.')
+    parser.set_defaults(func=generate_mixed_problem)
+    parser.add_argument('-v', '--variable_count', type=int, required=True,
+                        help='number of variables')
+    parser.add_argument('-c', '--constraint_count', type=int, required=True,
+                        help='number of constraints')
+    parser.add_argument('-H', '--hard_constraint', type=float, required=True,
+                        help='proportion of hard constraints')
+    parser.add_argument('-A', '--arity', type=int, required=False, default=2,
+                        help='The maximum arity of the constraints')
+    parser.add_argument('-r', '--range', type=int, required=True,
+                        help='range of the variables domain: 0, 1, ..., r-1')
+    parser.add_argument('-d', '--density', type=float, required=True,
+                        help='Graph density.')
+    parser.add_argument('-a', '--agents', type=int, required=False,
+                        default=None,
+                        help='number of agents, if not given the number of '
+                             'node is used.')
+    parser.add_argument('--capacity', type=int, required=False,
+                        default=0,
+                        help='Capacity of the agents.')
+    # TODO : intensional vs extensive form
+    parser.add_argument('-e', '--extensive',
+                        help='generate the problem in extensive form (default '
+                             'is intentional form) : NOT IMPLEMENTED YET')
+
+
+def parser_graph_coloring(subparsers):
     parser = subparsers.add_parser('graph_coloring',
                                    help='generate a DCOP graph coloring '
                                         'problem.')
     parser.set_defaults(func=generate_graph_coloring)
-
     # parser.add_argument('file', type=str, help="file")
     parser.add_argument('-n', '--node_count', type=int, required=True,
                         help='number of nodes (variables)')
@@ -169,79 +254,7 @@ def set_parser(main_subparsers):
                         help='NOT IMPLEMENTED YET : graph generation model, '
                              'Erdős-Rényi or Watts–Strogatz')
 
-    parser = subparsers.add_parser('mixed_problem',
-                                   help='generate a DCOP graph coloring '
-                                        'problem.')
-    parser.set_defaults(func=generate_mixed_problem)
 
-    parser.add_argument('-v', '--variable_count', type=int, required=True,
-                        help='number of variables')
-    parser.add_argument('-c', '--constraint_count', type=int, required=True,
-                        help='number of constraints')
-    parser.add_argument('-H', '--hard_constraint', type=float, required=True,
-                        help='proportion of hard constraints')
-    parser.add_argument('-A', '--arity', type=int, required=False, default=2,
-                        help='The maximum arity of the constraints')
-    parser.add_argument('-r', '--range', type=int, required=True,
-                        help='range of the variables domain: 0, 1, ..., r-1')
-    parser.add_argument('-d', '--density', type=float, required=True,
-                        help='Graph density.')
-    parser.add_argument('-a', '--agents', type=int, required=False,
-                        default=None,
-                        help='number of agents, if not given the number of '
-                             'node is used.')
-    parser.add_argument('--capacity', type=int, required=False,
-                        default=0,
-                        help='Capacity of the agents.')
-    # TODO : intensional vs extensive form
-    parser.add_argument('-e', '--extensive',
-                        help='generate the problem in extensive form (default '
-                             'is intentional form) : NOT IMPLEMENTED YET')
-
-    parser = subparsers.add_parser('ising_soft',
-                                  help='Generates a random problem with soft '
-                                       'constraints and an ising-based '
-                                       'constraints graph')
-    parser.set_defaults(func=generate_ising)
-
-    parser.add_argument('-s', '--size', type=int, required=True,
-                        help='size of the izing graph (which will contains s*s '
-                             'variables and 2*s*s constraints)')
-    parser.add_argument('-r', '--range', type=int, required=True,
-                        help='range of the variables domain: 0, 1, ..., r-1')
-
-
-    parser = subparsers.add_parser('small_world',
-                                   help='generate a DCOP with a small world '
-                                        'constraint graph. All constraints '
-                                        'are binary and cost are random.')
-    parser.set_defaults(func=generate_small_world)
-    parser.add_argument('-d', '--domain', type=int, required=True,
-                        help='domain of the variables domain: 0, 1, ..., d-1')
-    parser.add_argument('-n', '--num', type=int, required=True,
-                        help='number of variables in the graph')
-    # parser.add_argument('-p', '--p', type=float, required=True,
-    #                     help='probability of edge creation')
-    parser.add_argument('-r', '--range', type=int, default=10,
-                        help='range of the constraints values')
-    # parser.add_argument('-a', '--agents', type=int, required=True,
-    #                     help='number of agents')
-
-    parser = subparsers.add_parser('iot',
-                                   help='generate a DCOP modelling a '
-                                        'typical IoT problem. All constraints '
-                                        'are binary and cost are random.')
-    parser.set_defaults(func=generate_iot)
-    parser.add_argument('-d', '--domain', type=int, required=True,
-                        help='domain of the variables domain: 0, 1, ..., d-1')
-    parser.add_argument('-n', '--num', type=int, required=True,
-                        help='number of variables in the graph')
-    # parser.add_argument('-p', '--p', type=float, required=True,
-    #                     help='probability of edge creation')
-    parser.add_argument('-r', '--range', type=int, default=10,
-                        help='range of the constraints values')
-    # parser.add_argument('-a', '--agents', type=int, required=True,
-    #                     help='number of agents')
 
 def run_cmd(args):
     print('"dcop.py generate" can generate several kind of dcop\n'
