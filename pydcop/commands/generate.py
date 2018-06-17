@@ -99,6 +99,7 @@ import os
 
 #from numpy.random import random
 from pydcop.commands.generators.iot import generate_iot
+from pydcop.commands.generators.secp import generate_secp, parser_secp
 from pydcop.commands.generators.smallworld import generate_small_world
 from pydcop.dcop.objects import VariableDomain, Variable, AgentDef
 from pydcop.dcop.dcop import DCOP
@@ -139,6 +140,8 @@ def set_parser(main_subparsers):
     parser_ising_soft(subparsers)
 
     parser_iot_problem(subparsers)
+
+    parser_secp(subparsers)
 
 
 def parser_iot_problem(subparsers):
