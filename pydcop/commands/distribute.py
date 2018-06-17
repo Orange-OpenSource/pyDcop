@@ -44,6 +44,7 @@ Synopsis
 ::
 
     pydcop distribute --distribution <distribution_method>
+                      [--cost <distribution_method_for cost>]
                       [--graph <graph_model>]
                       [--algo <dcop_algorithm>] <dcop-files>
 
@@ -72,6 +73,12 @@ Options
 ``--distribution <distribution_method>`` / ``-d <distribution_method>``
   The distribution algorithm (``oneagent``, ``adhoc``, ``ilp_fgdp``, etc.,
   see :ref:`concepts_distribution`).
+
+``--cost <distribution_method_for_cost>``
+  A distribution method that can be used to evaluate the cost of a
+  distribution. If not given, defaults to ``<distribution_method>``. If the
+  distribution method does not define cost, a cost None will be returned in
+  the command output.
 
 ``--algo <dcop_algorithm>`` / ``-a <dcop_algorithm>``
   The (optional) algorithm whose computations will be distributed. It is needed
@@ -163,14 +170,20 @@ def set_parser(subparsers):
                         required=False,
                         choices=['factor_graph', 'pseudotree',
                                  'constraints_hypergraph'],
-                        help='graphical model for dcop computations')
+                        help='Graphical model for dcop computations.')
 
     parser.add_argument('-d', '--distribution',
                         choices=['oneagent', 'adhoc', 'ilp_fgdp',
                                  'ilp_compref', 'heur_comhost'],
                         required=True,
-                        help='algorithm for distributing the computation '
-                             'graph')
+                        help='Algorithm for distributing the computation '
+                             'graph.')
+
+    parser.add_argument('--cost',
+                        choices=['ilp_compref'],
+                        default=None,
+                        help='algorithm for computing the cost of the '
+                             'distribution.')
 
     parser.add_argument('-a', '--algo',
                         choices=algorithms,
@@ -189,6 +202,12 @@ def run_cmd(args):
     dcop = load_dcop_from_file(dcop_yaml_files)
 
     dist_module = load_distribution_module(args.distribution)
+    if args.cost :
+        cost_module = load_distribution_module(args.cost)
+    elif hasattr(dist_module, 'distribution_cost'):
+        cost_module = dist_module
+    else:
+        cost_module = None
 
     algo_module, graph_module = None, None
     if args.algo is not None:
@@ -229,8 +248,8 @@ def run_cmd(args):
                         communication_load=communication_load)
         dist = distribution.mapping()
 
-        if hasattr(dist_module, 'distribution_cost'):
-            cost = dist_module.distribution_cost(
+        if cost_module:
+            cost, _, _ = cost_module.distribution_cost(
                 distribution, cg, dcop.agents.values(),
                 computation_memory=computation_memory,
                 communication_load=communication_load)
