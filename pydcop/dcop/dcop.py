@@ -305,8 +305,14 @@ class DCOP(object):
         return self.constraints[c_name]
 
     def solution_cost(self, assignment, infinity):
+
+        # add external variables
+        full_assignment = assignment.copy()
+        full_assignment.update({v.name: v.value
+                                for v in self.external_variables.values()})
+
         return solution_cost(self.constraints.values(),
-                             self.all_variables, assignment, infinity)
+                             self.all_variables, full_assignment, infinity)
 
 
 def solution_cost(relations, variables, assignment, infinity):
