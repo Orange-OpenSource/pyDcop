@@ -73,7 +73,7 @@ variables:
 # Initial value is mandatory for external variables.
 external_variables:
   ext_var1:
-    domaine: dbool
+    domain: dbool
     initial_value: False
 
 # Constraints
