@@ -73,6 +73,9 @@ STABILITY_COEFF = 0.1
 HEADER_SIZE = 0
 UNIT_SIZE = 1
 
+
+SAME_COUNT = 4
+
 # constants for memory costs and capacity
 FACTOR_UNIT_SIZE = 1
 VARIABLE_UNIT_SIZE = 1
@@ -277,6 +280,7 @@ class MaxSumMessage(Message):
         
         return MaxSumMessage(dict(zip(vals, costs)))
 
+
 def approx_match(costs, prev_costs):
     """
     Check if a cost message match the previous message.
@@ -341,7 +345,8 @@ class FactorAlgo(DcopComputation):
             else logging.getLogger('pydcop.algo.maxsum.' + factor.name)
 
         # A dict var_name -> (message, count)
-        self._prev_messages = {}
+        self._prev_messages = defaultdict(lambda: (None, 0))
+
 
         if len(self.variables) <= 1:
             self._is_stable = True
@@ -440,14 +445,15 @@ class FactorAlgo(DcopComputation):
             for v in self.variables:
                 if v.name != var_name:
                     costs_v = self._costs_for_var(v)
-                    if not self._match_previous(v.name, costs_v):
+                    same, same_count = self._match_previous(v.name, costs_v)
+                    if not same or same_count < SAME_COUNT:
                         debug += '  * SEND {} -> {} : {}\n'.format(self.name,
                                                                    v.name,
                                                                    costs_v)
                         msg_size += self._send_costs(v.name, costs_v)
                         send.append(v.name)
                         msg_count += 1
-                        self._prev_messages[v.name] = costs_v
+                        self._prev_messages[v.name] = costs_v, same_count +1
                         self._is_stable = False
                     else:
                         no_send.append(v.name)
@@ -550,10 +556,12 @@ class FactorAlgo(DcopComputation):
         :param costs: costs sent to this factor
         :return:
         """
-        if v_name in self._prev_messages:
-            return approx_match(costs, self._prev_messages[v_name])
+        prev_costs, count = self._prev_messages[v_name]
+        if prev_costs is not None:
+            same = approx_match(costs, prev_costs)
+            return same, count
         else:
-            return False
+            return False, 0
 
     def __str__(self):
         return 'MaxsumFactor(' + self._factor.name + ')'
@@ -755,7 +763,7 @@ class VariableAlgo(VariableComputation):
         for f_name in factor_names:
             costs_f = self._costs_for_factor(f_name)
             same, same_count = self._match_previous(f_name, costs_f)
-            if not same or same_count < 2:
+            if not same or same_count < SAME_COUNT:
                 debug += '  * SEND : {} -> {} : {}\n'.format(self.name,
                                                              f_name,
                                                              costs_f)
