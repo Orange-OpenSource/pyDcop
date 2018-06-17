@@ -78,7 +78,7 @@ def main():
 
     subparsers = parser.add_subparsers(title='Actions', dest='action',
                                        description='To get help on a command, '
-                                                   'use secp.py <command> -h')
+                                                   'use pydcop <command> -h')
 
     # Register commands for dcop cli
     solve.set_parser(subparsers)
