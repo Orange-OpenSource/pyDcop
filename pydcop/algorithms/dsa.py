@@ -388,7 +388,7 @@ class DsaComputation(VariableComputation):
                 self._neighbors_values[neighbor] = value
             # In case every messages have been postponed, even it shouldn't
             # be possible. And for debugging messages
-            self._on_neighbors_values()
+            # self._on_neighbors_values()
 
         else:
             # Still waiting for other neighbors
