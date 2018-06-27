@@ -593,6 +593,11 @@ class Agent(object):
         """
         self.logger.debug('on_start for {}'.format(self.name))
 
+        if self._ui_port:
+            self._ui_server = UiServer(self, self._ui_port)
+            self.add_computation(self._ui_server, publish=False)
+            self._ui_server.start()
+
         self._computations[self.discovery.discovery_computation.name] = \
             self.discovery.discovery_computation
         while True:
@@ -612,10 +617,6 @@ class Agent(object):
         self.discovery.register_agent(self.name, self.address)
         self.discovery.discovery_computation.start()
 
-        if self._ui_port:
-            self._ui_server = UiServer(self, self._ui_port)
-            self.add_computation(self._ui_server)
-            self._ui_server.start()
         return True
 
     def _on_stop(self):
