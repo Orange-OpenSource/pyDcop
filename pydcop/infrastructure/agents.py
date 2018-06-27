@@ -30,7 +30,7 @@
 
 
 """
-This module implements the base building blocks of te system: Agent.
+Base 'Agent' classes.
 
 An Agent instance is a stand-alone autonomous object. It hosts computations,
 which send messages to each other.
@@ -147,7 +147,7 @@ class Agent(object):
         self._period = 1000
 
         # List of pause computations, any computation whose name is in this
-        # list will not revceive any message.
+        # list will not receive any message.
         self.paused_computations = []
 
     @property
@@ -163,7 +163,7 @@ class Agent(object):
         return self._comm
 
     def add_computation(self, computation: MessagePassingComputation,
-                        comp_name=None):
+                        comp_name=None, publish=True):
         """
         Add a computation to the agent.
 
@@ -178,6 +178,9 @@ class Agent(object):
         comp_name: str
             an optional name for the computation, if not given
             computation.name will be used.
+        publish: bool
+            True (default) is the computation must be published on the
+            discovery service.
 
         """
         comp_name = computation.name if comp_name is None else comp_name
@@ -185,7 +188,9 @@ class Agent(object):
                           comp_name, self._messaging)
         computation.message_sender = self._messaging.post_msg
         self._computations[comp_name] = computation
-        self.discovery.register_computation(comp_name, self.name, self.address)
+        self.discovery.register_computation(comp_name, self.name,self.address,
+                                            publish=publish)
+
 
         # start lookup for agent hosting a neighbor computation
         if hasattr(computation, 'computation_def') and \
@@ -891,10 +896,26 @@ class ResilientAgent(Agent):
             self.discovery.unregister_computation(self.replication_comp.name)
         super()._on_stop()
 
-
     def add_computation(self, computation: MessagePassingComputation,
-                        comp_name=None):
-        super().add_computation(computation, comp_name)
+                        comp_name=None, publish=True):
+        """
+        Add a computation to the agent.
+
+        See Also
+        --------
+        Agent.add_computation
+
+        Parameters
+        ----------
+        computation
+        comp_name
+        publish
+
+        Returns
+        -------
+
+        """
+        super().add_computation(computation, comp_name, publish)
         if self.replication_comp is not None \
                 and not computation.name.startswith('_')\
                 and not computation.name.startswith('B'):
