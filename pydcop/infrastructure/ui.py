@@ -33,7 +33,6 @@ import json
 import logging
 from threading import Thread
 
-from networkx.classes.function import neighbors
 from websocket_server.websocket_server import WebsocketServer
 
 from pydcop.infrastructure.computations import MessagePassingComputation, \
@@ -140,8 +139,9 @@ class UiServer(MessagePassingComputation):
         """Build a map repr of a computation."""
         c_value = None
         c_name = computation.name
-        neighbors =[]
-        c_algo= None
+        neighbors = []
+        c_algo, c_type= None, None
+        c_msg_count, c_msg_size, c_cycles, footprint = 0, 0, 0, 0
 
         if isinstance(computation, DcopComputation):
             # a dcop computation, but not for a variable, for now let's
@@ -152,11 +152,15 @@ class UiServer(MessagePassingComputation):
             c_algo = {'name': computation.computation_def.algo.algo,
                       'params': computation.computation_def.algo.params
                       }
+            c_msg_count = self._agent.messages_count(computation.name)
+            c_msg_size = self._agent.messages_size(computation.name)
+            c_cycles = computation.cycle_count
+            footprint = computation.footprint()
 
-        if isinstance(computation, VariableComputation):
-            c_type = 'variable'
-            c_value = computation.current_value
-            c_name = computation.variable.name
+            if isinstance(computation, VariableComputation):
+                c_type = 'variable'
+                c_value = computation.current_value
+                c_name = computation.variable.name
 
         return {
             'id': computation.name,
@@ -164,5 +168,9 @@ class UiServer(MessagePassingComputation):
             'type': c_type,
             'value': c_value,
             'neighbors': neighbors,
-            'algo': c_algo
+            'algo': c_algo,
+            'msg_count': c_msg_count,
+            'msg_size': c_msg_size,
+            'cycles': c_cycles,
+            'footprint' : footprint
         }

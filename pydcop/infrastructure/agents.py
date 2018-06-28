@@ -720,6 +720,12 @@ class Agent(object):
         }
         return m
 
+    def messages_count(self, computation: str):
+        return self._messaging.count_ext_msg[computation]
+
+    def messages_size(self, computation: str):
+        return self._messaging.size_ext_msg[computation]
+
     def set_periodic_action(self, period: float, cb: Callable):
         """
         Set a periodic action.
