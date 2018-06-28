@@ -78,13 +78,12 @@ class UiServer(MessagePassingComputation):
         self.server.server_close()
 
     def _new_client(self, client, server):
-        self.logger.debug('new client %s', client)
+        self.logger.debug('new client %s on %s', client , server)
         pass
 
     def _client_left(self, client, server):
         # Called for every client disconnecting
-        self.logger.debug('client left %s', client)
-
+        self.logger.debug('client left %s on %s', client, server)
         pass
 
     # Called when a client sends a message
@@ -119,14 +118,16 @@ class UiServer(MessagePassingComputation):
                             'computations': self._computations()}))
 
     def _agent_data(self, agent):
+
         agt = {
             'name' : agent.name,
             'computations': self._computations(),
             'replicas': [],  # TODO !!
-            'address': agent.address
-
+            'address': agent.address,
+            'is_orchestrator': agent.name == 'orchestrator'
         }
-        agt.update(agent.agent_def.extra_attr())
+        if agent.agent_def:
+            agt.update(agent.agent_def.extra_attr())
         return agt
 
     def _computations(self):

@@ -191,7 +191,6 @@ class Agent(object):
         self.discovery.register_computation(comp_name, self.name,self.address,
                                             publish=publish)
 
-
         # start lookup for agent hosting a neighbor computation
         if hasattr(computation, 'computation_def') and \
                 computation.computation_def is not None:
@@ -597,6 +596,8 @@ class Agent(object):
             self._ui_server = UiServer(self, self._ui_port)
             self.add_computation(self._ui_server, publish=False)
             self._ui_server.start()
+        else:
+            self.logger.debug('No ui server for %s', self.name)
 
         self._computations[self.discovery.discovery_computation.name] = \
             self.discovery.discovery_computation

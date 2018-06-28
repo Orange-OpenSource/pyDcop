@@ -121,8 +121,9 @@ class Orchestrator(object):
                  infinity=float('inf'),
                  collector: Queue=None,
                  collect_moment: str='value_change',
-                 collect_period: float=None):
-        self._own_agt = Agent(ORCHESTRATOR, comm)
+                 collect_period: float=None,
+                 ui_port: int = None):
+        self._own_agt = Agent(ORCHESTRATOR, comm, ui_port=ui_port)
         self.directory = Directory(self._own_agt.discovery)
         self._own_agt.add_computation(self.directory.directory_computation)
         self._own_agt.discovery.use_directory(ORCHESTRATOR,
@@ -1128,13 +1129,14 @@ class AgentsMgt(MessagePassingComputation):
         try:
             violation, cost = self._dcop.solution_cost(dcop_assignment,
                                                        self.infinity)
-        except ValueError:
+        except ValueError as ve:
             var_names = set(self._dcop.variables)
             ass_names = set(assignment)
             self.logger.debug(
                 'Cannot compute cost for cycle %s, incomplete assignment: '
                 'missing var %s in  %s', self._current_cycle,
                 (var_names - ass_names), assignment)
+            self.logger.debug(ve)
             cost, violation = None, None
 
         # msg stats and activity ratio

@@ -45,6 +45,7 @@ Synopsis
   pydcop orchestrator --algo <algo> [--algo_params <params>]
                       --distribution <distribution>
                       [--address <ip_addr>] [--port <port>]
+                      [--uiport <uiport>]
                       [--collect_on <collect_mode>] [--period <p>]
                       [--run_metrics <file>]
                       [--end_metrics <file>]
@@ -125,6 +126,10 @@ Options
 ``--port <port>``
   Optional port the orchestrator will listen on.
   If not given we try to use port 9000.
+
+``--uiport <port>``
+  Optional port the orchestrator's ui-server (only needed when using the GUI).
+  If not given no ui-server is started.
 
 ``<dcop_files>``
   One or several paths to the files containing the dcop. If several paths are
@@ -237,6 +242,12 @@ def set_parser(subparsers):
                         help="Port the orchestrator will listen on. If "
                              "not given we try to use port 9000.")
 
+    parser.add_argument('--uiport', type=int, default=None,
+                        help='The port on which the ui-server will be listening'
+                             '. If not given, no ui-server will '
+                             'be started for this orchestrator.')
+
+
 orchestrator = None
 start_time = 0
 
@@ -295,7 +306,7 @@ def prepare_metrics_files(run, end, mode):
             os.remove(run_metrics)
         else:
             f_dir = os.path.dirname(run_metrics)
-            if f_dir and  not os.path.exists(f_dir):
+            if f_dir and not os.path.exists(f_dir):
                 os.makedirs(f_dir)
         # Add column labels in file:
         headers = ','.join(columns[mode])
@@ -371,7 +382,7 @@ def run_cmd(args, timer=None, timeout=None):
     logger.info('Dcop distribution : {}'.format(distribution))
 
     algo = build_algo_def(algo_module, args.algo, dcop.objective,
-                            args.algo_params)
+                          args.algo_params)
 
     # When using the (default) 'fork' start method, http servers on agent's
     # processes do not work (why ?)
@@ -392,9 +403,10 @@ def run_cmd(args, timer=None, timeout=None):
     addr = args.address if args.address else None
     comm = HttpCommunicationLayer((addr, port))
     orchestrator = Orchestrator(algo, cg, distribution, comm, dcop,
-                                infinity, collector= collector_queue,
+                                infinity, collector=collector_queue,
                                 collect_moment=args.collect_on,
-                                collect_period=args.period)
+                                collect_period=period,
+                                ui_port=args.uiport)
 
     try:
         start_time = time()
@@ -437,7 +449,7 @@ def on_timeout():
         print()
 
     if orchestrator is None:
-        logger.debug("cli timeout with no orchestrator ?" )
+        logger.debug("cli timeout with no orchestrator ?")
         return
     global timeout_stopped
     timeout_stopped = True
@@ -497,4 +509,3 @@ def _results(status):
                 fo.write(json.dumps(metrics, sort_keys=True, indent='  '))
 
     print(json.dumps(metrics, sort_keys=True, indent='  '))
-
