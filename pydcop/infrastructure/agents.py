@@ -98,6 +98,11 @@ class Agent(object):
     ui_port: int
         the port on which to run the ui-server. If not given, no ui-server is
         started.
+    delay: int
+        An optional delay between message delivery, in second. This delay
+        only applies to algorithm's messages and is useful when you want to
+        observe (for example with the GUI) the behavior of the algorithm at
+        runtime.
     daemon: boolean
         indicates if the agent should use a daemon thread (defaults to False)
 
@@ -110,6 +115,7 @@ class Agent(object):
                  comm: CommunicationLayer,
                  agent_def: AgentDef=None,
                  ui_port: int=None,
+                 delay: int=None,
                  daemon: bool=False):
         self._name = name
         self.agent_def = agent_def
@@ -119,7 +125,7 @@ class Agent(object):
         self._comm = comm
         self.discovery = Discovery(self._name, self.address)
         self._comm.discovery = self.discovery
-        self._messaging = Messaging(name, comm)
+        self._messaging = Messaging(name, comm, delay=delay)
         self.discovery.discovery_computation.message_sender = \
             self._messaging.post_msg
 
@@ -838,15 +844,33 @@ class RepairComputationRegistration(object):
 class ResilientAgent(Agent):
     """
 
+    An agent that supports resiliency by replicating it's computations.
+
     Parameters
     ----------
+    name: str
+        name of the agent
+    comm: CommunicationLayer
+        object used to send and receive messages
+    agent_def: AgentDef
+        definition of this agent, optional
+    ui_port: int
+        the port on which to run the ui-server. If not given, no ui-server is
+        started.
     replication: str
         name of the replication algorithm
+    delay: int
+        An optional delay between message delivery, in second. This delay
+        only applies to algorithm's messages and is useful when you want to
+        observe (for example with the GUI) the behavior of the algorithm at
+        runtime.
+
     """
 
     def __init__(self, name: str, comm: CommunicationLayer,
-                 agent_def: AgentDef, replication: str, ui_port=None):
-        super().__init__(name, comm, agent_def, ui_port=ui_port)
+                 agent_def: AgentDef, replication: str, ui_port=None,
+                 delay: int=None):
+        super().__init__(name, comm, agent_def, ui_port=ui_port, delay=delay)
         self.replication_comp = None
         if replication is not None:
             self.logger.debug('deploying replication computation %s',

@@ -72,7 +72,11 @@ class OrchestratedAgent(ResilientAgent):
         mode for metrics collection : 'period', 'cycle' 'value_change' or None
     metrics_period: float
         when using metrics_on='period', the periodicity for metrics messages
-
+    delay: int
+        An optional delay between message delivery, in second. This delay
+        only applies to algorithm's messages and is useful when you want to
+        observe (for example with the GUI) the behavior of the algorithm at
+        runtime.
 
     See Also
     --------
@@ -82,9 +86,9 @@ class OrchestratedAgent(ResilientAgent):
     def __init__(self, agt_def: AgentDef, comm: CommunicationLayer,
                  orchestrator_address: Address,
                  metrics_on: str=None, metrics_period: float=None,
-                 replication: str=None, ui_port=None):
+                 replication: str=None, ui_port=None, delay=None):
         super().__init__(agt_def.name, comm, agt_def, replication,
-                         ui_port=ui_port)
+                         ui_port=ui_port, delay=delay)
 
         # Orchestrator and orchestration computation hosted by it:
         self.discovery.use_directory(ORCHESTRATOR, orchestrator_address)

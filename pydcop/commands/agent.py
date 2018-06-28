@@ -48,6 +48,7 @@ Synopsis
                --orchestrator <orchestrator_address>
                [--uiport <start_uiport>]
                [--restart]
+               [--delay <delay>]
 
 
 Description
@@ -106,6 +107,11 @@ Options
   When setting this flag, agent(s) will restarted when when they have all
   stopped. Useful when running `pydcop agent` as daemon on a remote machine.
 
+``--delay <delay>`
+  An optional delay between message delivery, in second. This delay
+  only applies to algorithm's messages and is useful when you want to
+  observe (for example with the GUI) the behavior of the algorithm at
+  runtime.
 
 Examples
 --------
@@ -167,6 +173,12 @@ def set_parser(subparsers):
                              'when when they have all stopped. Useful when '
                              'running `pydcop agent` as daemon on a remote '
                              'machine.')
+    parser.add_argument('--delay', default=None, type=int,
+                        help='an optional delay between message delivery, '
+                             ' in second. This delay only applies to '
+                             'algorithm\'s messages and is useful when you '
+                             'want to observe (for example with the UI) the '
+                             'behavior of the algorithm at runtime')
 
 
 def run_cmd(args):
@@ -176,7 +188,8 @@ def run_cmd(args):
     if args.restart:
         while not force_stopped:
             agents = start_agents(names, o_addr, int(o_port),
-                                  args.uiport, args.address, args.port)
+                                  args.uiport, args.address, args.port,
+                                  args.delay)
 
             # block until all agents have finished
             for agent in agents:
@@ -189,7 +202,7 @@ def run_cmd(args):
 
     else:
         agents = start_agents(names, o_addr, int(o_port),
-                              args.uiport, args.address, args.port)
+                              args.uiport, args.address, args.port, args.delay)
 
 
 def on_force_exit(_, __):
@@ -200,7 +213,8 @@ def on_force_exit(_, __):
         agent.stop()
 
 
-def start_agents(names: List[str], o_addr, o_port, u_port, a_addr, a_port):
+def start_agents(names: List[str], o_addr, o_port, u_port, a_addr, a_port,
+                 delay):
     """
     Start orchestrated agents.
 
@@ -243,7 +257,7 @@ def start_agents(names: List[str], o_addr, o_port, u_port, a_addr, a_port):
         comm = HttpCommunicationLayer((a_addr, a_port))
         agt_def = AgentDef(a)
         agent = OrchestratedAgent(agt_def, comm, (o_addr, o_port),
-                                  ui_port=u_port)
+                                  ui_port=u_port, delay=delay)
 
         agent.start()
         started_agents.append(agent)
