@@ -36,7 +36,7 @@ from collections import namedtuple, defaultdict
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from queue import Empty, PriorityQueue
 from threading import Thread
-from time import perf_counter
+from time import perf_counter, sleep
 from typing import Tuple, Dict, Optional
 
 import requests
@@ -308,7 +308,8 @@ class HttpCommunicationLayer(CommunicationLayer):
             self._address = find_local_ip(), 9000
         else :
             ip_addr, port = address_port
-            ip_addr = ip_addr if ip_addr else find_local_ip()
+            # ip_addr = ip_addr if ip_addr else find_local_ip()
+            ip_addr = ip_addr if ip_addr else '0.0.0.0'
             port = port if port else 9000
             self._address = ip_addr, port
 
@@ -473,15 +474,20 @@ class Messaging(object):
     comm: CommunicationLayer
         a concrete implementation of the CommunicationLayer protocol, it will
         be used to send messages to other agents.
+    delay: int
+        an optional delay between message delivery, in second. This delay
+        only applies to algorithm's messages and is useful when you want to
+        observe (for example with the GUI) the behavior of the algorithm at
+        runtime.
     """
 
-    def __init__(self, agent_name: str,
-                 comm: CommunicationLayer):
+    def __init__(self, agent_name: str, comm: CommunicationLayer, delay: None):
         self._queue = PriorityQueue()
         self._local_agent = agent_name
         self.discovery = comm.discovery
         self._comm = comm
         self._comm.messaging = self
+        self._delay = delay
 
         # Keep track of failer messages to retry later
         self._failed = []
@@ -526,8 +532,10 @@ class Messaging(object):
 
     def next_msg(self, timeout: float=0):
         try:
-            _, _, t, full_msg = self._queue.get(block=True,
+            msg_type, _, t, full_msg = self._queue.get(block=True,
                                                 timeout=timeout)
+            if self._delay and msg_type == MSG_ALGO:
+                sleep(self._delay)
             return full_msg, t
         except Empty:
             return None, None
