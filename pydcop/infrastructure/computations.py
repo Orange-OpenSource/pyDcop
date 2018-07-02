@@ -45,7 +45,7 @@ from pydcop.algorithms import ComputationDef
 from pydcop.dcop.objects import Variable
 from pydcop.utils.simple_repr import SimpleRepr, SimpleReprException, \
     simple_repr
-
+from pydcop.infrastructure.Events import event_bus
 
 class Message(SimpleRepr):
     """
@@ -379,9 +379,12 @@ class MessagePassingComputation(object):
             reception time
         """
         if not self.is_paused:
+            event_bus.send('computations.message_rcv.' + self.name,
+                           (self.name, msg.size))
             self._msg_handlers[msg.type](sender, msg, t)
         else:
             self._paused_messages_recv.append((sender, msg, t))
+
 
     def post_msg(self, target: str, msg, prio: int=None, on_error=None):
         """
@@ -406,8 +409,11 @@ class MessagePassingComputation(object):
         """
         if not self.is_paused:
             self._msg_sender(self.name, target, msg, prio, on_error)
+            event_bus.send('computations.message_snd.' + self.name,
+                           (self.name, msg.size))
         else:
             self._paused_messages_post.append((target, msg, prio, on_error))
+
 
     def __str__(self):
         return 'MessagePassingComputation({})'.format(self.name)
@@ -504,6 +510,9 @@ class DcopComputation(MessagePassingComputation):
         """
         self.__cycle_count__ += 1
         self._on_new_cycle(self.cycle_count)
+        event_bus.send('computations.cycle.'+self.name,
+                       (self.name, self.cycle_count))
+
 
     def _on_new_cycle(self, count):
         """
@@ -584,6 +593,8 @@ class VariableComputation(DcopComputation):
             self._on_value_selection(val, cost, self.cycle_count)
             self._previous_val = val
             self.__value__ = val
+            event_bus.send('computations.value.'+self.name,
+                           (self.name, val))
         self.__cost__ = cost
 
     def _on_value_selection(self, val, cost, cycle_count):
