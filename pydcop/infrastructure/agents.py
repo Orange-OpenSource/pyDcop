@@ -51,11 +51,14 @@ from threading import Thread
 from time import perf_counter, sleep
 from typing import Dict, List, Optional, Union, Callable, Tuple
 
+from collections import defaultdict
+
 from pydcop.algorithms import ComputationDef
 from pydcop.algorithms.objects import AlgoDef
 from pydcop.dcop.objects import AgentDef, create_binary_variables
 from pydcop.dcop.objects import BinaryVariable
 from pydcop.dcop.relations import Constraint
+from pydcop.infrastructure.Events import event_bus
 from pydcop.infrastructure.communication import Messaging, \
     CommunicationLayer, UnreachableAgent
 from pydcop.infrastructure.computations import MessagePassingComputation, \
@@ -120,6 +123,7 @@ class Agent(object):
         self._name = name
         self.agent_def = agent_def
         self.logger = logging.getLogger('pydcop.agent.' + name)
+        self.agt_metrics = AgentMetrics()
 
         # Setup communication and discovery
         self._comm = comm
@@ -216,6 +220,9 @@ class Agent(object):
             computation.finished,
             partial(self._on_computation_finished, computation.name))
 
+        event_bus.send("agents.add_computation."+self.name,
+                       (self.name, comp_name))
+
     def remove_computation(self, computation: str) -> None:
         """
         Removes a computation from the agent.
@@ -242,6 +249,9 @@ class Agent(object):
             comp.stop()
         self.logger.debug('Removing computation %s', comp)
         self.discovery.unregister_computation(computation, self.name)
+
+        event_bus.send("agents.rem_computation."+self.name,
+                       (self.name, computation))
 
     def computations(self, include_technical=False)-> \
             List[MessagePassingComputation]:
@@ -832,6 +842,41 @@ def notify_wrap(f, cb):
         f(*args, **kwargs)
         cb(*args, **kwargs)
     return wrapped
+
+
+class AgentMetrics(object):
+    """
+    AgentMetrics listen to events from the event_bus to consolidate metrics.
+
+    """
+
+    def __init__(self):
+        self._computation_msg_rcv = defaultdict(lambda : (0,0))
+        self._computation_msg_snd = defaultdict(lambda : (0,0))
+
+        event_bus.subscribe('computations.message_rcv.*',
+                            self._on_computation_msg_rcv)
+        event_bus.subscribe('computations.message_snd.*',
+                            self._on_computation_msg_snd)
+
+
+    def computation_msg_rcv(self, computation: str):
+        return self._computation_msg_rcv[computation]
+
+    def computation_msg_snd(self, computation: str):
+        return self._computation_msg_snd[computation]
+
+    def _on_computation_msg_rcv(self, topic: str, msg_event):
+        computation, msg_size = msg_event
+        prev_count , prev_size = self._computation_msg_rcv[computation]
+        self._computation_msg_rcv[computation] = \
+            prev_count+1, prev_size+ msg_size
+
+    def _on_computation_msg_snd(self, topic: str, msg_event):
+        computation, msg_size = msg_event
+        prev_count , prev_size = self._computation_msg_snd[computation]
+        self._computation_msg_snd[computation] = \
+            prev_count+1, prev_size+ msg_size
 
 
 from pydcop.computations_graph import constraints_hypergraph as chg
