@@ -115,7 +115,7 @@ class Agent(object):
                  comm: CommunicationLayer,
                  agent_def: AgentDef=None,
                  ui_port: int=None,
-                 delay: int=None,
+                 delay: float=None,
                  daemon: bool=False):
         self._name = name
         self.agent_def = agent_def
@@ -875,7 +875,7 @@ class ResilientAgent(Agent):
 
     def __init__(self, name: str, comm: CommunicationLayer,
                  agent_def: AgentDef, replication: str, ui_port=None,
-                 delay: int=None):
+                 delay: float=None):
         super().__init__(name, comm, agent_def, ui_port=ui_port, delay=delay)
         self.replication_comp = None
         if replication is not None:

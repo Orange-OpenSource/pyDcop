@@ -173,7 +173,7 @@ def set_parser(subparsers):
                              'when when they have all stopped. Useful when '
                              'running `pydcop agent` as daemon on a remote '
                              'machine.')
-    parser.add_argument('--delay', default=None, type=int,
+    parser.add_argument('--delay', default=None, type=float,
                         help='an optional delay between message delivery, '
                              ' in second. This delay only applies to '
                              'algorithm\'s messages and is useful when you '

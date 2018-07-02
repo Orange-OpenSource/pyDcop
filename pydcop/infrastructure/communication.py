@@ -481,7 +481,8 @@ class Messaging(object):
         runtime.
     """
 
-    def __init__(self, agent_name: str, comm: CommunicationLayer, delay: None):
+    def __init__(self, agent_name: str,
+                 comm: CommunicationLayer, delay: float=None):
         self._queue = PriorityQueue()
         self._local_agent = agent_name
         self.discovery = comm.discovery

@@ -86,7 +86,7 @@ class OrchestratedAgent(ResilientAgent):
     def __init__(self, agt_def: AgentDef, comm: CommunicationLayer,
                  orchestrator_address: Address,
                  metrics_on: str=None, metrics_period: float=None,
-                 replication: str=None, ui_port=None, delay=None):
+                 replication: str=None, ui_port=None, delay: float=None):
         super().__init__(agt_def.name, comm, agt_def, replication,
                          ui_port=ui_port, delay=delay)
 
