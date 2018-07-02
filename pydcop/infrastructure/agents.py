@@ -221,7 +221,7 @@ class Agent(object):
             partial(self._on_computation_finished, computation.name))
 
         event_bus.send("agents.add_computation."+self.name,
-                       (self.name, comp_name))
+                       (self.name, computation))
 
     def remove_computation(self, computation: str) -> None:
         """

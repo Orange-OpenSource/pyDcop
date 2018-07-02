@@ -37,6 +37,7 @@ from websocket_server.websocket_server import WebsocketServer
 
 from pydcop.infrastructure.computations import MessagePassingComputation, \
     VariableComputation, DcopComputation
+from pydcop.infrastructure.Events import event_bus
 
 
 class UiServer(MessagePassingComputation):
@@ -59,8 +60,20 @@ class UiServer(MessagePassingComputation):
         self.t = Thread(target=self.server.run_forever, name='ws-'+agent.name)
         self.t.setDaemon(True)
 
+        # Multicast is currently buggy in WebsocketServer, until it is fixed,
+        # we keep track of client manually (see. issue #56
+        # https://github.com/Pithikos/python-websocket-server/issues/56 )
+        self._clients = []
+
+        event_bus.subscribe('computations.cycle.*', self._cb_cycle)
+        event_bus.subscribe('computations.value.*', self._cb_value)
+        event_bus.subscribe('computations.message_rcv.*', self._cb_msg_rcv)
+        event_bus.subscribe('computations.message_snd.*', self._cb_msg_snd)
+        event_bus.subscribe('agents.add_computation.*', self._cb_add_comp)
+        event_bus.subscribe('agents.rem_computation.*', self._cb_rem_comp)
+
+
     def on_message(self, var_name, msg, t):
-        # self._handlers[msg.type](msg)
         pass
 
     def on_start(self):
@@ -78,12 +91,12 @@ class UiServer(MessagePassingComputation):
 
     def _new_client(self, client, server):
         self.logger.debug('new client %s on %s', client , server)
-        pass
+        self._clients.append(client)
 
     def _client_left(self, client, server):
         # Called for every client disconnecting
         self.logger.debug('client left %s on %s', client, server)
-        pass
+        self._clients.remove(client)
 
     # Called when a client sends a message
     def _message_received(self, client, server, message):
@@ -152,8 +165,8 @@ class UiServer(MessagePassingComputation):
             c_algo = {'name': computation.computation_def.algo.algo,
                       'params': computation.computation_def.algo.params
                       }
-            c_msg_count = self._agent.messages_count(computation.name)
-            c_msg_size = self._agent.messages_size(computation.name)
+            c_msg_count, c_msg_size = \
+                self._agent.agt_metrics.computation_msg_rcv(computation.name)
             c_cycles = computation.cycle_count
             footprint = computation.footprint()
 
@@ -174,3 +187,71 @@ class UiServer(MessagePassingComputation):
             'cycles': c_cycles,
             'footprint' : footprint
         }
+
+    def _cb_cycle(self, topic, cycle_event):
+        computation, cycles = cycle_event
+        if self.is_local_computation(computation):
+            self.logger.debug('send cycle event %s ', cycle_event)
+            self._send_to_all_clients(
+                json.dumps({'evt': 'cycle',
+                            'computation': computation,
+                            'cycles': cycles
+                            }))
+
+    def _cb_value(self, topic, value_event):
+        computation, value = value_event
+        if self.is_local_computation(computation):
+            self.logger.debug('send value event %s ', value_event)
+            self._send_to_all_clients(
+                json.dumps({'evt': 'value',
+                            'computation': computation,
+                            'value': value
+                            }))
+
+    def _cb_msg_rcv(self, topic: str, msg_event):
+        computation, msg_size = msg_event
+        if self.is_local_computation(computation):
+            self.logger.debug('send msg_rcv event %s ', msg_event)
+            self._send_to_all_clients(
+                json.dumps({'evt': 'msg_rcv',
+                            'computation': computation,
+                            'msg_size': msg_size
+                            }))
+
+    def _cb_msg_snd(self, topic, msg_event):
+        computation, msg_size= msg_event
+        if self.is_local_computation(computation):
+            self.logger.debug('send msg_snd event %s ', msg_event)
+            self._send_to_all_clients(
+                json.dumps({'evt': 'msg_snd',
+                            'computation': computation,
+                            'msg_size': msg_size
+                            }))
+
+    def _cb_add_comp(self, topic: str, comp_evt):
+        agent, computation = comp_evt
+        if agent == self._agent.name and \
+                self.is_local_computation(computation.name):
+            self.logger.debug('send add computation event %s ', comp_evt)
+            self._send_to_all_clients(
+                json.dumps({'evt': 'add_comp',
+                            'computation': self._computation(computation),
+                            }))
+
+    def _cb_rem_comp(self, topic: str, comp_evt):
+        agent, computation = comp_evt
+        if agent == self._agent.name and \
+                self.is_local_computation(computation.name):
+            self.logger.debug('send remove computation event %s ', comp_evt)
+            self._send_to_all_clients(
+                json.dumps({'evt': 'rem_comp',
+                            'computation': computation.name,
+                            }))
+
+    def is_local_computation(self, computation: str):
+        comp_names = [c.name for c in self._agent.computations()]
+        return computation in comp_names
+
+    def _send_to_all_clients(self, msg):
+        for client in self._clients:
+            self.server.send_message(client, msg)
