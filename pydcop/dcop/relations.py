@@ -591,7 +591,7 @@ class NAryFunctionRelation(AbstractBaseRelation, SimpleRepr):
 
 class AsNAryFunctionRelation(object):
     """
-    The AsNAryFunctionRelation annotation can be used to transform any function
+    The AsNAryFunctionRelation decorator can be used to transform any function
     into an object implementing the Relation protocol.
     This annotation requires an argument giving the list of variable (as
     Variable objects) that the relation depends on. The names of arguments of
