@@ -72,7 +72,6 @@ class UiServer(MessagePassingComputation):
         event_bus.subscribe('agents.add_computation.*', self._cb_add_comp)
         event_bus.subscribe('agents.rem_computation.*', self._cb_rem_comp)
 
-
     def on_message(self, var_name, msg, t):
         pass
 
@@ -86,6 +85,11 @@ class UiServer(MessagePassingComputation):
 
         """
         self.logger.debug('Stopping ui server on %s', self.port)
+
+        # Closing the server does not close the client side websocket :
+        # Add an application-level close message for this.
+        self._send_to_all_clients(json.dumps({"cmd": "close"}))
+
         self.server.shutdown()
         self.server.server_close()
 
