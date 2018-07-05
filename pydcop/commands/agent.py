@@ -44,8 +44,8 @@ Synopsis
 ::
 
   pydcop agent --names <names>
-               [--address <ip_address>] --port <start_port>
-               --orchestrator <orchestrator_address>
+               [--address <ip_address>] [--port <start_port>]
+               --orchestrator <ip[:<port>]>
                [--uiport <start_uiport>]
                [--restart]
                [--delay <delay>]
@@ -86,8 +86,9 @@ Options
   The names of the agent(s). Notice that this needs to match the name of the
   agents expected by the orchestrator.
 
-``--orchestrator <orchestrator_address>``
-  The address of the orchestrator as <ip>:<port>
+``--orchestrator <ip[:<port>]>``
+  The address of the orchestrator as <ip>:<port> where the port is optional
+  and defaults to 9000.
 
 ``--address <ip_address>``
   Optional IP address the agent will listen on.
@@ -96,7 +97,7 @@ Options
 ``-p <start_port>`` / ``--port <start_port>``
   The port on which the agent will listen for messages. If several agents
   names are started (when giving several names) this port is used for the
-  first agent and increment for each subsequent agent.
+  first agent and increment for each subsequent agent. Defaults to 9001
 
 ``-i <start_uiport>`` / ``--uiport <start_uiport>``
   The port on which the ui-server will be listening (same behavior as
@@ -113,16 +114,20 @@ Options
   observe (for example with the GUI) the behavior of the algorithm at
   runtime.
 
+
+Note that the agent's port defaults to 9001 to avoid conflicts with the
+orchestrator, whose port defaults to 9000.
+
 Examples
 --------
 
-Running a single agent on port 9000, with an ui-server on port 10001::
+Running a single agent on port 9001, with an ui-server on port 10001::
 
-    pydcop -v 3 agent -n a1 -p 9001 --orchestrator 127.0.0.1:9000 --uiport 10001
+    pydcop -v 3 agent -n a1 --orchestrator 127.0.0.1:9000 --uiport 10001
 
-Running 5 agents, listening on port 9001 - 9006 (without ui-server)::
+Running 5 agents, listening on port 9011 - 9016 (without ui-server)::
 
-    pydcop -v 3 agent -n a1 a2 a3 a4 a5 -p 9001 --orchestrator 127.0.0.1:9000
+    pydcop -v 3 agent -n a1 a2 a3 a4 a5 -p 9011 --orchestrator 127.0.0.1:9000
 
 
 """
@@ -154,14 +159,14 @@ def set_parser(subparsers):
     parser.add_argument('--address', type=str, default=None,
                         help="IP address the orchestrator will listen on. If "
                              "not given we try to use the primary IP address.")
-    parser.add_argument('-p', '--port', type=int,
+    parser.add_argument('-p', '--port', type=int, default=9001,
                         help='The port on which the agent will listen for '
                              'messages. If several agents names are started '
                              '(when giving several names) this port is used '
                              'for the first agent and increment for each '
                              'subsequent agent.')
     parser.add_argument('-o', '--orchestrator', type=str,
-                        help='The address of the orchestrator <ip>:port')
+                        help='The address of the orchestrator <ip>[:<port>]')
 
     parser.add_argument('-i', '--uiport', type=int, default=None,
                         help='The port on which the ui-server will be listening'
@@ -183,7 +188,11 @@ def set_parser(subparsers):
 
 def run_cmd(args):
     global agents
-    o_addr, o_port = args.orchestrator.split(':')
+    if ':' in args.orchestrator:
+        o_addr, o_port = args.orchestrator.split(':')
+    else:
+        o_addr, o_port = args.orchestrator, 9000
+
     names = list(args.names)
     if args.restart:
         while not force_stopped:
