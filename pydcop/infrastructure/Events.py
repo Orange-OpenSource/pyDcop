@@ -50,7 +50,8 @@ class EventDispatcher(object):
     def send(self, topic, evt):
         for cb in self._cbs[topic]:
             cb(topic, evt)
-        eligibles = [cbs for s_topic, cbs  in self._cbs.items()
+        all_cbs = list(self._cbs.items())
+        eligibles = [cbs for s_topic, cbs  in all_cbs
                     if s_topic[-1] == '*' and topic.startswith(s_topic[:-1])]
         for cbs in eligibles:
             for cb in cbs:
@@ -79,7 +80,8 @@ class EventDispatcher(object):
     def unsubscribe(self, cb: Callable, topic: str=None):
 
         if topic is None:
-            for s_topic,  s_cbs in self._cbs.copy().items():
+            all_cbs = list(self._cbs.items())
+            for s_topic,  s_cbs in all_cbs:
                 if cb in s_cbs:
                     s_cbs.remove(cb)
         # else:
