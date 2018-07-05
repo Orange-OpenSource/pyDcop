@@ -308,7 +308,7 @@ class HttpCommunicationLayer(CommunicationLayer):
             self._address = find_local_ip(), 9000
         else :
             ip_addr, port = address_port
-            # ip_addr = ip_addr if ip_addr else find_local_ip()
+            ip_addr = ip_addr if ip_addr else find_local_ip()
             ip_addr = ip_addr if ip_addr else '0.0.0.0'
             port = port if port else 9000
             self._address = ip_addr, port
@@ -328,7 +328,8 @@ class HttpCommunicationLayer(CommunicationLayer):
         self.logger.info('Starting http server for HttpCommunicationLayer '
                          'on %s', self.address)
         try:
-            self.httpd = HTTPServer(self.address, MPCHttpHandler)
+            _, port = self._address
+            self.httpd = HTTPServer(("0.0.0.0", port), MPCHttpHandler)
         except OSError:
             self.logger.error('Cannot bind http server on adress {}'.format(
                 self.address))
