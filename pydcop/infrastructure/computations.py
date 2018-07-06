@@ -416,7 +416,6 @@ class MessagePassingComputation(object):
         else:
             self._paused_messages_post.append((target, msg, prio, on_error))
 
-
     def __str__(self):
         return 'MessagePassingComputation({})'.format(self.name)
 
@@ -531,6 +530,23 @@ class DcopComputation(MessagePassingComputation):
             the cycle count.
         """
         pass
+
+    def post_to_all_neighbors(self, msg, prio: int=None, on_error=None):
+        """
+        Post a message to all neighbors of the computation.
+
+        Parameters
+        ----------
+        msg: an instance of Message
+            the message to send
+        prio: int
+            priority level
+        on_error: error handling method
+            passed to the messaging component.
+
+        """
+        for neighbor in self.neighbors:
+            self.post_msg(neighbor, msg, prio, on_error)
 
 
 class VariableComputation(DcopComputation):
