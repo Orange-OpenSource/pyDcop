@@ -49,6 +49,7 @@ Synopsis
                [--period <p>]
                [--run_metrics <file>]
                [--end_metrics <file>]
+               [--delay <delay>]
                <dcop_files>
 
 
@@ -160,6 +161,12 @@ Options
     End metrics (i.e. when the solve process stops) will be appended to this
     file (in csv).
 
+``--delay <delay>``
+  An optional delay between message delivery, in second. This delay
+  only applies to algorithm's messages and is useful when you want to
+  observe (for example with the GUI) the behavior of the algorithm at
+  runtime.
+
 ``<dcop_files>``
   One or several paths to the files containing the dcop. If several paths are
   given, their content is concatenated as used a the
@@ -206,6 +213,7 @@ from pydcop.infrastructure.run import run_local_thread_dcop, \
 
 
 logger = logging.getLogger('pydcop.cli.solve')
+
 
 def set_parser(subparsers):
 
@@ -268,6 +276,13 @@ def set_parser(subparsers):
                              'infinity in case of hard constraints, '
                              'for algorithms that do not use symbolic '
                              'infinity. Defaults to 10 000')
+
+    parser.add_argument('--delay', default=None, type=float,
+                        help='an optional delay between message delivery, '
+                             ' in second. This delay only applies to '
+                             'algorithm\'s messages and is useful when you '
+                             'want to observe (for example with the UI) the '
+                             'behavior of the algorithm at runtime')
 
 
 dcop = None
@@ -373,8 +388,8 @@ def run_cmd(args, timer=None, timeout=None):
                                    collect_on)
 
     if args.distribution in ['oneagent', 'adhoc', 'ilp_fgdp', 'heur_comhost']:
-        dist_module, algo_module, graph_module = _load_modules(args.distribution,
-                                                               args.algo)
+        dist_module, algo_module, graph_module = _load_modules(
+            args.distribution, args.algo)
     else:
         dist_module, algo_module, graph_module = _load_modules(None,
                                                                args.algo)
@@ -408,7 +423,7 @@ def run_cmd(args, timer=None, timeout=None):
     logger.info('Dcop distribution : {}'.format(distribution))
 
     algo = build_algo_def(algo_module, args.algo, dcop.objective,
-                            args.algo_params)
+                          args.algo_params)
 
     # Setup metrics collection
     collector_queue = Queue()
@@ -423,7 +438,8 @@ def run_cmd(args, timer=None, timeout=None):
                                              INFINITY,
                                              collector=collector_queue,
                                              collect_moment=args.collect_on,
-                                             period=period)
+                                             period=period,
+                                             delay=args.delay)
     elif args.mode == 'process':
 
         # Disable logs from agents, they are in other processes anyway
@@ -437,8 +453,8 @@ def run_cmd(args, timer=None, timeout=None):
                                               INFINITY,
                                               collector=collector_queue,
                                               collect_moment=args.collect_on,
-                                              period=period)
-
+                                              period=period,
+                                              delay = args.delay)
     try:
         orchestrator.deploy_computations()
         orchestrator.run(timeout=timeout)

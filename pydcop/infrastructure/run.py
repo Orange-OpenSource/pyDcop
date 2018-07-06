@@ -146,7 +146,8 @@ def run_local_thread_dcop(algo: AlgoDef,
                           collector: Queue=None,
                           collect_moment: str='value_change',
                           period=None,
-                          replication=None)-> Orchestrator:
+                          replication=None,
+                          delay=None) -> Orchestrator:
     """Build orchestrator and agents for running a dcop in threads.
 
     The DCOP will be run in a single process, using one thread for each agent.
@@ -202,7 +203,8 @@ def run_local_thread_dcop(algo: AlgoDef,
                                   orchestrator.address,
                                   metrics_on=collect_moment,
                                   metrics_period=period,
-                                  replication=replication)
+                                  replication=replication,
+                                  delay=delay)
         agent.start()
 
     # once all agents have started and registered to the orchestrator,
@@ -216,7 +218,8 @@ def run_local_process_dcop(algo: AlgoDef, cg: ComputationGraph,
                            collector: Queue=None,
                            collect_moment: str='value_change',
                            period=None,
-                           replication=None
+                           replication=None,
+                           delay=None
                            ):
 
     agents = dcop.agents
@@ -236,7 +239,8 @@ def run_local_process_dcop(algo: AlgoDef, cg: ComputationGraph,
                     args=[agents[a_name], port, orchestrator.address],
                     kwargs={'metrics_on': collect_moment,
                             'metrics_period': period,
-                            'replication': replication},
+                            'replication': replication,
+                            'delay': delay},
                     daemon=True)
         p.start()
 
