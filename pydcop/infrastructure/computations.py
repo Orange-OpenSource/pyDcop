@@ -41,6 +41,8 @@ import logging
 from importlib import import_module
 from typing import List, Tuple, Any, Callable
 
+from numpy import random
+
 from pydcop.algorithms import ComputationDef
 from pydcop.dcop.objects import Variable
 from pydcop.utils.simple_repr import SimpleRepr, SimpleReprException, \
@@ -596,6 +598,17 @@ class VariableComputation(DcopComputation):
             event_bus.send('computations.value.'+self.name,
                            (self.name, val))
         self.__cost__ = cost
+
+
+    def random_value_selection(self):
+        """
+        Select a random value from the domain of the variable of the
+        VariableComputation.
+
+        """
+        value = random.choice(self.variable.domain)
+        self.value_selection(value)
+
 
     def _on_value_selection(self, val, cost, cycle_count):
         pass
