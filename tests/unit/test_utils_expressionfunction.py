@@ -31,6 +31,9 @@
 
 import unittest
 from functools import partial
+
+import pytest
+
 from pydcop.utils.expressionfunction import ExpressionFunction
 from pydcop.utils.simple_repr import simple_repr, from_repr
 
@@ -169,3 +172,17 @@ class TestExpressionFunction(unittest.TestCase):
 
         self.assertNotEqual(hash(f1), hash(f2))
         self.assertNotEqual(hash(f1), hash(f3))
+
+
+def test_type_error_on_incomplete_assignment():
+    f = ExpressionFunction('a / b ')
+
+    with pytest.raises(TypeError):
+        f(a=4)
+
+
+def test_type_error_on_excessive_assignment():
+    f = ExpressionFunction('a / b ')
+
+    with pytest.raises(TypeError):
+        f(a=4, b=3, c=2)

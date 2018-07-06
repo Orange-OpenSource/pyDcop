@@ -107,7 +107,20 @@ class ExpressionFunction(Callable, SimpleRepr):
     def __call__(self, *args, **kwargs):
         l = kwargs.copy()
         l.update(self._fixed_vars)
+
+        received = set(kwargs.keys())
+        expected = set(self.variable_names)
+        unexpected = received - expected
+        missing = expected - received
+        if missing:
+            raise TypeError(
+                "Missing named argument(s) " + str(missing))
+        if unexpected:
+            raise TypeError(
+                "Unexpected argument(s) " + str(unexpected))
+
         exec(self._c, globals(), l)
+
         return l['_fres']
 
     def __eq__(self, other):
