@@ -32,7 +32,7 @@
 import pkgutil
 from collections import namedtuple
 from importlib import import_module
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Iterable
 
 import numpy as np
 
@@ -132,6 +132,14 @@ def generate_assignment_as_dict(variables: List[Variable]):
             for ass in generate_assignment_as_dict(variables[:-1]):
                 ass[current_var.name] = d
                 yield ass
+
+
+def assignment_cost(assignment: Dict[str, Any],
+                    constraints: Iterable['Constraint']):
+    cost = 0
+    for c in constraints:
+        cost += c(filter_assignment_dict(assignment, c.dimensions))
+    return cost
 
 
 def filter_assignment_dict(assignment, target_vars):

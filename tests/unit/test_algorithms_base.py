@@ -38,9 +38,10 @@ import pydcop.dcop.relations
 import pydcop.utils
 import pydcop.utils.various
 from pydcop import algorithms
+from pydcop.algorithms import assignment_cost
 from pydcop.infrastructure.computations import Message
 from pydcop.dcop.objects import VariableDomain, Variable
-from pydcop.dcop.relations import UnaryFunctionRelation
+from pydcop.dcop.relations import UnaryFunctionRelation, constraint_from_str
 from pydcop.utils.simple_repr import simple_repr, from_repr
 
 
@@ -295,6 +296,7 @@ def test_algo_parameters_with_int_conversion(algo_param_defs):
 
     assert params['param2'] == 10
 
+
 def test_algo_parameters_with_invalid_param(algo_param_defs):
     with pytest.raises(ValueError):
         algorithms.prepare_algo_params({'invalid_param' : 'foo'},
@@ -307,3 +309,32 @@ def test_algo_parameters_with_invalid_value(algo_param_defs):
                                        algo_param_defs)
 
 
+def test_assignment_cost_empty():
+    assert assignment_cost({}, []) == 0
+
+
+def test_assignment_cost_one_constraint():
+    domain = VariableDomain('d', 'test', list(range(10)))
+    v1 = Variable('v1', domain)
+    c1 = constraint_from_str('c1', 'v1', [v1] )
+
+    assert assignment_cost({'v1': 3}, [c1]) == 3
+
+
+def test_assignment_cost_one_constraint_two_vars():
+    domain = VariableDomain('d', 'test', list(range(10)))
+    v1 = Variable('v1', domain)
+    v2 = Variable('v2', domain)
+    c1 = constraint_from_str('c1', 'v1+v2', [v1, v2])
+
+    assert assignment_cost({'v1': 3, 'v2': 4}, [c1]) == 7
+
+
+def test_assignment_cost_two_constraints_two_vars():
+    domain = VariableDomain('d', 'test', list(range(10)))
+    v1 = Variable('v1', domain)
+    v2 = Variable('v2', domain)
+    c1 = constraint_from_str('c1', 'v1+v2', [v1, v2])
+    c2 = constraint_from_str('c2', 'v1*v2', [v1, v2])
+
+    assert assignment_cost({'v1': 2, 'v2': 5}, [c1, c2]) == 17
