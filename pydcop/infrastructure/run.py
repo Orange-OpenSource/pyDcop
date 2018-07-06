@@ -147,7 +147,8 @@ def run_local_thread_dcop(algo: AlgoDef,
                           collect_moment: str='value_change',
                           period=None,
                           replication=None,
-                          delay=None) -> Orchestrator:
+                          delay=None,
+                          uiport=None) -> Orchestrator:
     """Build orchestrator and agents for running a dcop in threads.
 
     The DCOP will be run in a single process, using one thread for each agent.
@@ -192,19 +193,23 @@ def run_local_thread_dcop(algo: AlgoDef,
     orchestrator = Orchestrator(algo, cg, distribution, comm, dcop, infinity,
                                 collector=collector,
                                 collect_moment=collect_moment,
-                                collect_period=period)
+                                collect_period=period,
+                                ui_port=uiport)
     orchestrator.start()
+
 
     # Create and start all agents.
     # Each agent will register it-self on the orchestrator
     for a_name in dcop.agents:
+        uiport += 1
         comm = InProcessCommunicationLayer()
         agent = OrchestratedAgent(agents[a_name], comm,
                                   orchestrator.address,
                                   metrics_on=collect_moment,
                                   metrics_period=period,
                                   replication=replication,
-                                  delay=delay)
+                                  delay=delay,
+                                  ui_port=uiport)
         agent.start()
 
     # once all agents have started and registered to the orchestrator,
@@ -219,7 +224,8 @@ def run_local_process_dcop(algo: AlgoDef, cg: ComputationGraph,
                            collect_moment: str='value_change',
                            period=None,
                            replication=None,
-                           delay=None
+                           delay=None,
+                           uiport=None
                            ):
 
     agents = dcop.agents
@@ -228,19 +234,22 @@ def run_local_process_dcop(algo: AlgoDef, cg: ComputationGraph,
     orchestrator = Orchestrator(algo, cg, distribution, comm, dcop, infinity,
                                 collector=collector,
                                 collect_moment=collect_moment,
-                                collect_period=period)
+                                collect_period=period,
+                                ui_port=uiport)
     orchestrator.start()
 
     # Create and start all agents.
     # Each agent will register it-self on the orchestrator
     for a_name in dcop.agents:
         port += 1
+        uiport += 1
         p = Process(target=_build_process_agent, name='p_'+a_name,
                     args=[agents[a_name], port, orchestrator.address],
                     kwargs={'metrics_on': collect_moment,
                             'metrics_period': period,
                             'replication': replication,
-                            'delay': delay},
+                            'delay': delay,
+                            'uiport': uiport},
                     daemon=True)
         p.start()
 
@@ -249,11 +258,15 @@ def run_local_process_dcop(algo: AlgoDef, cg: ComputationGraph,
     return orchestrator
 
 
+
 def _build_process_agent(agt_def: AgentDef, port, orchestrator_address,
-                         metrics_on, metrics_period, replication):
+                         metrics_on, metrics_period, replication,
+                         delay, uiport):
     comm = HttpCommunicationLayer(('127.0.0.1', port))
     agent = OrchestratedAgent(agt_def, comm, orchestrator_address,
                               metrics_on=metrics_on,
                               metrics_period=metrics_period,
-                              replication=replication)
+                              replication=replication,
+                              delay=delay,
+                              ui_port=uiport)
     agent.start()

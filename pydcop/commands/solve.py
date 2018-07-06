@@ -50,6 +50,7 @@ Synopsis
                [--run_metrics <file>]
                [--end_metrics <file>]
                [--delay <delay>]
+               [--uiport <port>]
                <dcop_files>
 
 
@@ -166,6 +167,12 @@ Options
   only applies to algorithm's messages and is useful when you want to
   observe (for example with the GUI) the behavior of the algorithm at
   runtime.
+
+``--uiport``
+  The port on which the ui-server will be listening.
+  This port is used for the orchestrator and incremented for each following
+  agent. If not given, no ui-server will be started for any agent.
+
 
 ``<dcop_files>``
   One or several paths to the files containing the dcop. If several paths are
@@ -284,6 +291,12 @@ def set_parser(subparsers):
                              'want to observe (for example with the UI) the '
                              'behavior of the algorithm at runtime')
 
+    parser.add_argument('--uiport', type=int, default=None,
+                        help='The port on which the ui-server will be '
+                             'listening. This port is used for the orchestrator'
+                             'and incremented for each following agent. If not '
+                             'given, no ui-server will be started for any '
+                             'agent.')
 
 dcop = None
 orchestrator = None
@@ -439,7 +452,8 @@ def run_cmd(args, timer=None, timeout=None):
                                              collector=collector_queue,
                                              collect_moment=args.collect_on,
                                              period=period,
-                                             delay=args.delay)
+                                             delay=args.delay,
+                                             uiport=args.uiport)
     elif args.mode == 'process':
 
         # Disable logs from agents, they are in other processes anyway
@@ -454,7 +468,8 @@ def run_cmd(args, timer=None, timeout=None):
                                               collector=collector_queue,
                                               collect_moment=args.collect_on,
                                               period=period,
-                                              delay = args.delay)
+                                              delay = args.delay,
+                                              uiport=args.uiport)
     try:
         orchestrator.deploy_computations()
         orchestrator.run(timeout=timeout)
