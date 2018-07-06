@@ -594,8 +594,20 @@ class VariableComputation(DcopComputation):
     def current_cost(self):
         return self.__cost__
 
-    def footprint(self):
-        raise NotImplementedError()
+    def footprint(self) -> float:
+        """
+        Return the footprint of the computation.
+
+        The footprint is use by many distribution methods, this methods should
+        be overwritten when subclassing VariableComputation, although it's not
+        mandatory.
+
+        Returns
+        -------
+        float:
+            The footprint of the computation.
+        """
+        return 0
 
     def value_selection(self, val, cost=0):
         """
