@@ -759,7 +759,7 @@ class AgentDef(SimpleRepr):
         """
         Extra attributes for this agent definition.
 
-        These atra attributes are the `kwargs` passed to the constructor.
+        These extra attributes are the `kwargs` passed to the constructor.
         They are typically used to defined extra properties on an agent,
         like the capacity.
 
