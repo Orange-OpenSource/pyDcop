@@ -579,7 +579,7 @@ class VariableComputation(DcopComputation):
     def footprint(self):
         raise NotImplementedError()
 
-    def value_selection(self, val, cost):
+    def value_selection(self, val, cost=0):
         """
         When the computation selects a value, it MUST be done by calling
         this method. This is necessary to be able to automatically monitor
