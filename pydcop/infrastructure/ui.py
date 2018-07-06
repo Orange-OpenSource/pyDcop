@@ -137,6 +137,7 @@ class UiServer(MessagePassingComputation):
 
         agt = {
             'name' : agent.name,
+            'extra': agent.agent_def.extra_attr(),
             'computations': self._computations(),
             'replicas': [],  # TODO !!
             'address': agent.address,
