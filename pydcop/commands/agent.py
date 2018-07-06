@@ -161,10 +161,10 @@ def set_parser(subparsers):
                              "not given we try to use the primary IP address.")
     parser.add_argument('-p', '--port', type=int, default=9001,
                         help='The port on which the agent will listen for '
-                             'messages. If several agents names are started '
+                             'messages. If several agents are started '
                              '(when giving several names) this port is used '
-                             'for the first agent and increment for each '
-                             'subsequent agent.')
+                             'for the first agent and incremented for each '
+                             'following agent.')
     parser.add_argument('-o', '--orchestrator', type=str,
                         help='The address of the orchestrator <ip>[:<port>]')
 
