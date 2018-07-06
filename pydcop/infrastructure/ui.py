@@ -140,7 +140,7 @@ class UiServer(MessagePassingComputation):
             'extra': agent.agent_def.extra_attr(),
             'computations': self._computations(),
             'replicas': [],  # TODO !!
-            'address': agent.address,
+            'address': str(agent.address),
             'is_orchestrator': agent.name == 'orchestrator'
         }
         if agent.agent_def:
@@ -166,7 +166,7 @@ class UiServer(MessagePassingComputation):
             # assume it's a factor
             c_type = 'factor'
             c_value = ''
-            neighbors = computation.neighbors
+            neighbors = list(computation.neighbors)
             c_algo = {'name': computation.computation_def.algo.algo,
                       'params': computation.computation_def.algo.params
                       }
