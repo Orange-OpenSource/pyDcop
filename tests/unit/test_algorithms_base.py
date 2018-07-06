@@ -338,3 +338,24 @@ def test_assignment_cost_two_constraints_two_vars():
     c2 = constraint_from_str('c2', 'v1*v2', [v1, v2])
 
     assert assignment_cost({'v1': 2, 'v2': 5}, [c1, c2]) == 17
+
+
+def test_assignment_cost_missing_vars():
+    domain = VariableDomain('d', 'test', list(range(10)))
+    v1 = Variable('v1', domain)
+    v2 = Variable('v2', domain)
+    c1 = constraint_from_str('c1', 'v1+v2', [v1, v2])
+    c2 = constraint_from_str('c2', 'v1*v2', [v1, v2])
+
+    with pytest.raises(TypeError):
+        assignment_cost({'v1': 2}, [c1, c2])
+
+
+def test_assignment_cost_extra_vars():
+    domain = VariableDomain('d', 'test', list(range(10)))
+    v1 = Variable('v1', domain)
+    v2 = Variable('v2', domain)
+    c1 = constraint_from_str('c1', 'v1+v2', [v1, v2])
+    c2 = constraint_from_str('c2', 'v1*v2', [v1, v2])
+
+    assert assignment_cost({'v1': 2, 'v2': 5, 'v3': 4}, [c1, c2]) == 17

@@ -136,6 +136,26 @@ def generate_assignment_as_dict(variables: List[Variable]):
 
 def assignment_cost(assignment: Dict[str, Any],
                     constraints: Iterable['Constraint']):
+    """
+    Compute the cost of an assignment over a set of constraints.
+
+    Parameters
+    ----------
+    assignment: Dict[str, Any]
+        The assignment given as a dict of variable_name : value
+    constraints: Iterable['Constraint']
+        a list of constraints
+
+    Raises
+    ------
+    TypeError:
+        If some variables are missing in the assignment.
+
+    Returns
+    -------
+    The sum of the costs of the constraints for this assignment.
+
+    """
     cost = 0
     for c in constraints:
         cost += c(filter_assignment_dict(assignment, c.dimensions))
