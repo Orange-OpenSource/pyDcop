@@ -162,8 +162,10 @@ def _configure_logs(level: int, log_conf: str):
     # Avoid logs when sending http requests:
     urllib_logger = logging.getLogger('urllib3.connectionpool')
     urllib_logger.setLevel(logging.ERROR)
-    # Remove communication layer logs:
+    # Remove ui and communication layer logs:
     comm_logger = logging.getLogger('infrastructure.communication')
+    comm_logger.setLevel(logging.ERROR)
+    comm_logger = logging.getLogger('pydcop.agent.ui')
     comm_logger.setLevel(logging.ERROR)
 
     levels = {
