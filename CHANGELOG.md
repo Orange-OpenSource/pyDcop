@@ -11,8 +11,9 @@ pyDCOP v0.1.2 [Unreleased]
 - New `--version` global option on cli.
 - `--graph` option may be omitted in `distribute` cli command, when `--algo`
  is given.
--- `--output` is now supported by the `solve` cli command 
+- `--output` is now supported by the `solve` cli command 
 - Add a lot of documentation : usage, command line reference, etc. 
+- `--delay` option for `solve` and `agent` cli command 
 - termination detection in solve command: the command returns if all 
   computations have finished.
 - Clean shutdown mechanism for orchestrator, agents, and messaging   
@@ -32,7 +33,8 @@ pyDCOP v0.1.2 [Unreleased]
 - domain type is now optional (in API and yaml DCOP format)
 - agents can be given as a list or a dict in yaml
 - the number and size of technical computations (mgt, discovery, etc.)  is not 
-  output in metrics 
+  output in metrics
+- the port is now optional in the `agent`  and `orchestrator` cli commands 
 - new mechanism for defining algorithms parameters   
 
 pyDCOP v0.1.0 - 2018-05-04
