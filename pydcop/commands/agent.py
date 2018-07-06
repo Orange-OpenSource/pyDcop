@@ -108,7 +108,7 @@ Options
   When setting this flag, agent(s) will restarted when when they have all
   stopped. Useful when running `pydcop agent` as daemon on a remote machine.
 
-``--delay <delay>`
+``--delay <delay>``
   An optional delay between message delivery, in second. This delay
   only applies to algorithm's messages and is useful when you want to
   observe (for example with the GUI) the behavior of the algorithm at
