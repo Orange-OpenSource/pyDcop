@@ -403,6 +403,7 @@ class DsaComputation(VariableComputation):
         self.new_cycle()
         if self.stop_cycle and self.cycle_count >= self.stop_cycle:
             self.finished()
+            return
 
         for n in self._neighbors:
             msg = DsaMessage(self.current_value)
