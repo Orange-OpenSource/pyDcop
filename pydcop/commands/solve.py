@@ -524,6 +524,18 @@ def on_force_exit(sig, frame):
     _results('STOPPED')
 
 
+import numpy as np
+
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, np.int64):
+            return int(obj)
+        return json.JSONEncoder.default(self, obj)
+
+
 def _results(status):
     """
     Outputs results and metrics on stdout and trace last metrics in csv
@@ -543,10 +555,11 @@ def _results(status):
 
     if output_file:
         with open(output_file, encoding='utf-8', mode='w') as fo:
-                fo.write(json.dumps(metrics, sort_keys=True, indent='  '))
+                fo.write(json.dumps(metrics, sort_keys=True, indent='  ',
+                                    cls=NumpyEncoder))
 
-    print(json.dumps(metrics, sort_keys=True, indent='  '))
-
+    print(json.dumps(metrics, sort_keys=True, indent='  ',
+                     cls=NumpyEncoder))
 
 
 
