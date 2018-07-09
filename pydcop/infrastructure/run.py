@@ -201,7 +201,8 @@ def run_local_thread_dcop(algo: AlgoDef,
     # Create and start all agents.
     # Each agent will register it-self on the orchestrator
     for a_name in dcop.agents:
-        uiport += 1
+        if uiport:
+            uiport += 1
         comm = InProcessCommunicationLayer()
         agent = OrchestratedAgent(agents[a_name], comm,
                                   orchestrator.address,
@@ -242,7 +243,8 @@ def run_local_process_dcop(algo: AlgoDef, cg: ComputationGraph,
     # Each agent will register it-self on the orchestrator
     for a_name in dcop.agents:
         port += 1
-        uiport += 1
+        if uiport:
+            uiport += 1
         p = Process(target=_build_process_agent, name='p_'+a_name,
                     args=[agents[a_name], port, orchestrator.address],
                     kwargs={'metrics_on': collect_moment,
