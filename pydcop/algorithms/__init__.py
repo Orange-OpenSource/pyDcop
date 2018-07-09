@@ -158,7 +158,7 @@ def assignment_cost(assignment: Dict[str, Any],
     """
     cost = 0
     for c in constraints:
-        cost += c(filter_assignment_dict(assignment, c.dimensions))
+        cost += c(**filter_assignment_dict(assignment, c.dimensions))
     return cost
 
 
