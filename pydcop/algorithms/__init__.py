@@ -371,11 +371,14 @@ def prepare_algo_params(params: Dict[str, Any],
     --------
 
     >>> param_defs = [AlgoParameterDef('p1', 'str', ['1', '2'], '1'), \
-                      AlgoParameterDef('p2', 'int', None, 5)]
-    >>> prepare_algo_params({}, param_defs)
-    {'p1': '1', 'p2': 5}
-    >>> prepare_algo_params({'p2' : 2}, param_defs)
-    {'p1': '1', 'p2': 2}
+                      AlgoParameterDef('p2', 'int', None, 5),\
+                      AlgoParameterDef('p3', 'float', None, 0.5)]
+    >>> prepare_algo_params({}, param_defs)['p3']
+    0.5
+    >>> prepare_algo_params({'p2' : 2}, param_defs)['p2']
+    2
+    >>> prepare_algo_params({'p3' : 0.7}, param_defs)['p3']
+    0.7
 
     Returns
     -------
@@ -395,7 +398,7 @@ def prepare_algo_params(params: Dict[str, Any],
             selected_params[param_name] = param_val
 
         else:
-            raise ValueError('Unknown parameter for MGM : {}'
+            raise ValueError('Unknown parameter for algorithm : {}'
                              .format(param_name))
 
     missing_params = set(all_algo_params) - set(params)
