@@ -33,8 +33,8 @@
 DSA : Distributed Stochastic algorithm
 --------------------------------------
 
-Distributed Stochastic Algorithms :cite:`zhang_distributed_2005` is a synchronous, stochastic,
-local search DCOP algorithm.
+Distributed Stochastic Algorithms :cite:`zhang_distributed_2005` is a
+synchronous, stochastic, local search DCOP algorithm.
   
 Algorithm Parameters
 ^^^^^^^^^^^^^^^^^^^^
@@ -52,7 +52,8 @@ Example
 
 ::
 
-    dcop.py -t 3 solve -a dsa -p variant:C probability:0.3 -d adhoc graph_coloring_csp.yaml
+    dcop.py -t 3 solve -a dsa -p variant:C probability:0.3 \
+     -d adhoc graph_coloring_csp.yaml
     {
       "assignment": {
         "v1": "G",
@@ -82,7 +83,6 @@ from pydcop.infrastructure.computations import MessagePassingComputation, \
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
 from pydcop.dcop.relations import find_optimum
-
 
 
 HEADER_SIZE = 100
@@ -179,6 +179,7 @@ def communication_load(src: VariableComputationNode, target: str) -> float:
 algo_params = [
     AlgoParameterDef('probability', 'float', None, 0.7),
     AlgoParameterDef('variant', 'str', ['A', 'B', 'C'], 'B'),
+    AlgoParameterDef('stop_cycle', 'int', None, None),
 ]
 
 
@@ -220,6 +221,7 @@ class DsaComputation(VariableComputation):
 
     """
     def __init__(self, variable, constraints, variant='B', probability=0.7,
+                 stop_cycle=None,
                  mode='min', logger=None, comp_def=None):
         """
 
@@ -243,10 +245,11 @@ class DsaComputation(VariableComputation):
 
         self.probability = probability
         self.variant = variant
+        self.stop_cycle = stop_cycle
         self.mode = mode
         self.constraints = list(constraints)
         self.__optimum_dict__ = {c.name: find_optimum(c, self.mode) for c in
-                            self.constraints}
+                                 self.constraints}
 
         # some constraints might be unary, and our variable can have several
         # constraints involving the same variable
@@ -398,6 +401,9 @@ class DsaComputation(VariableComputation):
     def _send_value(self):
         # We consider sending the value as the start of a new cycle in DSA:
         self.new_cycle()
+        if self.stop_cycle and self.cycle_count >= self.stop_cycle:
+            self.finished()
+
         for n in self._neighbors:
             msg = DsaMessage(self.current_value)
             self.post_msg(n, msg)
