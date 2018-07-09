@@ -73,14 +73,13 @@ import operator
 import random
 
 import functools
-from typing import Iterable, Dict
 
 from pydcop.algorithms import find_arg_optimal, filter_assignment_dict, \
-    generate_assignment_as_dict, ComputationDef
+    generate_assignment_as_dict, ComputationDef, AlgoParameterDef
 from pydcop.infrastructure.computations import MessagePassingComputation, \
     Message, VariableComputation, DcopComputation
 
-from pydcop.computations_graph.constraints_hypergraph import ConstraintLink, \
+from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
 from pydcop.dcop.relations import find_optimum
 
@@ -177,35 +176,10 @@ def communication_load(src: VariableComputationNode, target: str) -> float:
     return  UNIT_SIZE + HEADER_SIZE
 
 
-def algo_params(params: Dict[str, str]):
-    """
-    Returns the parameters for the algorithm.
-
-    If a value for parameter is given in `params` it is used, otherwise a
-    default value is used instead.
-
-    :param params: a dict containing name and values for parameters
-    :return:
-    """
-    dsa_params = {
-        'probability': 0.7,
-        'variant': 'B'
-    }
-    if 'probability' in params:
-        try:
-            dsa_params['probability'] = float(params['probability'])
-        except:
-            raise TypeError("'probability' parameter for DSA must be a float")
-    if 'variant' in params:
-        if params['variant'] not in ['A', 'B', 'C']:
-            raise ValueError("'variant' parameter for DSA must be A, B or C")
-        dsa_params['variant'] = params['variant']
-
-    remaining_params = set(params) - {'probability', 'variant'}
-    if remaining_params:
-        raise ValueError('Unknown parameter(s) for DSA : {}'
-                         .format(remaining_params))
-    return dsa_params
+algo_params = [
+    AlgoParameterDef('probability', 'float', None, 0.7),
+    AlgoParameterDef('variant', 'str', ['A', 'B', 'C'], 'B'),
+]
 
 
 class DsaMessage(Message):
