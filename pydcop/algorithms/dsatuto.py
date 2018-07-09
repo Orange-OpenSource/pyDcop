@@ -91,6 +91,7 @@ class DsaTutoComputation(VariableComputation):
         self.evaluate_cycle()
 
     def on_value_msg(self, variable_name, recv_msg, t):
+        self.logger.debug('Receiving %s from %s', recv_msg, variable_name)
 
         if variable_name not in self.current_cycle:
             self.current_cycle[variable_name] = recv_msg.value
@@ -102,6 +103,9 @@ class DsaTutoComputation(VariableComputation):
     def evaluate_cycle(self):
 
         if len(self.current_cycle) == len(self.neighbors):
+
+            self.logger.debug('Full neighbors assignment for cycle %s : %s ',
+                              self.cycle_count, self.current_cycle)
 
             self.current_cycle[self.variable.name] = self.current_value
             current_cost = assignment_cost(self.current_cycle, self.constraints)
