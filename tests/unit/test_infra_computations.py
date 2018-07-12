@@ -27,11 +27,14 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
+from time import sleep
+from unittest.mock import MagicMock
 
 import pytest
 
-from pydcop.infrastructure.computations import Message, message_type
+from pydcop.infrastructure.agents import Agent
+from pydcop.infrastructure.computations import Message, message_type, \
+    MessagePassingComputation
 from pydcop.utils.simple_repr import simple_repr
 from pydcop.utils.simple_repr import from_repr
 
@@ -81,3 +84,80 @@ def test_message_factory_serialization():
     print(r)
     obtained = from_repr(r)
     assert msg == obtained
+
+
+def test_setting_message_sender_on_computation():
+
+    c = MessagePassingComputation('c')
+
+    c.message_sender = MagicMock()
+
+    msg = Message('type')
+    c.post_msg('target', msg)
+
+    c.message_sender.assert_called_with('c', 'target', msg, None, None)
+
+
+def test_setting_message_sender_only_works_once():
+
+    c = MessagePassingComputation('c')
+
+    c.message_sender = MagicMock()
+    with pytest.raises(AttributeError):
+        c.message_sender = MagicMock()
+
+
+def test_periodic_action_on_computation():
+
+    a = Agent('a', MagicMock())
+    class TestComputation(MessagePassingComputation):
+        def __init__(self):
+            super().__init__('test')
+            self.mock = MagicMock()
+
+        def on_start(self):
+            self.add_periodic_action(0.1, self.action)
+
+        def action(self):
+            self.mock()
+
+    c = TestComputation()
+
+    a.add_computation(c)
+    a.start()
+    a.run()
+    sleep(0.25)
+    a.stop()
+
+    assert c.mock.call_count == 2
+
+
+def test_several_periodic_action_on_computation():
+
+    a = Agent('a', MagicMock())
+    class TestComputation(MessagePassingComputation):
+        def __init__(self):
+            super().__init__('test')
+            self.mock1 = MagicMock()
+            self.mock2 = MagicMock()
+
+        def on_start(self):
+            self.add_periodic_action(0.1, self.action1)
+            self.add_periodic_action(0.2, self.action2)
+
+        def action1(self):
+            self.mock1()
+
+        def action2(self):
+            self.mock2()
+
+    c = TestComputation()
+
+    a.add_computation(c)
+    a.start()
+    a.run()
+    sleep(0.25)
+    a.stop()
+
+    assert c.mock1.call_count == 2
+    assert c.mock2.call_count == 1

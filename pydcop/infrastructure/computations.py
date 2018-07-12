@@ -241,6 +241,7 @@ class MessagePassingComputation(object):
         # sub-classes.
         self.logger = logging.getLogger('pydcop.computation')
         self._msg_sender = None
+        self._periodic_action_handler = None
         self._running = False
 
         self._is_paused = False
@@ -281,6 +282,16 @@ class MessagePassingComputation(object):
         if self._msg_sender is not None:
             raise AttributeError('Can only set message sender once ')
         self._msg_sender = msg_sender
+
+    @property
+    def periodic_action_handler(self):
+        return  self._periodic_action_handler
+
+    @periodic_action_handler.setter
+    def periodic_action_handler(self, handler: Callable[[float], Callable]):
+        if self._periodic_action_handler is not None:
+            raise AttributeError('Can only set periodic_action_handler once')
+        self._periodic_action_handler = handler
 
     def finished(self):
         pass
@@ -415,6 +426,23 @@ class MessagePassingComputation(object):
                            (self.name, msg.size))
         else:
             self._paused_messages_post.append((target, msg, prio, on_error))
+
+    def add_periodic_action(self, period: float, cb: Callable):
+        """
+        Add an action that will be called every `period` seconds.
+
+        Parameters
+        ----------
+        period: float
+            the period, in second
+        cb: Callable
+            A callable, with no parameters
+
+        Returns
+        -------
+        the callable
+        """
+        return self.periodic_action_handler(period, cb)
 
     def __str__(self):
         return 'MessagePassingComputation({})'.format(self.name)
