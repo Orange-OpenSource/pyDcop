@@ -442,7 +442,12 @@ class MessagePassingComputation(object):
         -------
         the callable
         """
-        return self.periodic_action_handler(period, cb)
+
+        def call_action():
+            if not self.is_paused:
+                cb()
+
+        return self.periodic_action_handler(period, call_action)
 
     def __str__(self):
         return 'MessagePassingComputation({})'.format(self.name)

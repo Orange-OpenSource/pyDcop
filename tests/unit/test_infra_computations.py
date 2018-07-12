@@ -161,3 +161,33 @@ def test_several_periodic_action_on_computation():
 
     assert c.mock1.call_count == 2
     assert c.mock2.call_count == 1
+
+def test_periodic_action_not_called_when_paused():
+
+
+    a = Agent('a', MagicMock())
+    class TestComputation(MessagePassingComputation):
+        def __init__(self):
+            super().__init__('test')
+            self.mock = MagicMock()
+
+        def on_start(self):
+            self.add_periodic_action(0.1, self.action)
+
+        def action(self):
+            self.mock()
+
+    c = TestComputation()
+
+    a.add_computation(c)
+    a.start()
+    a.run()
+    sleep(0.25)
+    assert c.mock.call_count == 2
+    c.mock.reset_mock()
+
+    a.pause_computations('test')
+    sleep(0.25)
+    assert c.mock.call_count == 0
+
+    a.stop()
