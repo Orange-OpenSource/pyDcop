@@ -284,10 +284,65 @@ def test_pause_several_computations(agent):
 
 
 def test_periodic_action(agent):
-    cb = agent.set_periodic_action(0.1, MagicMock())
+    mock = MagicMock()
+
+    def cb(*args):
+        mock(args)
+
+    agent.set_periodic_action(0.1, cb)
     agent.start()
     sleep(0.25)
     # Depending on the start instant, the cb might be called 2 or 3 times:
-    assert 2 <=len(list(cb.mock_calls)) <= 3
+    assert 2 <=len(list(mock.mock_calls)) <= 3
 
 
+def test_periodic_action_not_called(agent):
+    mock = MagicMock()
+    def cb(*args):
+        mock(args)
+    agent.set_periodic_action(1, cb)
+    agent.start()
+    sleep(0.25)
+    # Depending on the start instant, the cb might be called 2 or 3 times:
+
+    assert not list(mock.mock_calls)
+
+
+def test_several_periodic_action(agent):
+    mock1 = MagicMock()
+
+    def cb1(*args):
+        mock1(args)
+
+    mock2 = MagicMock()
+
+    def cb2(*args):
+        mock2(args)
+
+    agent.set_periodic_action(0.1, cb1)
+    agent.set_periodic_action(0.1, cb2)
+    agent.start()
+    sleep(0.25)
+    # Depending on the start instant, the cb might be called 2 or 3 times:
+    assert 2 <=len(list(mock1.mock_calls)) <= 3
+    assert 2 <=len(list(mock2.mock_calls)) <= 3
+
+
+def test_several_actions_different_period(agent):
+    mock1 = MagicMock()
+
+    def cb1(*args):
+        mock1(args)
+
+    mock2 = MagicMock()
+
+    def cb2(*args):
+        mock2(args)
+
+    agent.set_periodic_action(0.1, cb1)
+    agent.set_periodic_action(0.2, cb2)
+    agent.start()
+    sleep(0.5)
+    # Depending on the start instant, the cb might be called 2 or 3 times:
+    assert 4 <=len(list(mock1.mock_calls)) <= 5
+    assert 2 <=len(list(mock2.mock_calls)) <= 3

@@ -153,10 +153,10 @@ class Agent(object):
         # time when starting the agent
         self._start_t = None
 
-        self._periodic_cb = None
-        self._period = 1000
+        # Tasks that must run periodically as {callable: (period, last_run)}
+        self._periodic_cb = {}  # type: Dict[Callable, Tuple[float, float]]
 
-        # List of pause computations, any computation whose name is in this
+        # List of paused computations, any computation whose name is in this
         # list will not receive any message.
         self.paused_computations = []
 
@@ -754,14 +754,12 @@ class Agent(object):
         """
         assert period != None
         assert cb != None
-        self._periodic_cb = cb
-        self._period = period
+        self._periodic_cb[cb] = (period, perf_counter())
         return cb
 
     def _run(self):
         self.logger.debug('Running agent ' + self._name)
         full_msg = None
-        last_cb_time = perf_counter()
         try:
             self._running = True
             self._on_start()
@@ -792,15 +790,7 @@ class Agent(object):
                                     'Long message handling (%s) : %s',
                                     msg_duration, msg)
 
-                # Process periodic action. Only once the agents runs the
-                # computations (i.e. self._run_t is not None)
-                ct = perf_counter()
-                if self._start_t is not None \
-                        and self._periodic_cb is not None \
-                        and ct - last_cb_time >= self._period:
-                    self.logger.info('periodic cb %s %s ', ct, last_cb_time)
-                    self._periodic_cb()
-                    last_cb_time = ct
+                self._process_periodic_action()
 
         except Exception as e:
             self.logger.error('Thread %s exits With error : %s \n '
@@ -819,6 +809,17 @@ class Agent(object):
             self._comm.shutdown()
             self._on_stop()
             self.logger.info('Thread of agent %s stopped', self._name)
+
+    def _process_periodic_action(self):
+        # Process periodic action. Only once the agents runs the
+        # computations (i.e. self._run_t is not None)
+        ct = perf_counter()
+        if self._start_t is not None :
+            for cb, (p, last_t) in list(self._periodic_cb.items()):
+                if ct - last_t >= p:
+                    self.logger.info('periodic cb %s %s ', ct, last_t)
+                    cb()
+                    self._periodic_cb[cb] = (p, ct)
 
     def is_idle(self):
         """
