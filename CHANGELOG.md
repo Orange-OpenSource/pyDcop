@@ -17,6 +17,8 @@ pyDCOP v0.1.2 [Unreleased]
 - termination detection in solve command: the command returns if all 
   computations have finished.
 - Clean shutdown mechanism for orchestrator, agents, and messaging   
+- support for periodic action at computation level.
+- new @register decorator to register message handlers in computation classes.
 
 ### Fixed
 - When stopping an agent, the ws-sever (for ui) was not closed properly.
@@ -36,6 +38,8 @@ pyDCOP v0.1.2 [Unreleased]
   output in metrics
 - the port is now optional in the `agent`  and `orchestrator` cli commands 
 - new mechanism for defining algorithms parameters   
+- several periodic action can now be defined at agent'level 
+  (only one action was possible before)
 
 pyDCOP v0.1.0 - 2018-05-04
 --------------------------

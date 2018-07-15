@@ -38,6 +38,7 @@ your own DCOP algorithm.
 
 
 import logging
+from functools import wraps
 from importlib import import_module
 from typing import List, Tuple, Any, Callable
 
@@ -48,6 +49,7 @@ from pydcop.dcop.objects import Variable
 from pydcop.utils.simple_repr import SimpleRepr, SimpleReprException, \
     simple_repr
 from pydcop.infrastructure.Events import event_bus
+
 
 class Message(SimpleRepr):
     """
@@ -222,7 +224,26 @@ def message_type(msg_type: str, fields: List[str]):
     return msg_class
 
 
-class MessagePassingComputation(object):
+class ComputationMetaClass(type):
+    """
+    ComputationMetaClass is used to ensure that each subclass of
+    `MessagePassingComputation` has it's own set of message handlers,
+    which can be declared using the `@register` decorator.
+    """
+
+    def __new__(mcs, clsname, bases, attrs):
+        cls = super().__new__(mcs, clsname, bases, attrs)
+        # Each class using this metaclass must have it's own set of handlers
+        cls._decorated_handlers = {}
+        for attr in attrs.values():
+            # handlers registered using the decorator have a specific msg_type
+            # attribute and must be added to the dict of handlers.
+            if hasattr(attr, 'msg_type'):
+                    cls._decorated_handlers[attr.msg_type] = attr
+        return cls
+
+
+class MessagePassingComputation(object, metaclass=ComputationMetaClass):
     """
 
     Notes
@@ -285,7 +306,7 @@ class MessagePassingComputation(object):
 
     @property
     def periodic_action_handler(self):
-        return  self._periodic_action_handler
+        return self._periodic_action_handler
 
     @periodic_action_handler.setter
     def periodic_action_handler(self, handler: Callable[[float], Callable]):
@@ -394,10 +415,12 @@ class MessagePassingComputation(object):
         if not self.is_paused:
             event_bus.send('computations.message_rcv.' + self.name,
                            (self.name, msg.size))
-            self._msg_handlers[msg.type](sender, msg, t)
+            try:
+                self._decorated_handlers[msg.type](self, sender, msg, t)
+            except KeyError:
+                self._msg_handlers[msg.type](sender, msg, t)
         else:
             self._paused_messages_recv.append((sender, msg, t))
-
 
     def post_msg(self, target: str, msg, prio: int=None, on_error=None):
         """
@@ -451,6 +474,52 @@ class MessagePassingComputation(object):
 
     def __str__(self):
         return 'MessagePassingComputation({})'.format(self.name)
+
+
+# noinspection PyPep8Naming
+class register(object):
+    """
+    Decorator for registering message handles in computations.
+
+    This decorator is meant to be used to register message handlers in
+    computation class (subclasses of MessagePassingComputation).
+
+    A method decorated with `@register('foo')` will be called automatically
+    when the computation receives a message of type `'foo'`.
+
+    Message handler must accept 3 parameters : (sender_name, message, time).
+    * sender_name is the name of the computation that sent the message
+    * message is the message it-self, which is an instance of a subclass of
+    `Message`
+    * time is the time the message was received.
+
+    Parameters
+    ----------
+    msg_type: str
+        the type of message
+
+    Examples
+    --------
+
+    > class C(Abs):
+    >    ...
+    >    @register('msg_on_c')
+    >    def handler_c(self, s, m, t):
+    >        print("received messages", m, "from", s)
+
+    See DsaTuto sample implementation for a complete example.
+
+    """
+
+    def __init__(self, msg_type: str):
+        self.msg_type = msg_type
+
+    def __call__(self, handler):
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+        wrapper.msg_type = self.msg_type
+        return wrapper
 
 
 class DcopComputation(MessagePassingComputation):
@@ -546,7 +615,6 @@ class DcopComputation(MessagePassingComputation):
         self._on_new_cycle(self.cycle_count)
         event_bus.send('computations.cycle.'+self.name,
                        (self.name, self.cycle_count))
-
 
     def _on_new_cycle(self, count):
         """
@@ -660,7 +728,6 @@ class VariableComputation(DcopComputation):
                            (self.name, val))
         self.__cost__ = cost
 
-
     def random_value_selection(self):
         """
         Select a random value from the domain of the variable of the
@@ -669,7 +736,6 @@ class VariableComputation(DcopComputation):
         """
         value = random.choice(self.variable.domain)
         self.value_selection(value)
-
 
     def _on_value_selection(self, val, cost, cycle_count):
         pass

@@ -28,13 +28,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 from time import sleep
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, ANY
 
 import pytest
 
 from pydcop.infrastructure.agents import Agent
 from pydcop.infrastructure.computations import Message, message_type, \
-    MessagePassingComputation
+    MessagePassingComputation, register
 from pydcop.utils.simple_repr import simple_repr
 from pydcop.utils.simple_repr import from_repr
 
@@ -162,6 +162,7 @@ def test_several_periodic_action_on_computation():
     assert c.mock1.call_count == 2
     assert c.mock2.call_count == 1
 
+
 def test_periodic_action_not_called_when_paused():
 
 
@@ -191,3 +192,39 @@ def test_periodic_action_not_called_when_paused():
     assert c.mock.call_count == 0
 
     a.stop()
+
+
+
+def test_register_handler_decorator():
+
+    class TestComputation(MessagePassingComputation):
+        def __init__(self):
+            super().__init__('test')
+            self.mock = MagicMock()
+
+        @register("test_type")
+        def on_msg(self, sender: str, msg: Message, t: float):
+            self.mock()
+
+    c = TestComputation()
+
+    assert "test_type" in c._decorated_handlers
+
+
+def test_handler_decorator():
+
+    class TestComputation(MessagePassingComputation):
+        def __init__(self):
+            super().__init__('test')
+            self.mock = MagicMock()
+
+        @register("test_type")
+        def on_msg(self, sender: str, msg: Message, t: float):
+            self.mock(sender, msg, t)
+
+    c = TestComputation()
+
+    msg = Message("test_type")
+    c.on_message('foo', msg, 0)
+
+    c.mock.assert_called_once_with("foo", msg, 0)
