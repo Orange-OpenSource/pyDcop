@@ -78,7 +78,7 @@ import functools
 from pydcop.algorithms import find_arg_optimal, filter_assignment_dict, \
     generate_assignment_as_dict, ComputationDef, AlgoParameterDef
 from pydcop.infrastructure.computations import MessagePassingComputation, \
-    Message, VariableComputation, DcopComputation
+    Message, VariableComputation, DcopComputation, register
 
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
@@ -238,7 +238,6 @@ class DsaComputation(VariableComputation):
 
         """
         super().__init__(variable, comp_def)
-        self._msg_handlers['dsa_value'] = self._on_value_msg
 
         self.logger = logger if logger is not None \
             else logging.getLogger('pydcop.algo.dsa.'+variable.name)
@@ -281,6 +280,7 @@ class DsaComputation(VariableComputation):
         # we must treat them now.
         self._on_neighbors_values()
 
+    @register('dsa_value')
     def _on_value_msg(self, variable_name, recv_msg, t):
         if variable_name not in self._neighbors_values:
             self._neighbors_values[variable_name] = recv_msg.value

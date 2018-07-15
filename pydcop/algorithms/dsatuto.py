@@ -50,7 +50,8 @@ from typing import Any, Tuple
 from numpy import random
 
 from pydcop.algorithms import ComputationDef, assignment_cost
-from pydcop.infrastructure.computations import VariableComputation, message_type
+from pydcop.infrastructure.computations import VariableComputation, \
+    message_type, register
 
 # Type of computations graph that must be used with dsa
 GRAPH_TYPE = 'constraints_hypergraph'
@@ -77,7 +78,6 @@ class DsaTutoComputation(VariableComputation):
     def __init__(self, variable, constraints, computation_definition):
         super().__init__(variable, computation_definition)
 
-        self._msg_handlers['DsaMessage'] = self.on_value_msg
         self.logger = logging.getLogger('pydcop.algo.dsatuto.'+variable.name)
         self.constraints = constraints
         self.current_cycle = {}
@@ -90,6 +90,7 @@ class DsaTutoComputation(VariableComputation):
         self.post_to_all_neighbors(DsaMessage(self.current_value))
         self.evaluate_cycle()
 
+    @register("DsaMessage")
     def on_value_msg(self, variable_name, recv_msg, t):
         self.logger.debug('Receiving %s from %s', recv_msg, variable_name)
 
