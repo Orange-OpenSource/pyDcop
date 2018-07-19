@@ -68,14 +68,9 @@ class DynamicFunctionFactorComputation(FactorAlgo):
 
      """
 
-    def __init__(self, factor, name=None, msg_sender=None, logger=None,
-                 comp_def=None):
-
-        logger = logging.getLogger('maxsum.algo.dynfnfactor.' + factor.name) \
-            if \
-            logger is None else logger
+    def __init__(self, factor, name=None, msg_sender=None, comp_def=None):
         super().__init__(factor, name=name, msg_sender=msg_sender,
-                         logger=logger, comp_def=comp_def)
+                         comp_def=comp_def)
 
     def change_factor_function(self, fn):
         """
@@ -124,7 +119,7 @@ class FactorWithReadOnlyVariableComputation(DynamicFunctionFactorComputation):
     """
 
     def __init__(self, relation, read_only_variables, name=None,
-                 msg_sender=None, logger=None):
+                 msg_sender=None):
 
         self._relation = relation
         self._read_only_variables = read_only_variables
@@ -143,7 +138,7 @@ class FactorWithReadOnlyVariableComputation(DynamicFunctionFactorComputation):
         self._sliced_relation = NeutralRelation(writable_vars,
                                                 name=self._relation.name)
         super().__init__(self._sliced_relation, name=name,
-                         msg_sender=msg_sender, logger=logger)
+                         msg_sender=msg_sender)
 
     def on_start(self):
         # when starting, subscribe to all sensor variable used in the
@@ -208,9 +203,7 @@ class DynamicFactorComputation(FactorAlgo):
 
     """
 
-    def __init__(self, relation, name=None, msg_sender=None, logger=None):
-        logger = logging.getLogger('maxsum.dynfactor.' + relation.name) if \
-            logger is None else logger
+    def __init__(self, relation, name=None, msg_sender=None):
 
         self._relation = relation
         self._current_relation = relation
@@ -227,8 +220,7 @@ class DynamicFactorComputation(FactorAlgo):
             self._current_relation = self._relation.slice(external_values)
 
         super().__init__(self._current_relation, name=name,
-                         msg_sender=msg_sender,
-                         logger=logger)
+                         msg_sender=msg_sender)
 
     def on_start(self):
         # subscribe to external variable

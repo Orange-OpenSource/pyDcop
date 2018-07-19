@@ -245,6 +245,11 @@ class ComputationMetaClass(type):
             # attribute and must be added to the dict of handlers.
             if hasattr(attr, 'msg_type'):
                     cls._decorated_handlers[attr.msg_type] = attr
+        comp_module = cls.__module__
+        name =  comp_module.split('.')[-1]
+
+        # if module.startswith('pydcop.algorithms'):
+
         return cls
 
 
@@ -282,7 +287,11 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         self._msg_handlers = {}
         # Default logger for computation, will generally be overwritten by
         # sub-classes.
-        self.logger = logging.getLogger('pydcop.computation')
+        self.logger = logging.getLogger(
+            'pydcop.computation.' + self.__class__.__name__)
+
+
+
         self._msg_sender = None
         self._periodic_action_handler = None
         self._running = False
@@ -617,6 +626,11 @@ class DcopComputation(MessagePassingComputation):
             raise ValueError('ComputationDef and name are mandatory for a DCOP '
                              'computation')
         super().__init__(name)
+
+        algo_name = self.__class__.__module__.split(".")[-1]
+        self.logger = logging.getLogger(
+            'pydcop.algo.' + algo_name + '.' + name)
+
         self.computation_def = comp_def
         self.__cycle_count__ = 0
 

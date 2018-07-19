@@ -74,9 +74,11 @@ import operator
 import random
 
 import functools
+from typing import Any, Tuple
 
 from pydcop.algorithms import find_arg_optimal, filter_assignment_dict, \
-    generate_assignment_as_dict, ComputationDef, AlgoParameterDef
+    generate_assignment_as_dict, ComputationDef, AlgoParameterDef, \
+    assignment_cost
 from pydcop.infrastructure.computations import MessagePassingComputation, \
     Message, VariableComputation, DcopComputation, register
 
@@ -219,28 +221,32 @@ class DsaComputation(VariableComputation):
     comparison and applications to constraint optimization problems in sensor
     networks', Zhang Weixiong & al, 2005
 
+
+    Parameters
+    ----------
+    variable: Variable
+        an instance of Variable, whose this computation is responsible for
+    constraints: an iterable of constraints objects
+        The constraints the variables depends on
+    variant: str
+        The DSA variant to use (A, B or C)
+    probability: float
+        The probability threshold for changing value. Used differently
+        depending on the variant of DSA. See (Zhang, 2005) for details
+    stop_cycle: int
+        the number of cycle after which the computation must stop. If not
+        given, the computation does not stop automatically.
+    mode: str
+        'min' or 'max'
+    logger: a logger
+    comp_def: ComputationDef
+        the definition of the computation, given as a ComputationDef instance.
+
     """
     def __init__(self, variable, constraints, variant='B', probability=0.7,
                  stop_cycle=None,
-                 mode='min', logger=None, comp_def=None):
-        """
-
-        :param variable a variable object for which this computation is
-        responsible
-        :param constraints: the list of constraints involving this variable
-        :param variant: the variant of the DSA algorithm : 'A' for DSA-A,
-        etc.. possible values avec 'A', 'B' and 'C'
-        :param probability : the probability to change the value,
-        used differently depending on the variant of DSA. See (Zhang,
-        2005) for details.
-        :param mode: optimization mode, 'min' for minimization and 'max' for
-        maximization. Defaults to 'min'.
-
-        """
+                 mode='min', comp_def=None):
         super().__init__(variable, comp_def)
-
-        self.logger = logger if logger is not None \
-            else logging.getLogger('pydcop.algo.dsa.'+variable.name)
 
         self.probability = probability
         self.variant = variant
@@ -267,11 +273,9 @@ class DsaComputation(VariableComputation):
 
     def on_start(self):
         # randomly select a value
-        self.value_selection(random.choice(self.variable.domain),
-                             self.current_cost)
-        self.logger.debug('%s dsa start (%s %s) : randomly select value %s and'
-                          ' send to neighbors', self.variable.name,
-                          self.variant, self.probability, self.current_value)
+        self.random_value_selection()
+        self.logger.debug('DSA starts : randomly select value %s',
+                          self.current_value)
         # send a value msg to all neighbors
         self._send_value()
 
@@ -294,12 +298,28 @@ class DsaComputation(VariableComputation):
                           recv_msg.value, variable_name)
         self._on_neighbors_values()
 
+    def evaluate_cycle(self):
+
+        if len(self.current_cycle) < len(self.neighbors):
+            return
+
+        self.logger.debug('Full neighbors assignment for cycle %s : %s ',
+                          self.cycle_count, self.current_cycle)
+
+        self.current_cycle[self.variable.name] = self.current_value
+        arg_min, min_cost = self.compute_best_value()
+        current_cost = assignment_cost(self.current_cycle, self.constraints)
+        delta = current_cost - min_cost
+
+        if  (self.mode == 'min' and delta > 0) or \
+                    (self.mode == 'max' and delta < 0):
+            pass
     def _on_neighbors_values(self):
         # if we have a value for all neighbors, compute our best value for
         # conflict reduction
         # We also check that we have already selected an initial value,
         # otherwise it makes no sense to compute our gain.
-        if len(self._neighbors_values) == len(self._neighbors) and \
+        if len(self._neighbors_values) == len(self.neighbors) and \
                         self.current_value is not None:
             self.logger.debug('%s received values from all neighbors : %s',
                               self.variable.name,
@@ -398,6 +418,21 @@ class DsaComputation(VariableComputation):
 
         return var_val, rel_val
 
+
+    def compute_best_value(self) -> Tuple[Any, float]:
+
+        arg_min, min_cost = None, float('inf')
+        for value in self.variable.domain:
+            self.current_cycle[self.variable.name] = value
+            cost = assignment_cost(self.current_cycle, self.constraints)
+            if cost < min_cost:
+                min_cost, arg_min = cost, value
+
+        # FIXME : take into account variable cost
+        return arg_min, min_cost
+
+
+
     def _send_value(self):
         # We consider sending the value as the start of a new cycle in DSA:
         self.new_cycle()
@@ -405,7 +440,7 @@ class DsaComputation(VariableComputation):
             self.finished()
             return
 
-        for n in self._neighbors:
+        for n in self.neighbors:
             msg = DsaMessage(self.current_value)
             self.post_msg(n, msg)
 

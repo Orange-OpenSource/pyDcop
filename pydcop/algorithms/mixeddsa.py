@@ -204,8 +204,7 @@ class MixedDsaComputation(VariableComputation):
     """
 
     def __init__(self, variable, constraints, variant='B', proba_hard=0.7,
-                 proba_soft=0.7, mode='min', logger=None,
-                 comp_def=None):
+                 proba_soft=0.7, mode='min', comp_def=None):
         """
 
         :param variable a variable object for which this computation is
@@ -233,10 +232,6 @@ class MixedDsaComputation(VariableComputation):
         self._neighbors = set([v.name for c in constraints
                                for v in c.dimensions if v != variable])
         self._neighbors_values = {}
-
-        self.logger = logger if logger is not None else \
-            logging.getLogger('pydcop.algo.mixed-dsa'+variable.name)
-
         self._postponed_messages = list()
 
         self.hard_constraints = list()

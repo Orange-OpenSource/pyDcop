@@ -247,8 +247,7 @@ class GdbaComputation(VariableComputation):
     def __init__(self, variable: Variable,
                  constraints: Iterable[RelationProtocol], mode='min',
                  modifier='A', violation='NZ', increase_mode='E',
-                 msg_sender=None, logger=None,
-                 comp_def=None):
+                 msg_sender=None, comp_def=None):
         """
         :param variable: a variable object for which this computation is
         responsible
@@ -265,8 +264,6 @@ class GdbaComputation(VariableComputation):
         super().__init__(variable, comp_def)
 
         self._msg_sender = msg_sender
-        self.logger = logger if logger is not None \
-            else logging.getLogger('pydcop.algo.gdba.' + variable.name)
 
         # Handling messages arriving during wrong mode
         self.__postponed_improve_messages__ = []

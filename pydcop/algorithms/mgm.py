@@ -236,7 +236,7 @@ class MgmComputation(VariableComputation):
 
     def __init__(self, variable: Variable,
                  utilities: Iterable[RelationProtocol],
-                 mode='min', msg_sender=None, logger=None,
+                 mode='min', msg_sender=None,
                  break_mode='lexic',
                  stop_cycle= None,
                  comp_def=None):
@@ -249,10 +249,7 @@ class MgmComputation(VariableComputation):
         """
 
         super().__init__(variable, comp_def)
-
         self._msg_sender = msg_sender
-        self.logger = logger if logger is not None \
-            else logging.getLogger('pydcop.algo.mgm.' + variable.name)
 
         self.__utilities__ = list(utilities)
         self._mode = mode  # min or max

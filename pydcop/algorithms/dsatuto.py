@@ -74,12 +74,21 @@ class DsaTutoComputation(VariableComputation):
     """
     A very simple DSA implementation.
 
+    Parameters
+    ----------
+    variable: Variable
+        an instance of Variable, whose this computation is responsible for
+    constraints: an iterable of constraints objects
+        The constraints the variables depends on
+    computation_definition: ComputationDef
+        the definition of the computation, given as a ComputationDef instance.
+
+
     """
     def __init__(self, variable, constraints, computation_definition):
         super().__init__(variable, computation_definition)
 
-        self.logger = logging.getLogger('pydcop.algo.dsatuto.'+variable.name)
-        self.constraints = constraints
+        self.constraints = list(constraints)
         self.current_cycle = {}
         self.next_cycle = {}
 
@@ -109,8 +118,8 @@ class DsaTutoComputation(VariableComputation):
                               self.cycle_count, self.current_cycle)
 
             self.current_cycle[self.variable.name] = self.current_value
-            current_cost = assignment_cost(self.current_cycle, self.constraints)
             arg_min, min_cost = self.compute_best_value()
+            current_cost = assignment_cost(self.current_cycle, self.constraints)
 
             self.logger.debug(
                 "Evaluate cycle %s: current cost %s - best cost %s",
@@ -138,5 +147,4 @@ class DsaTutoComputation(VariableComputation):
             if cost < min_cost:
                 min_cost, arg_min = cost, value
         return arg_min, min_cost
-
 

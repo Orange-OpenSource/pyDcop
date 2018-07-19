@@ -487,7 +487,6 @@ class Mgm2Computation(VariableComputation):
         }
 
         self._msg_sender = msg_sender
-        self.logger = logging.getLogger('pydcop.algo.mgm2.' + variable.name)
         self.cycle_stop = cycle_stop
 
         # Handling messages arriving during wrong mode

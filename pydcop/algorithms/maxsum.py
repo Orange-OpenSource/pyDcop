@@ -309,7 +309,7 @@ class FactorAlgo(DcopComputation):
 
     """
 
-    def __init__(self, factor, name=None, msg_sender=None, logger=None,
+    def __init__(self, factor, name=None, msg_sender=None,
                  infinity=INFINITY, stability=STABILITY_COEFF,
                  comp_def=None):
         """
@@ -338,9 +338,6 @@ class FactorAlgo(DcopComputation):
         self._costs = {}
 
         self._msg_sender = msg_sender
-
-        self.logger = logger if logger is not None \
-            else logging.getLogger('pydcop.algo.maxsum.' + factor.name)
 
         # A dict var_name -> (message, count)
         self._prev_messages = defaultdict(lambda: (None, 0))
@@ -620,8 +617,6 @@ class VariableAlgo(VariableComputation):
         # with. { factor : {domain value : cost }}
         self._costs = {}
 
-        self.logger = logging.getLogger('pydcop.algo.maxsum.' + variable.name)
-        self.cycle_logger = logging.getLogger('cycle')
         self._is_stable = False
         self._prev_messages = defaultdict(lambda: (None, 0))
 

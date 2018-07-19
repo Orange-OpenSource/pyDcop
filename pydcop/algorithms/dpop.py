@@ -349,8 +349,6 @@ class DpopAlgo(VariableComputation):
             # before us
             self._waited_children = self._children[:]
 
-        self.logger = logging.getLogger('pydcop.algo.dpop.' + variable.name)
-
     def footprint(self):
         return computation_memory(self.computation_def.node)
 

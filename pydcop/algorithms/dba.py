@@ -324,7 +324,7 @@ class DbaComputation(VariableComputation):
 
     def __init__(self, variable: Variable,
                  constraints: Iterable[RelationProtocol],
-                 msg_sender=None, logger=None, mode='min',
+                 msg_sender=None, mode='min',
                  infinity=INFINITY, max_distance=50,
                  comp_def=None):
         """
@@ -340,10 +340,8 @@ class DbaComputation(VariableComputation):
             raise ValueError('DBA is a constraint **satisfaction** '
                              'algorithm and only support '
                              'minimization objective')
-        
+
         self._msg_sender = msg_sender
-        self.logger = logger if logger is not None \
-            else logging.getLogger('pydcop.algo.dba.' + variable.name)
 
         global INFINITY
         INFINITY = infinity
