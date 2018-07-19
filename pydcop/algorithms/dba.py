@@ -101,7 +101,8 @@ import random
 
 from typing import Iterable, Dict
 
-from pydcop.algorithms.objects import filter_assignment_dict, ComputationDef
+from pydcop.algorithms.objects import filter_assignment_dict, ComputationDef, \
+    AlgoParameterDef
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
 
@@ -273,43 +274,10 @@ class DbaEndMessage(Message):
         return type(other) == DbaEndMessage
 
 
-def algo_params(params: Dict[str, str]):
-    """
-    DBA support two parameters:
-
-    * the value used as 'infinity', returned as the cost of a violated
-    constraint (it must map the value used in your dcop definition)
-
-    * 'max_path' : an upper bound for the maximum distance between two
-    agents in the graph. Ideally you could use the graph diameter or simply
-    the number of variables in the problem. It is use for termination
-    detection (which in DBA only works is there is a solution to the problem).
-
-    :param params: a dict containing name and values for parameters
-
-    :return: a Dict with all dsa paremeters (either their default value or
-    the values extracted form `params`
-    """
-    dba_params = {
-        'infinity': 10000,
-        'max_distance': 50
-    }
-    if 'infinity' in params:
-        try:
-            dba_params['infinity'] = int(params['infinity'])
-        except TypeError:
-            raise TypeError("'infinity' parameter for DBA must be an int")
-    if 'max_distance' in params:
-        try:
-            dba_params['max_distance'] = int(params['max_distance'])
-        except TypeError:
-            raise TypeError("'max_distance' parameter for DBA must be an int")
-
-    remaining_params = set(params) - {'infinity', 'max_distance'}
-    if remaining_params:
-        raise ValueError('Unknown parameter(s) for DBA : {}'
-                         .format(remaining_params))
-    return dba_params
+algo_params = [
+    AlgoParameterDef('infinity', 'int', None, 10000),
+    AlgoParameterDef('max_distance', 'int', None, 50),
+]
 
 
 # ###########################   COMPUTATION   ############################

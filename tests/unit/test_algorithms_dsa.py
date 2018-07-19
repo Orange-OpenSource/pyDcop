@@ -83,7 +83,12 @@ def test_footprint_on_computation_object():
     comp_def = ComputationDef(n1, AlgoDef('dsa', mode='min'))
     c = build_computation(comp_def)
 
-    assert c.footprint() ==  5
+    # Must fix unit size otherwise the tests fails when we change the default
+    # value
+    dsa.UNIT_SIZE = 1
+
+    footprint = c.footprint()
+    assert footprint == 1
 
 
 class Neighbors(unittest.TestCase):

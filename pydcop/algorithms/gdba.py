@@ -44,7 +44,7 @@ from collections import defaultdict
 from typing import Iterable, Dict, Any, Tuple
 
 from pydcop.algorithms.objects import generate_assignment_as_dict, \
-    filter_assignment_dict, ComputationDef
+    filter_assignment_dict, ComputationDef, AlgoParameterDef
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
 from pydcop.computations_graph.constraints_hypergraph import \
@@ -183,43 +183,12 @@ class GdbaImproveMessage(Message):
         return False
 
 
-def algo_params(params: Dict[str, str]):
-    """
-    Returns the parameters for the algorithm.
-
-    If a value for parameter is given in `params` it is used, otherwise a
-    default value is used instead.
-
-    :param params: a dict containing name and values for parameters
-    :return: A dictionary {param_name: param_value}
-    """
-    gdba_params = {
-        'modifier': 'A',
-        'violation': 'NZ',
-        'increase_mode': 'E',
-    }
-    if 'modifier' in params:
-        if params['modifier'] not in ['A', 'M']:
-            raise ValueError("'modifier' parameter for GDBA must be 'A' or 'M'")
-        gdba_params['modifier'] = params['modifier']
-    if 'violation' in params:
-        if params['violation'] not in ['NZ', 'NM', 'MX']:
-            raise ValueError(
-                "'violation' parameter for GDBA must be 'NZ', 'NM' or 'MX'")
-        gdba_params['violation'] = params['violation']
-    if 'increase_mode' in params:
-        if params['increase_mode'] not in ['E', 'R', 'C', 'T']:
-            raise ValueError(
-                "'increase_mode' parameter for GDBA must be 'E', 'R', "
-                "'C' or 'T'")
-        gdba_params['increase_mode'] = params['increase_mode']
-
-    remaining_params = set(params) - {'infinity', 'modifier', 'violation',
-                                      'increase_mode'}
-    if remaining_params:
-        raise ValueError('Unknown parameter(s) for GDBA : {}'
-                         .format(remaining_params))
-    return gdba_params
+algo_params = [
+    AlgoParameterDef('infinity', 'int', None, 10000),
+    AlgoParameterDef('modifier', 'str',  ['A', 'M'], 'A'),
+    AlgoParameterDef('violation', 'str', ['NZ', 'NM', 'MX'], 'NZ'),
+    AlgoParameterDef('increase_mode', 'str', ['E', 'R', 'C', 'T'], "E"),
+]
 
 
 # ###########################   COMPUTATION   ############################

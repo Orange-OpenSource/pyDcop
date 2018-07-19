@@ -55,6 +55,8 @@ from pydcop.algorithms.objects import get_data_type_max, get_data_type_min, \
     find_arg_optimal, ComputationDef, DEFAULT_TYPE, ALGO_STOP, ALGO_CONTINUE
 
 GRAPH_TYPE = 'pseudotree'
+# DCOP has no parameters
+algo_params = []
 
 
 def algo_name() -> str:
@@ -256,6 +258,8 @@ def _add_var_to_assignment(partial_assignt, ass_vars, new_var, new_value):
         if ass_vars[i] == new_var:
             full_assignment.insert(i, new_value)
     return full_assignment
+
+
 
 
 class DpopAlgo(VariableComputation):

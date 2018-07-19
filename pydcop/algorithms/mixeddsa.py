@@ -39,7 +39,7 @@ from typing import Dict, List, Tuple
 from pydcop.dcop.relations import RelationProtocol
 
 from pydcop.algorithms.objects import generate_assignment_as_dict, \
-    filter_assignment_dict, ComputationDef
+    filter_assignment_dict, ComputationDef, AlgoParameterDef
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
 
@@ -126,41 +126,12 @@ def communication_load(src: VariableComputationNode, target: str) -> float:
     return  UNIT_SIZE + HEADER_SIZE
 
 
-def algo_params(params: Dict[str, str]):
-    """
-    Returns the parameters for the algorithm.
-
-    If a value for parameter is given in `params` it is used, otherwise a
-    default value is used instead.
-
-    :param params: a dict containing name and values for parameters
-    :return:
-    """
-    mixeddsa_params = {
-        'proba_hard': 0.7,
-        'proba_soft': 0.5,
-        'variant': 'B'
-    }
-    if 'proba_hard' in params:
-        try:
-            mixeddsa_params['proba_hard'] = float(params['proba_hard'])
-        except:
-            raise TypeError("'proba_hard' parameter for MixDSA must be a float")
-    if 'proba_soft' in params:
-        try:
-            mixeddsa_params['proba_soft'] = float(params['proba_soft'])
-        except:
-            raise TypeError("'proba_soft' parameter for MixDSA must be a float")
-    if 'variant' in params:
-        if params['variant'] not in ['A', 'B', 'C']:
-            raise ValueError("'variant' parameter for DSA must be A, B or C")
-        mixeddsa_params['variant'] = params['variant']
-
-    remaining_params = set(params) - {'proba_hard', 'proba_soft', 'variant'}
-    if remaining_params:
-        raise ValueError('Unknown parameter(s) for DSA : {}'
-                         .format(remaining_params))
-    return mixeddsa_params
+algo_params = [
+    AlgoParameterDef('proba_hard', 'float', None, 0.7),
+    AlgoParameterDef('proba_soft', 'float', None, 0.5),
+    AlgoParameterDef('variant', 'str', ['A', 'B', 'C'], 'B'),
+    AlgoParameterDef('stop_cycle', 'int', None, 0),
+]
 
 
 class MixedDsaMessage(Message):

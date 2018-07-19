@@ -58,7 +58,7 @@ from pydcop.computations_graph.factor_graph import VariableComputationNode, \
     FactorComputationNode
 from pydcop.dcop.objects import VariableNoisyCostFunc, Variable
 from pydcop.algorithms.objects import generate_assignment_as_dict, \
-    ComputationDef
+    ComputationDef, AlgoParameterDef
 from pydcop.infrastructure.computations import Message, DcopComputation, \
     VariableComputation, register
 
@@ -185,48 +185,12 @@ def communication_load(src: Union[FactorComputationNode,
                      'invalid computation: ' + str(src))
 
 
-def algo_params(params: Dict[str, str]):
-    """
-    Returns the parameters for the algorithm.
-
-    If a value for parameter is given in `params` it is used, otherwise a
-    default value is used instead.
-
-    :param params: a dict containing name and values for parameters
-    :return:
-    """
-    maxsum_params = {
-        'infinity': 10000,
-        'stability': 0.1,
-        'damping': 0
-    }
-    if 'infinity' in params:
-        try:
-            maxsum_params['infinity'] = int(params['infinity'])
-        except:
-            raise TypeError("'infinity' parameter for Max-Sum must be an int")
-
-    if 'stability' in params:
-        try:
-            stability = float(params['stability'])
-            if stability > 1:
-                raise ValueError(
-                    "'stability' parameter for MaxSum a float <1 ")
-            maxsum_params['stability'] = stability
-        except:
-            raise ValueError("'stability' parameter for MaxSum a float <1 ")
-
-    if 'damping' in params:
-        try:
-            maxsum_params['damping'] = float(params['damping'])
-        except:
-            raise TypeError("'damping' parameter for Max-Sum must be an int")
-
-    remaining_params = set(params) - {'infinity', 'stability', 'damping'}
-    if remaining_params:
-        raise ValueError('Unknown parameter(s) for Max-Sum : {}'
-                         .format(remaining_params))
-    return maxsum_params
+algo_params = [
+    AlgoParameterDef('infinity', 'int', None, 10000),
+    AlgoParameterDef('stability', 'float', None, 0.1),
+    AlgoParameterDef('damping', 'float', None, 0.0),
+    AlgoParameterDef('stability', 'float', None, STABILITY_COEFF)
+]
 
 
 class MaxSumMessage(Message):

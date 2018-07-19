@@ -739,6 +739,9 @@ class VariableComputation(DcopComputation):
         if variable is None:
             raise ValueError('Variable object is mandatory for a '
                              'VariableComputation')
+        if comp_def is None:
+            raise ValueError('ComputationDef object is mandatory for a '
+                             'VariableComputation')
         super().__init__(variable.name, comp_def)
         self._variable = variable
         self.__value__ = None  # NEVER access this directly

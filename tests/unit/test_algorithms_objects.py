@@ -39,29 +39,36 @@ class AlgoDefTest(unittest.TestCase):
 
     def test_algo_def(self):
 
-        a = AlgoDef('maxsum', 'min', stability_coef=0.01)
+        a = AlgoDef('maxsum', 'min', {'stability': 0.01})
 
         self.assertEqual(a.algo, 'maxsum')
         self.assertEqual(a.mode, 'min')
-        self.assertIn('stability_coef', a.param_names())
-        self.assertEqual(a.param_value('stability_coef'), 0.01)
+        self.assertIn('stability', a.param_names())
+        self.assertEqual(a.param_value('stability'), 0.01)
 
     def test_simple_repr(self):
 
-        a = AlgoDef('maxsum', 'min', stability_coef=0.01)
+        a = AlgoDef('maxsum', 'min', {'stability': 0.01})
 
         r = simple_repr(a)
 
         self.assertEqual(r['algo'], 'maxsum')
         self.assertEqual(r['mode'], 'min')
-        self.assertEqual(r['params']['stability_coef'], 0.01)
+        self.assertEqual(r['params']['stability'], 0.01)
 
     def test_from_repr(self):
 
-        a = AlgoDef('maxsum', 'min', stability_coef=0.01)
+        a = AlgoDef('maxsum', 'min', {'stability': 0.01})
 
         r = simple_repr(a)
         a2 = from_repr(r)
 
         self.assertEqual(a, a2)
-        self.assertEqual(a2.param_value('stability_coef'), 0.01)
+        self.assertEqual(a2.param_value('stability'), 0.01)
+
+
+def building_Algodef_with_default_params():
+
+    a = AlgoDef.build_with_default_param('maxsum')
+
+    assert a.params['damping'] == 0

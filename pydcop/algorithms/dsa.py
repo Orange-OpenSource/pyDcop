@@ -69,7 +69,6 @@ Example
 
 """
 
-import logging
 import operator
 import random
 

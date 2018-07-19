@@ -57,10 +57,16 @@ class AlgoDef(SimpleRepr):
 
     """
 
-    def __init__(self, algo: str, mode: str='min', params: Dict[str, Any]= None,
-                 parameters_definitions: List[AlgoParameterDef]= None
-                 ) -> None:
+    def __init__(self, algo: str, mode: str='min',
+                 params: Dict[str, Any]= None) -> None:
         """
+
+        Notes
+        -----
+        params must already be a dict of valid parameter for this algorithm
+        no check is done. If you want to automatically use default arguments
+        for parameters, use `AlgoDef.build_with_default_param` static method
+        instead.
 
         :param algo: name of the algorithm. It must be the name of a module
         in the `pydcop.algorithms` package.
@@ -72,13 +78,24 @@ class AlgoDef(SimpleRepr):
         self._algo = algo
         self._mode = mode
 
-        params = {} if params is None else params
+        self._params = {} if params is None else params
+
+    @staticmethod
+    def build_with_default_param(
+            algo: str, mode: str='min',
+            params: Dict[str, Any]= None,
+            parameters_definitions: List[AlgoParameterDef]= None):
+
         if parameters_definitions is None:
             algo_module = import_module('pydcop.algorithms.{}'.format(algo))
             parameters_definitions = algo_module.algo_params
 
-        self._params = prepare_algo_params(
+        params = {} if params is None else params
+        params = prepare_algo_params(
             params, parameters_definitions)  # type: Dict[str, Any]
+
+        return AlgoDef(algo, mode, params)
+
 
     @property
     def algo(self) -> str:
@@ -109,7 +126,7 @@ class AlgoDef(SimpleRepr):
         del r['params']
         args = {k: from_repr(v) for k, v in r.items()
                 if k not in ['__qualname__', '__module__']}
-        algo = cls(**args, **params)
+        algo = cls(**args, params=params)
         return algo
 
     def __str__(self):

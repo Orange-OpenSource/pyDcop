@@ -48,7 +48,7 @@ from collections import defaultdict
 from typing import Iterable, Dict, Any, Tuple, List
 
 from pydcop.algorithms.objects import generate_assignment_as_dict, \
-    filter_assignment_dict, ComputationDef
+    filter_assignment_dict, ComputationDef, AlgoParameterDef
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
 
@@ -141,44 +141,13 @@ def communication_load(src: VariableComputationNode, target: str) -> float:
     # for potential coordinated move we have two value and a gain :
     return nb_pairs * UNIT_SIZE * 3 + HEADER_SIZE
 
+algo_params = [
+    AlgoParameterDef('threshold', 'float', None, 0.5),
+    AlgoParameterDef('favor', 'str', 'unilateral',
+                     ['unilateral', 'no', 'coordinated']),
+    AlgoParameterDef('stop_cycle', 'int', None, 0),
 
-def algo_params(params: Dict[str, str]):
-    """
-    Returns the parameters for the algorithm.
-
-    If a value for parameter is given in `params` it is used, otherwise a
-    default value is used instead.
-
-    :param params: a dict containing name and values for parameters
-    :return:
-    """
-    mgm2_params = {
-        'threshold': 0.5,
-        'favor': 'unilateral',
-        'cycle_stop': None
-    }
-    if 'threshold' in params:
-        try:
-            mgm2_params['threshold'] = float(params['threshold'])
-        except ValueError:
-            raise ValueError("'threshold' parameter for MGM2 must be a float")
-    if 'favor' in params:
-        if params['favor'] in ['unilateral', 'no', 'coordinated']:
-            mgm2_params['favor'] = params['favor']
-        else:
-            raise ValueError("'favor' parameter for MGM2 must be "
-                             "'unilateral', 'no' or 'coordinated'")
-    if 'cycle_stop' in params:
-        try:
-            mgm2_params['cycle_stop'] = int('cycle_stop')
-        except ValueError:
-            raise ValueError("''cycle_stop' parameter must be an int")
-
-    remaining_params = set(params) - {'threshold', 'favor', 'cycle_stop'}
-    if remaining_params:
-        raise ValueError('Unknown parameter(s) for MGM2 : {}'
-                         .format(remaining_params))
-    return mgm2_params
+]
 
 
 # ############################   MESSAGES   ################################
@@ -460,7 +429,7 @@ class Mgm2Computation(VariableComputation):
     favor: 'unilateral',
         the type of moved that is favored in the algorithm : 'unilateral', 'no'
         or 'coordinated'
-    cycle_stop: int
+    stop_cycle: int
         number of cycles before stopping. If None, the computation does not
         stop autonomously.
     comp_def: ComputationDef
@@ -473,7 +442,7 @@ class Mgm2Computation(VariableComputation):
                  threshold: float =0.5,
                  mode: str='min',
                  msg_sender=None,
-                 favor: str='unilateral', cycle_stop: int=None,
+                 favor: str='unilateral', stop_cycle: int=None,
                  comp_def: ComputationDef=None):
 
         super().__init__(variable, comp_def)
@@ -487,7 +456,7 @@ class Mgm2Computation(VariableComputation):
         }
 
         self._msg_sender = msg_sender
-        self.cycle_stop = cycle_stop
+        self.stop_cycle = stop_cycle
 
         # Handling messages arriving during wrong mode
         self._postponed_msg = defaultdict(lambda: [])  # type: Dict[str, List]
@@ -657,12 +626,12 @@ class Mgm2Computation(VariableComputation):
 
         """
         self.new_cycle()
-        if self.cycle_stop is not None and self.cycle_count >= self.cycle_stop:
+        if self.stop_cycle is not None and self.cycle_count >= self.stop_cycle:
             # The computation has run for the requested number of cycles :
             # stop it.
             self.logger.info('Computation has reached the number of '
                              'requested cycles (%s) : stopping ',
-                             self.cycle_stop)
+                             self.stop_cycle)
             self.finished()
             return
         else:
