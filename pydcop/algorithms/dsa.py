@@ -181,7 +181,7 @@ def communication_load(src: VariableComputationNode, target: str) -> float:
 algo_params = [
     AlgoParameterDef('probability', 'float', None, 0.7),
     AlgoParameterDef('variant', 'str', ['A', 'B', 'C'], 'B'),
-    AlgoParameterDef('stop_cycle', 'int', None, None),
+    AlgoParameterDef('stop_cycle', 'int', None, 0),
 ]
 
 
