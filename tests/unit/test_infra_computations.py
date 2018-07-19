@@ -110,6 +110,7 @@ def test_setting_message_sender_only_works_once():
 def test_periodic_action_on_computation():
 
     a = Agent('a', MagicMock())
+
     class TestComputation(MessagePassingComputation):
         def __init__(self):
             super().__init__('test')
@@ -135,6 +136,7 @@ def test_periodic_action_on_computation():
 def test_several_periodic_action_on_computation():
 
     a = Agent('a', MagicMock())
+
     class TestComputation(MessagePassingComputation):
         def __init__(self):
             super().__init__('test')
@@ -165,8 +167,8 @@ def test_several_periodic_action_on_computation():
 
 def test_periodic_action_not_called_when_paused():
 
-
     a = Agent('a', MagicMock())
+
     class TestComputation(MessagePassingComputation):
         def __init__(self):
             super().__init__('test')
@@ -192,7 +194,6 @@ def test_periodic_action_not_called_when_paused():
     assert c.mock.call_count == 0
 
     a.stop()
-
 
 
 def test_register_handler_decorator():
@@ -222,9 +223,30 @@ def test_handler_decorator():
         def on_msg(self, sender: str, msg: Message, t: float):
             self.mock(sender, msg, t)
 
+    # Computation must be started for messages to be handled
     c = TestComputation()
+    c.start()
 
     msg = Message("test_type")
     c.on_message('foo', msg, 0)
 
     c.mock.assert_called_once_with("foo", msg, 0)
+
+
+def test_handler_decorator_not_called_before_start():
+    class TestComputation(MessagePassingComputation):
+        def __init__(self):
+            super().__init__('test')
+            self.mock = MagicMock()
+
+        @register("test_type")
+        def on_msg(self, sender: str, msg: Message, t: float):
+            self.mock(sender, msg, t)
+
+    c = TestComputation()
+
+    msg = Message("test_type")
+    c.on_message('foo', msg, 0)
+
+    # Computation is NOT started, handled must NOT be called
+    c.mock.assert_not_called()

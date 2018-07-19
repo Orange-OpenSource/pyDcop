@@ -229,6 +229,11 @@ class ComputationMetaClass(type):
     ComputationMetaClass is used to ensure that each subclass of
     `MessagePassingComputation` has it's own set of message handlers,
     which can be declared using the `@register` decorator.
+
+    See Also
+    --------
+
+    register(message_type) decorator.
     """
 
     def __new__(mcs, clsname, bases, attrs):
@@ -245,15 +250,32 @@ class ComputationMetaClass(type):
 
 class MessagePassingComputation(object, metaclass=ComputationMetaClass):
     """
+    `MessagePassingComputation` is the base class for all computations.
+    It defines the computation lifecycle (`start`, `pause`, `stop`) and can
+    send and receive messages.
+
+    When subclassing `MessagePassingComputation`, you can use the `@register`
+    decorator on your subclass methods to register then as handler for a
+    specific kind of message. For example
+
+    > class MyComputation(MessagePassingComputation):
+    >    ...
+    >    @register('msg_on_c')
+    >    def handler_c(self, s, m, t):
+    >        print("received messages", m, "from", s)
 
     Notes
     -----
-    A computation is always be hosted, and run, on an agent, which works with a
-    single thread.
+    A computation is always be hosted and run on an agent, which works with a
+    single thread. This means that its methods do not need to be thread safe
+    as they will always be called sequentially in the same single thread.
 
-    Parameters:
+
+    Parameters
+    ----------
     name: str
         The name of the computation.
+
     """
     def __init__(self, name: str):
         self._name = name
@@ -318,12 +340,47 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         pass
 
     def start(self):
+        """
+        Start the computation.
+
+        A computation will only handle messages once it has been started.
+        However, due to the asynchronous and distributed nature of the
+        system, computation may send messages to computations that did not
+        start yet ; any message received before startup is kept and handled once
+        `start()` has been called.
+
+        This method should not be overwritten in subclasses, instead you can
+        overwrite the `on_start` hook, which is called automatically when the
+        computation starts, before handling pending messages received before
+        startup.
+
+        """
         self._running = True
         self.on_start()
 
+        pending_msg_count = 0
+        while self._paused_messages_recv:
+            pending_msg_count += 1
+            src, msg, t = self._paused_messages_recv.pop()
+            # Do NOT call on_message directly, that would block the
+            # agent's thread for a potentially long time during which we
+            # would not be able to handle any mgt message.
+            # Instead, inject the message with a slightly higher
+            # priority so that we handle them before new messages.
+            self._msg_sender(src, self.name, msg, 19)
+        self.logger.debug('On startup, injecting %s pending '
+                          'messages received before start', pending_msg_count)
+
     def stop(self):
-        self.on_stop()
+        """
+        Stop the computation.
+
+        This method should not be overwritten in subclasses, instead you can
+        overwrite the `on_stop` hook, which is called automatically when the
+        computation stops.
+        """
         self._running = False
+        self.on_stop()
 
     def pause(self, is_paused: bool=True):
         """
@@ -412,7 +469,10 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         t: float
             reception time
         """
-        if not self.is_paused:
+
+        if not self.is_paused and self._running:
+            # Only handle messages if the computation has been started and is
+            # not paused.
             event_bus.send('computations.message_rcv.' + self.name,
                            (self.name, msg.size))
             try:
@@ -501,7 +561,7 @@ class register(object):
     Examples
     --------
 
-    > class C(Abs):
+    > class C(MessagePassingComputation):
     >    ...
     >    @register('msg_on_c')
     >    def handler_c(self, s, m, t):
