@@ -43,8 +43,8 @@ from collections import defaultdict
 
 from typing import Iterable, Dict, Any, Tuple
 
-from pydcop.algorithms import filter_assignment_dict, \
-    generate_assignment_as_dict, ComputationDef
+from pydcop.algorithms.objects import generate_assignment_as_dict, \
+    filter_assignment_dict, ComputationDef
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
 from pydcop.computations_graph.constraints_hypergraph import \

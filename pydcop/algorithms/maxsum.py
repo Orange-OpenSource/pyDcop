@@ -54,11 +54,11 @@ from typing import Dict, Union, Tuple, Any, List
 
 from collections import defaultdict
 
-from pydcop.algorithms import ComputationDef
 from pydcop.computations_graph.factor_graph import VariableComputationNode, \
     FactorComputationNode
 from pydcop.dcop.objects import VariableNoisyCostFunc, Variable
-from . import generate_assignment_as_dict
+from pydcop.algorithms.objects import generate_assignment_as_dict, \
+    ComputationDef
 from pydcop.infrastructure.computations import Message, DcopComputation, \
     VariableComputation, register
 

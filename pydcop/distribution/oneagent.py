@@ -85,7 +85,7 @@ def distribution_cost(distribution: Distribution,
     distribution cost:
         0
     """
-    return 0
+    return 0, 0, 0
 
 def distribute(computation_graph: ComputationGraph,
                agentsdef: Iterable[AgentDef],

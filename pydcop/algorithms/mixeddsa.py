@@ -38,8 +38,8 @@ from typing import Dict, List, Tuple
 
 from pydcop.dcop.relations import RelationProtocol
 
-from pydcop.algorithms import filter_assignment_dict, \
-    generate_assignment_as_dict, ComputationDef
+from pydcop.algorithms.objects import generate_assignment_as_dict, \
+    filter_assignment_dict, ComputationDef
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
 

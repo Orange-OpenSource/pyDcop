@@ -35,7 +35,7 @@ from typing import Dict, Iterable, Union
 
 import yaml
 
-from pydcop.algorithms import generate_assignment_as_dict
+from pydcop.algorithms.objects import generate_assignment_as_dict
 from pydcop.dcop.objects import VariableDomain, Variable, \
     ExternalVariable, VariableWithCostFunc, VariableNoisyCostFunc, AgentDef
 from pydcop.dcop.scenario import EventAction, DcopEvent, Scenario

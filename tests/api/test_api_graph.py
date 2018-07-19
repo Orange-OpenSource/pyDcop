@@ -33,8 +33,8 @@ from time import sleep
 
 import pydcop.computations_graph.constraints_hypergraph as chg
 
-from pydcop.algorithms import dsa, mgm, mgm2, ComputationDef
-from pydcop.algorithms.objects import AlgoDef
+from pydcop.algorithms import dsa, mgm, mgm2
+from pydcop.algorithms.objects import AlgoDef, ComputationDef
 from pydcop.dcop.objects import Domain, Variable
 from pydcop.dcop.relations import constraint_from_str
 from pydcop.infrastructure.agents import Agent

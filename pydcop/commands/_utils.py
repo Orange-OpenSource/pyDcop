@@ -41,8 +41,7 @@ from queue import Queue, Empty
 from types import FunctionType
 from typing import List
 
-from pydcop.algorithms import prepare_algo_params
-from pydcop.algorithms.objects import AlgoDef
+from pydcop.algorithms.objects import AlgoDef, prepare_algo_params
 
 logger = logging.getLogger('pydcop')
 
@@ -89,7 +88,7 @@ def build_algo_def(algo_module, algo_name: str, objective,
                                **algo_module.algo_params(params))
             else:
                 return AlgoDef(algo_name, objective,
-                               **prepare_algo_params(params,
+                               prepare_algo_params(params,
                                                      algo_module.algo_params))
 
         except Exception as e:

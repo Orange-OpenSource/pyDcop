@@ -34,11 +34,11 @@ import time
 
 from pydcop.algorithms.maxsum_dynamic import DynamicFactorComputation, \
     DynamicFactorVariableComputation
+from pydcop.dcop.dcop import DCOP
 from pydcop.dcop.objects import VariableNoisyCostFunc
 from pydcop.dcop.relations import find_dependent_relations, \
     NAryFunctionRelation
-from pydcop.infrastructure.run import AgentsRunner
-from pydcop.infrastructure.run import Agent
+from pydcop.infrastructure.agents import Agent
 from pydcop.infrastructure.communication import InProcessCommunicationLayer
 
 """
@@ -146,8 +146,9 @@ def dmaxsum_graphcoloring():
     r1_fcts = [r1, r1_2]
 
     agents = [a1, a2, a3]
-    runner = AgentsRunner(agents)
-    runner.run_agents()
+
+    for a in agents:
+        a.start()
 
     # Now change a factor function every two seconds
     r1_fct, iteration, fail = 0, 0, False

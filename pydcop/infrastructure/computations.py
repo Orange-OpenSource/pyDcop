@@ -44,7 +44,7 @@ from typing import List, Tuple, Any, Callable
 
 from numpy import random
 
-from pydcop.algorithms import ComputationDef
+from pydcop.algorithms.objects import ComputationDef
 from pydcop.dcop.objects import Variable
 from pydcop.utils.simple_repr import SimpleRepr, SimpleReprException, \
     simple_repr
@@ -245,11 +245,6 @@ class ComputationMetaClass(type):
             # attribute and must be added to the dict of handlers.
             if hasattr(attr, 'msg_type'):
                     cls._decorated_handlers[attr.msg_type] = attr
-        comp_module = cls.__module__
-        name =  comp_module.split('.')[-1]
-
-        # if module.startswith('pydcop.algorithms'):
-
         return cls
 
 

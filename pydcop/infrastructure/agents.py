@@ -53,8 +53,7 @@ from typing import Dict, List, Optional, Union, Callable, Tuple
 
 from collections import defaultdict
 
-from pydcop.algorithms import ComputationDef
-from pydcop.algorithms.objects import AlgoDef
+from pydcop.algorithms.objects import AlgoDef, ComputationDef
 from pydcop.dcop.objects import AgentDef, create_binary_variables
 from pydcop.dcop.objects import BinaryVariable
 from pydcop.dcop.relations import Constraint

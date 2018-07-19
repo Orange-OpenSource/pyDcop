@@ -33,7 +33,7 @@ from typing import Dict, List
 
 from collections import defaultdict
 
-from pydcop.algorithms import ComputationDef
+from pydcop.algorithms.objects import ComputationDef
 from pydcop.infrastructure.computations import Message
 
 

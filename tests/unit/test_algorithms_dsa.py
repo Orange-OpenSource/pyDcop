@@ -32,9 +32,9 @@
 import unittest
 from unittest.mock import MagicMock
 
-from pydcop.algorithms import ComputationDef, dsa
+from pydcop.algorithms import dsa
 from pydcop.algorithms.dsa import DsaComputation, build_computation
-from pydcop.algorithms.objects import AlgoDef
+from pydcop.algorithms.objects import AlgoDef, ComputationDef
 from pydcop.computations_graph.constraints_hypergraph \
     import VariableComputationNode, ConstraintLink
 from pydcop.dcop.objects import Variable

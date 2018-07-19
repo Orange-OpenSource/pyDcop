@@ -39,7 +39,7 @@ from collections import defaultdict
 from copy import deepcopy
 from typing import List, Dict, Tuple, Set, Iterable, Union
 
-from pydcop.algorithms import ComputationDef
+from pydcop.algorithms.objects import ComputationDef
 from pydcop.infrastructure.agents import Agent
 from pydcop.infrastructure.computations import MessagePassingComputation, \
     Message

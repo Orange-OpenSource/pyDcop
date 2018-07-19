@@ -32,7 +32,7 @@
 import logging
 from typing import Dict, List, Set
 
-from pydcop.algorithms import ComputationDef
+from pydcop.algorithms.objects import ComputationDef
 from pydcop.dcop.objects import AgentDef
 from pydcop.infrastructure.agents import ResilientAgent
 from pydcop.infrastructure.communication import CommunicationLayer, MSG_VALUE, \

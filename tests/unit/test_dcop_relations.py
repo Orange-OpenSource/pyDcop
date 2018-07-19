@@ -32,7 +32,8 @@
 import unittest
 
 import numpy as np
-from pydcop.algorithms import generate_assignment, generate_assignment_as_dict
+from pydcop.algorithms.objects import generate_assignment, \
+    generate_assignment_as_dict
 
 import pydcop.dcop.objects
 from pydcop.dcop.objects import VariableDomain, Variable, ExternalVariable, \

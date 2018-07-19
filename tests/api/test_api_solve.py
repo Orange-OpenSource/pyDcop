@@ -29,8 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from pydcop.dcop.dcop import DCOP
-from pydcop.dcop.objects import Domain, create_variables, create_agents
+from pydcop.dcop.objects import create_agents
 from pydcop.infrastructure.run import solve
 from tests.api.instances_and_utils import dcop_graphcoloring_3
 

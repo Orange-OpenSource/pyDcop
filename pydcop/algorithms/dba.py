@@ -101,7 +101,7 @@ import random
 
 from typing import Iterable, Dict
 
-from pydcop.algorithms import filter_assignment_dict, ComputationDef
+from pydcop.algorithms.objects import filter_assignment_dict, ComputationDef
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
 

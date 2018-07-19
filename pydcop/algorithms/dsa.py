@@ -76,9 +76,9 @@ import random
 import functools
 from typing import Any, Tuple
 
-from pydcop.algorithms import find_arg_optimal, filter_assignment_dict, \
-    generate_assignment_as_dict, ComputationDef, AlgoParameterDef, \
-    assignment_cost
+from pydcop.algorithms.objects import generate_assignment_as_dict, \
+    assignment_cost, filter_assignment_dict, find_arg_optimal, ComputationDef, \
+    AlgoParameterDef
 from pydcop.infrastructure.computations import MessagePassingComputation, \
     Message, VariableComputation, DcopComputation, register
 
@@ -87,8 +87,8 @@ from pydcop.computations_graph.constraints_hypergraph import \
 from pydcop.dcop.relations import find_optimum
 
 
-HEADER_SIZE = 100
-UNIT_SIZE = 5
+HEADER_SIZE = 0
+UNIT_SIZE = 1
 
 # Type of computations graph that must be used with dsa
 GRAPH_TYPE = 'constraints_hypergraph'

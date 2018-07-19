@@ -44,17 +44,15 @@ import logging
 
 from typing import Iterable
 
-from pydcop.algorithms import generate_assignment, generate_assignment_as_dict,\
-    find_arg_optimal, DEFAULT_TYPE, \
-    ALGO_STOP, ALGO_CONTINUE, filter_assignment_dict, ComputationDef
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
 from pydcop.computations_graph.pseudotree import PseudoTreeNode
 from pydcop.dcop.objects import Variable
 from pydcop.dcop.relations import NAryMatrixRelation, RelationProtocol, \
     Constraint
-from . import get_data_type_max, get_data_type_min
-
+from pydcop.algorithms.objects import get_data_type_max, get_data_type_min, \
+    generate_assignment, generate_assignment_as_dict, filter_assignment_dict, \
+    find_arg_optimal, ComputationDef, DEFAULT_TYPE, ALGO_STOP, ALGO_CONTINUE
 
 GRAPH_TYPE = 'pseudotree'
 
