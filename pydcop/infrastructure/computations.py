@@ -541,7 +541,7 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
 
         return self.periodic_action_handler(period, call_action)
 
-    def __str__(self):
+    def __repr__(self):
         return 'MessagePassingComputation({})'.format(self.name)
 
 
@@ -627,9 +627,9 @@ class DcopComputation(MessagePassingComputation):
                              'computation')
         super().__init__(name)
 
-        algo_name = self.__class__.__module__.split(".")[-1]
+        self.algo_name = self.__class__.__module__.split(".")[-1]
         self.logger = logging.getLogger(
-            'pydcop.algo.' + algo_name + '.' + name)
+            'pydcop.algo.' + self.algo_name + '.' + name)
 
         self.computation_def = comp_def
         self.__cycle_count__ = 0
@@ -722,6 +722,10 @@ class DcopComputation(MessagePassingComputation):
         """
         for neighbor in self.neighbors:
             self.post_msg(neighbor, msg, prio, on_error)
+
+    def __repr__(self):
+        return "{}.{}({})".format(
+            self.algo_name, self.__class__.__name__, self.name)
 
 
 class VariableComputation(DcopComputation):

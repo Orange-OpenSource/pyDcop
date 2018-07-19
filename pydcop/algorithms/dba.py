@@ -642,9 +642,3 @@ class DbaComputation(VariableComputation):
 
     def _in_wait_improve_mode(self):
         return self._mode == 'improve'
-
-    def __str__(self):
-        return 'DBA algorithm for ' + self.name
-
-    def __repr__(self):
-        return 'DbaAlgo ( ' + self.name + ')'

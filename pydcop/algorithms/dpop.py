@@ -532,8 +532,3 @@ class DpopAlgo(VariableComputation):
             self.post_msg(c, msg)
 
         self.select_value_and_finish(selected_value, float(current_cost))
-
-
-    def __str__(self):
-        return 'dpop algo for variable {} (p: {}, relations : {} )'.format(
-            self._variable.name, self._parent, self._constraints)

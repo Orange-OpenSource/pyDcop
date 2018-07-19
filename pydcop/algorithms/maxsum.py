@@ -559,12 +559,6 @@ class FactorAlgo(DcopComputation):
         else:
             return False, 0
 
-    def __str__(self):
-        return 'MaxsumFactor(' + self._factor.name + ')'
-
-    def __repr__(self):
-        return self.__str__()
-
 
 class VariableAlgo(VariableComputation):
 
@@ -895,9 +889,3 @@ class VariableAlgo(VariableComputation):
             msg_costs = damped_costs
 
         return msg_costs
-
-    def __str__(self):
-        return 'MaxsumVariable(' + self._v.name + ')'
-
-    def __repr__(self):
-        return self.__str__()

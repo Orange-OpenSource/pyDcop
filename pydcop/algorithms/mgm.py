@@ -586,10 +586,3 @@ class MgmComputation(VariableComputation):
                               msg)
             self._handle_value_message(msg[0], msg[1])
         self.__postponed_value_messages__.clear()
-
-    def __str__(self):
-        return 'MgmComputation({})'.format(self.name)
-
-    def __repr__(self):
-        return 'MgmComputation({}, {})'.format(
-            self.name,self.__utilities__)

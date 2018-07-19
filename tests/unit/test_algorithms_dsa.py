@@ -225,3 +225,20 @@ class ComputeBoundary(unittest.TestCase):
 
         self.assertEqual(c, [c1, c2])
         self.assertEqual(b, 8)
+
+
+def test_str_dsa_class():
+    variable = Variable('a', [0, 1, 2, 3, 4])
+    c1 = UnaryFunctionRelation('c1', variable, lambda x: abs(x - 2))
+
+    computation = DsaComputation(variable, [c1], comp_def=MagicMock())
+
+    assert str(computation) == "dsa.DsaComputation(a)"
+
+def test_repr_dsa_class():
+    variable = Variable('a', [0, 1, 2, 3, 4])
+    c1 = UnaryFunctionRelation('c1', variable, lambda x: abs(x - 2))
+
+    computation = DsaComputation(variable, [c1], comp_def=MagicMock())
+
+    assert repr(computation) == "dsa.DsaComputation(a)"

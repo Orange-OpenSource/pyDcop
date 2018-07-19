@@ -655,12 +655,6 @@ class GdbaComputation(VariableComputation):
             for ass in asgts:
                 self._increase_modifier(constraint, ass)
 
-    def __str__(self):
-        return 'DBA algorithm for ' + self.name
-
-    def __repr__(self):
-        return 'DbaAlgo ( ' + self.name + ')'
-
 
 def break_ties(val_list):
     return sorted(val_list)[0]

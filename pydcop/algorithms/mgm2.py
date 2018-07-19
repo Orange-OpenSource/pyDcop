@@ -1031,9 +1031,3 @@ class Mgm2Computation(VariableComputation):
         self._partner = self._neighbor_var(partner_name)
         self._committed = True
         self.post_msg(partner_name, Mgm2ResponseMessage(True, val_p, gain))
-
-    def __str__(self):
-        return 'Mgm2(' + self.name + ')'
-
-    def __repr__(self):
-        return self.__str__()

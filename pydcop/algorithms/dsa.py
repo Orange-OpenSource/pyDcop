@@ -457,12 +457,6 @@ class DsaComputation(VariableComputation):
 
         return cost
 
-    def __str__(self):
-        return 'DSA algorithm for ' + self.name
-
-    def __repr__(self):
-        return 'DsaAlgo ( ' + self.name + ')'
-
     def _compute_boundary(self, constraints):
         constraints_list = list()
         optimum = 0

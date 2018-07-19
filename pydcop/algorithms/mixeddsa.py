@@ -500,12 +500,6 @@ class MixedDsaComputation(VariableComputation):
             return INFINITY
         return dcop_cost
 
-    def __str__(self):
-        return 'Mixed DSA algorithm for ' + self.name
-
-    def __repr__(self):
-        return 'MixedDsaAlgo ( ' + self.name + ')'
-
     def exists_violated_soft_constraint(self) -> bool:
         """
         Tells if there is a violated soft constraint regarding the current
