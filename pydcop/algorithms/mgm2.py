@@ -49,7 +49,8 @@ from typing import Iterable, Dict, Any, Tuple, List
 
 from pydcop.algorithms import filter_assignment_dict, \
     generate_assignment_as_dict, ComputationDef
-from pydcop.infrastructure.computations import Message, VariableComputation
+from pydcop.infrastructure.computations import Message, VariableComputation, \
+    register
 
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
@@ -715,7 +716,31 @@ class Mgm2Computation(VariableComputation):
         for n in self._neighbors:
                 self.post_msg(n.name, Mgm2GainMessage(self._potential_gain))
 
-    def on_message(self, sender_name, msg, t):
+    @register("value")
+    def on_value_msg(self, sender_name, msg, t):
+        self.on_all_message(sender_name, msg, t)
+
+    @register("gain")
+    def on_gain_msg(self, sender_name, msg, t):
+        self.on_all_message(sender_name, msg, t)
+
+    @register("offer")
+    def on_offer_msg(self, sender_name, msg, t):
+        self.on_all_message(sender_name, msg, t)
+
+    @register("answer?")
+    def on_answer_msg(self, sender_name, msg, t):
+        self.on_all_message(sender_name, msg, t)
+
+    @register("go?")
+    def on_go_msg(self, sender_name, msg, t):
+        self.on_all_message(sender_name, msg, t)
+
+    def on_all_message(self, sender_name, msg, t):
+        # This handlers makes sure that we got all messages form our
+        # neighbors before evaluating a phase of the algorithm.
+        # We should probably find a better way to handle this kind of
+        # situation, which is quite common in synchronous algorithms.
         msg_state = msg.type
         if msg_state == self._state:
             self.states[msg_state](sender_name, msg)

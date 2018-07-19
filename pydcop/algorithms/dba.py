@@ -102,7 +102,8 @@ import random
 from typing import Iterable, Dict
 
 from pydcop.algorithms import filter_assignment_dict, ComputationDef
-from pydcop.infrastructure.computations import Message, VariableComputation
+from pydcop.infrastructure.computations import Message, VariableComputation, \
+    register
 
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
@@ -339,10 +340,7 @@ class DbaComputation(VariableComputation):
             raise ValueError('DBA is a constraint **satisfaction** '
                              'algorithm and only support '
                              'minimization objective')
-        self._msg_handlers['dba_ok'] = self._on_ok_msg
-        self._msg_handlers['dba_improve'] = self._on_improve_msg
-        self._msg_handlers['dba_end'] = self._on_end_msg
-
+        
         self._msg_sender = msg_sender
         self.logger = logger if logger is not None \
             else logging.getLogger('pydcop.algo.dba.' + variable.name)
@@ -399,6 +397,7 @@ class DbaComputation(VariableComputation):
         self._send_current_value()
         self._go_to_wait_ok_mode()
 
+    @register("dba_ok")
     def _on_ok_msg(self, variable_name, recv_msg, _):
         """
         This method  implements the wait_ok_mode of DBA as described in
@@ -542,6 +541,7 @@ class DbaComputation(VariableComputation):
 
 
 # #############################IMPORVE MODE##################################
+    @register("dba_improve")
     def _on_improve_msg(self, variable_name, recv_msg, _):
 
         if self._mode == 'improve':
@@ -623,6 +623,7 @@ class DbaComputation(VariableComputation):
             self._handle_ok_message(sender, msg)
         self.__postponed_ok_messages__.clear()
 
+    @register("dba_end")
     def _on_end_msg(self, variable_name, recv_msg, _):
         # To avoid to send again and again EndMessages to the neighbors
         if self._mode != 'finished':

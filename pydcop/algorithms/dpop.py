@@ -47,7 +47,8 @@ from typing import Iterable
 from pydcop.algorithms import generate_assignment, generate_assignment_as_dict,\
     find_arg_optimal, DEFAULT_TYPE, \
     ALGO_STOP, ALGO_CONTINUE, filter_assignment_dict, ComputationDef
-from pydcop.infrastructure.computations import Message, VariableComputation
+from pydcop.infrastructure.computations import Message, VariableComputation, \
+    register
 from pydcop.computations_graph.pseudotree import PseudoTreeNode
 from pydcop.dcop.objects import Variable
 from pydcop.dcop.relations import NAryMatrixRelation, RelationProtocol, \
@@ -319,8 +320,6 @@ class DpopAlgo(VariableComputation):
         :param mode: type of optimization to perform, 'min' or 'max'
         """
         super().__init__(variable, comp_def)
-        self._msg_handlers['VALUE'] = self._on_value_message
-        self._msg_handlers['UTIL'] = self._on_util_message
 
         self._msg_sender = msg_sender
         self._mode = mode
@@ -423,6 +422,7 @@ class DpopAlgo(VariableComputation):
         self.logger.info('Value selected at %s : %s - %s', self.name,
                          value, cost)
 
+    @register("UTIL")
     def _on_util_message(self, variable_name, recv_msg, t):
         self.logger.debug('Util message from %s : %r ',
                           variable_name, recv_msg.content)
@@ -491,6 +491,7 @@ class DpopAlgo(VariableComputation):
 
         return util
 
+    @register("VALUE")
     def _on_value_message(self, variable_name, recv_msg, t):
         self.logger.debug('{}: on value message from {} : "{}"'
                           .format(self.name, variable_name, recv_msg))

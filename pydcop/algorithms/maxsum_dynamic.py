@@ -31,7 +31,7 @@
 
 import logging
 
-from pydcop.infrastructure.computations import Message
+from pydcop.infrastructure.computations import Message, register
 from pydcop.algorithms.maxsum import FactorAlgo, MaxSumMessage, VariableAlgo
 from pydcop.dcop.relations import NeutralRelation
 
@@ -145,8 +145,6 @@ class FactorWithReadOnlyVariableComputation(DynamicFunctionFactorComputation):
         super().__init__(self._sliced_relation, name=name,
                          msg_sender=msg_sender, logger=logger)
 
-        self._msg_handlers['VARIABLE_VALUE'] = self._on_new_var_value_msg
-
     def on_start(self):
         # when starting, subscribe to all sensor variable used in the
         # condition of the rule
@@ -155,6 +153,7 @@ class FactorWithReadOnlyVariableComputation(DynamicFunctionFactorComputation):
                                                                  None))
         super().on_start()
 
+    @register("VARIABLE_VALUE")
     def _on_new_var_value_msg(self, var_name, msg, t):
         msg_count, msg_size = 0, 0
 
@@ -231,8 +230,6 @@ class DynamicFactorComputation(FactorAlgo):
                          msg_sender=msg_sender,
                          logger=logger)
 
-        self._msg_handlers['VARIABLE_VALUE'] = self._on_new_var_value_msg
-
     def on_start(self):
         # subscribe to external variable
         for v in self._external_variables.values():
@@ -277,6 +274,7 @@ class DynamicFactorComputation(FactorAlgo):
 
         return msg_count, msg_size
 
+    @register("VARIABLE_VALUE")
     def _on_new_var_value_msg(self, var_name, msg, t):
         msg_count, msg_size = 0, 0
         value = msg.content
@@ -373,9 +371,8 @@ class DynamicFactorVariableComputation(VariableAlgo):
 
         super().__init__(variable, factor_names=factor_names,
                          msg_sender=msg_sender)
-        self._msg_handlers['REMOVE'] = self._on_remove_msg
-        self._msg_handlers['ADD'] = self._on_add_msg
 
+    @register("REMOVE")
     def _on_remove_msg(self, factor_name, msg, t):
         self.logger.debug("Received REMOVE msg from %s on var %s",
                           factor_name, self.name)
@@ -404,7 +401,7 @@ class DynamicFactorVariableComputation(VariableAlgo):
         # Do not send init cost, we may still have costs from other factors !
         msg_count, msg_size = self._compute_and_send_costs(self.factors)
 
-
+    @register("ADD")
     def _on_add_msg(self, factor_name, msg, t):
         self.logger.debug("Received ADD msg from %s : %s ", factor_name,
                           msg.content)

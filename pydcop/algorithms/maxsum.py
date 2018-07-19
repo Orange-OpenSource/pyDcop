@@ -60,8 +60,7 @@ from pydcop.computations_graph.factor_graph import VariableComputationNode, \
 from pydcop.dcop.objects import VariableNoisyCostFunc, Variable
 from . import generate_assignment_as_dict
 from pydcop.infrastructure.computations import Message, DcopComputation, \
-    VariableComputation
-
+    VariableComputation, register
 
 # Avoid using symbolic infinity as it is currently not correctly
 # (de)serialized
@@ -324,7 +323,6 @@ class FactorAlgo(DcopComputation):
         """
         name = name if name is not None else factor.name
         super().__init__(name, comp_def)
-        self._msg_handlers['max_sum'] = self._on_cost_msg
 
         self._factor = factor
 
@@ -422,7 +420,8 @@ class FactorAlgo(DcopComputation):
         self.post_msg(var_name, msg)
         return size
 
-    def _on_cost_msg(self, var_name, msg, t):
+    @register("max_sum")
+    def _on_maxsum_msg(self, var_name, msg, t):
         """
         Handling messages from variables nodes.
 
@@ -585,8 +584,6 @@ class VariableAlgo(VariableComputation):
         """
         super().__init__(variable, comp_def)
 
-        self._msg_handlers['max_sum'] = self._on_cost_msg
-
         # self._v = variable.clone()
         # Add noise to the variable, on top of cost if needed
         if hasattr(variable, 'cost_for_val'):
@@ -716,7 +713,8 @@ class VariableAlgo(VariableComputation):
             'current_value': self.current_value
         }
 
-    def _on_cost_msg(self, factor_name, msg, t):
+    @register("max_sum")
+    def _on_maxsum_msg(self, factor_name, msg, t):
         """
         Handling cost message from a neighbor factor.
 

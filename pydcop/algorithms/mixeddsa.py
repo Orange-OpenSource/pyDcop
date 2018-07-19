@@ -40,7 +40,8 @@ from pydcop.dcop.relations import RelationProtocol
 
 from pydcop.algorithms import filter_assignment_dict, \
     generate_assignment_as_dict, ComputationDef
-from pydcop.infrastructure.computations import Message, VariableComputation
+from pydcop.infrastructure.computations import Message, VariableComputation, \
+    register
 
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
@@ -222,7 +223,6 @@ class MixedDsaComputation(VariableComputation):
 
         """
         super().__init__(variable, comp_def)
-        self._msg_handlers['mixed_dsa_value'] = self._on_value_msg
 
         self.proba_hard = proba_hard
         self.proba_soft = proba_soft
@@ -298,6 +298,7 @@ class MixedDsaComputation(VariableComputation):
         # we must treat them now.
         self._on_neighbors_values()
 
+    @register("mixed_dsa_value")
     def _on_value_msg(self, variable_name, recv_msg, t):
         if variable_name not in self._neighbors_values:
             self._neighbors_values[variable_name] = recv_msg.value

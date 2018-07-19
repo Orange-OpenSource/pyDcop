@@ -61,7 +61,8 @@ from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
 from pydcop.dcop.objects import Variable
 from pydcop.dcop.relations import RelationProtocol
-from pydcop.infrastructure.computations import Message, VariableComputation
+from pydcop.infrastructure.computations import Message, VariableComputation, \
+    register
 
 GRAPH_TYPE = 'constraints_hypergraph'
 
@@ -248,8 +249,6 @@ class MgmComputation(VariableComputation):
         """
 
         super().__init__(variable, comp_def)
-        self._msg_handlers['mgm_value'] = self._on_value_msg
-        self._msg_handlers['mgm_gain'] = self._on_gain_msg
 
         self._msg_sender = msg_sender
         self.logger = logger if logger is not None \
@@ -314,6 +313,7 @@ class MgmComputation(VariableComputation):
                              self.variable.name, self.current_value)
         self._wait_for_values()
 
+    @register("mgm_value")
     def _on_value_msg(self, variable_name, recv_msg, t):
         """
         Postpones (resp. launches) the processing of the received Value
@@ -472,6 +472,7 @@ class MgmComputation(VariableComputation):
         return var_val, rel_val
 
     # #############################GAIN STATE##################################
+    @register("mgm_gain")
     def _on_gain_msg(self, variable_name, recv_msg, t):
         """
         Postpones (resp. launches) the processing of the received Gain

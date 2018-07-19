@@ -45,7 +45,8 @@ from typing import Iterable, Dict, Any, Tuple
 
 from pydcop.algorithms import filter_assignment_dict, \
     generate_assignment_as_dict, ComputationDef
-from pydcop.infrastructure.computations import Message, VariableComputation
+from pydcop.infrastructure.computations import Message, VariableComputation, \
+    register
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
 from pydcop.dcop.objects import Variable
@@ -262,8 +263,6 @@ class GdbaComputation(VariableComputation):
         """
 
         super().__init__(variable, comp_def)
-        self._msg_handlers['gdba_ok'] = self._on_ok_msg
-        self._msg_handlers['gdba_improve'] = self._on_improve_message
 
         self._msg_sender = msg_sender
         self.logger = logger if logger is not None \
@@ -353,6 +352,7 @@ class GdbaComputation(VariableComputation):
         self._send_current_value()
         self._go_to_wait_ok_mode()
 
+    @register("gdba_ok")
     def _on_ok_msg(self, variable_name, recv_msg, t):
         self.logger.debug('%s received %s from %s', self.name, recv_msg,
                           variable_name)
@@ -485,6 +485,7 @@ class GdbaComputation(VariableComputation):
             self._handle_improve_message(sender, msg)
         self.__postponed_improve_messages__.clear()
 
+    @register("gdba_improve")
     def _on_improve_message(self, variable_name, recv_msg, t):
         self.logger.debug('%s received %s from %s', self.name, recv_msg,
                           variable_name)
