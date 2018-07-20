@@ -98,7 +98,7 @@ def solve(dcop: DCOP,
     """
 
     if isinstance(algo_def, str):
-        algo_def = AlgoDef(algo_def)
+        algo_def = AlgoDef.build_with_default_param(algo_def)
     algo_module = import_module('pydcop.algorithms.'+algo_def.algo)
 
     if graph is None:
