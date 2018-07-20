@@ -314,6 +314,41 @@ def list_available_algorithms():
     return algorithms
 
 
+def load_algorithm_module(algo_name: str):
+    """
+    Dynamically load an algorithm module.
+
+    This should be used instead of `importlib.import_module` as it adds
+    default implementations for some method, if they have not been defined
+    for the algorithm.
+
+    Parameters
+    ----------
+    algo_name: str
+        the name of the algorithm. It must be one of the name returned by
+        `list_available_algorithms()`.
+
+    Returns
+    -------
+    module
+        The imported module for this algorithm.
+    """
+
+    algo_module = import_module('pydcop.algorithms.'+algo_name)
+    algo_module.algorithm_name = algo_name
+
+    if not hasattr(algo_module, 'algo_params'):
+        algo_module.algo_params = []
+
+    if not hasattr(algo_module, 'communication_load'):
+        algo_module.communication_load = lambda *a, **ka: 1
+
+    if not hasattr(algo_module, 'computation_memory'):
+        algo_module.computation_memory = lambda *a, **ka: 1
+
+    return algo_module
+
+
 def get_data_type_max(data_type):
     # see http://docs.scipy.org/doc/numpy/user/basics.types.html
 

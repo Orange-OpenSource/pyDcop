@@ -31,7 +31,8 @@
 
 import unittest
 
-from pydcop.algorithms.objects import AlgoDef
+from pydcop.algorithms.objects import AlgoDef, load_algorithm_module, \
+    list_available_algorithms
 from pydcop.utils.simple_repr import simple_repr, from_repr
 
 
@@ -67,8 +68,29 @@ class AlgoDefTest(unittest.TestCase):
         self.assertEqual(a2.param_value('stability'), 0.01)
 
 
-def building_Algodef_with_default_params():
+def test_building_algodef_with_default_params():
 
     a = AlgoDef.build_with_default_param('maxsum')
 
     assert a.params['damping'] == 0
+
+
+def test_load_algorithm():
+
+    # We test load for all available algorithms
+    for a in list_available_algorithms():
+        algo = load_algorithm_module(a)
+
+        assert algo.algorithm_name == a
+        assert hasattr(algo, 'communication_load')
+        assert hasattr(algo, 'computation_memory')
+
+
+def test_load_algorithm_with_default_footprint():
+
+    # dsatuto has no load method defined : check that we get instead default
+    # implementations
+    algo = load_algorithm_module('dsatuto')
+    assert algo.algorithm_name == 'dsatuto'
+    assert algo.communication_load(None, None) == 1
+    assert algo.computation_memory(None) == 1
