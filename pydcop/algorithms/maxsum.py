@@ -324,9 +324,6 @@ class FactorAlgo(DcopComputation):
     def is_stable(self):
         return self._is_stable
 
-    def footprint(self):
-        return computation_memory(self.computation_def.node)
-
     def on_start(self):
         msg_count, msg_size = 0, 0
 
@@ -583,9 +580,6 @@ class VariableAlgo(VariableComputation):
         the variable managed by this algorithm.
         """
         return self._factors[:]
-
-    def footprint(self):
-        return computation_memory(self.computation_def.node)
 
     def add_factor(self, factor_name):
         """

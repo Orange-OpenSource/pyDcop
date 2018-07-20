@@ -266,9 +266,6 @@ class MgmComputation(VariableComputation):
         self.__break_mode__ = break_mode
         self.__random_nb__ = 0  # used in case break_mode is 'random'
 
-    def footprint(self):
-        return computation_memory(self.computation_def.node)
-
     @property
     def random_nb(self) -> float:
         return self.__random_nb__

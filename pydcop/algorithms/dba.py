@@ -331,9 +331,6 @@ class DbaComputation(VariableComputation):
         self._my_improve = 0  # Possible improvement the agent can realize
         self._new_value = None
 
-    def footprint(self):
-        return computation_memory(self.computation_def.node)
-
     @property
     def constraints(self):
         return self.__constraints__

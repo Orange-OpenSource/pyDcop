@@ -143,7 +143,7 @@ def message_type(msg_type: str, fields: List[str]):
 
     Returns
     -------
-    A class type that can be used as a message type
+    A class type that can be used as a message type.
 
     Examples
     --------
@@ -284,8 +284,6 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         # sub-classes.
         self.logger = logging.getLogger(
             'pydcop.computation.' + self.__class__.__name__)
-
-
 
         self._msg_sender = None
         self._periodic_action_handler = None
@@ -748,6 +746,8 @@ class VariableComputation(DcopComputation):
         self.__cost__ = None  # NEVER access this directly
         self._previous_val = None
 
+        self._footprint_method = None  # cache ref to avoid multiple imports
+
     @property
     def variable(self)-> Variable:
         """
@@ -775,16 +775,39 @@ class VariableComputation(DcopComputation):
         """
         Return the footprint of the computation.
 
-        The footprint is use by many distribution methods, this methods should
-        be overwritten when subclassing VariableComputation, although it's not
-        mandatory.
+        The footprint is used by many distribution methods.
+
+        Notes
+        -----
+
+        This methods should **NOT be overwritten** when subclassing
+        `VariableComputation`, instead, you should provide a
+        `computation_memory` function at module-level in your algorithm.
+        This method computes the footprint
+        from a ComputationNode, which is required to for bootstrap
+        distributions, where the distribution is computed before instanciating
+        the computation objects.
+
+        This module level function must have the following signature:
+
+        > computation_memory(computation: ComputationNode) -> float:
 
         Returns
         -------
         float:
             The footprint of the computation.
         """
-        return 0
+        if self._footprint_method is None:
+            try:
+                self._footprint_method = \
+                    import_module(self.__class__.__module__).computation_memory
+            except AttributeError:
+                # if the algorithm as been imported without using
+                # `load_algoorithm_module`, computation_memory may not be
+                #  available
+                self._footprint_method = lambda *a, **ka: 1
+
+        return self._footprint_method(self.computation_def.node)
 
     def value_selection(self, val, cost=0):
         """

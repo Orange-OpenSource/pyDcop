@@ -475,9 +475,6 @@ class Mgm2Computation(VariableComputation):
         self._potential_value = None  # Value for best potentila gain
         self._can_move = False
 
-    def footprint(self):
-        return computation_memory(self.computation_def.node)
-
     @property
     def utilities(self):
         return self._constraints

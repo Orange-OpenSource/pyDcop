@@ -257,9 +257,6 @@ class DsaComputation(VariableComputation):
         # turn n
         self._postponed_messages = list()
 
-    def footprint(self):
-        return computation_memory(self.computation_def.node)
-
     def on_start(self):
         # randomly select a value
         self.random_value_selection()
