@@ -40,13 +40,10 @@ TODO
 
 """
 
-import logging
-
 from typing import Iterable
 
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
-from pydcop.computations_graph.pseudotree import PseudoTreeNode
 from pydcop.dcop.objects import Variable
 from pydcop.dcop.relations import NAryMatrixRelation, RelationProtocol, \
     Constraint
@@ -55,18 +52,6 @@ from pydcop.algorithms.objects import get_data_type_max, get_data_type_min, \
     find_arg_optimal, ComputationDef, DEFAULT_TYPE, ALGO_STOP, ALGO_CONTINUE
 
 GRAPH_TYPE = 'pseudotree'
-# DCOP has no parameters
-algo_params = []
-
-
-def algo_name() -> str:
-    """
-
-    Returns
-    -------
-    The name of the algorithm implemented by this module : 'dpop'
-    """
-    return __name__.split('.')[-1]
 
 
 def build_computation(comp_def: ComputationDef):
@@ -85,31 +70,6 @@ def build_computation(comp_def: ComputationDef):
                            children, constraints,
                            mode='min', comp_def=comp_def)
     return computation
-
-
-def computation_memory(computation: PseudoTreeNode) -> float:
-    """Return the memory footprint of a DPOP computation.
-
-    Parameters
-    ----------
-    computation
-    links
-
-    Returns
-    -------
-
-    """
-    # FIXME: can we really compute the memory footprint if we do not known
-    # the size of the DFS tree ?
-    # The size of the util matrix a computation strores depends on the
-    # size of the util matrix of its children and pseudo children.
-    # At the top of the DFS tree, the matrix might be huge, but the root node
-    # cannot known it beforehand if it does not know the size of the tree.
-    raise NotImplementedError()
-
-
-def communication_load(src: PseudoTreeNode, target: str) -> float:
-    raise NotImplementedError()
 
 
 class DpopMessage(Message):

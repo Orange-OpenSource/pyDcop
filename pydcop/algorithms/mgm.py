@@ -71,16 +71,6 @@ UNIT_SIZE = 5
 BREAK_MODES = ['lexic', 'random']
 
 
-def algo_name() -> str:
-    """
-
-    Returns
-    -------
-    The name of the algorithm implemented by this module : 'mgm'
-    """
-    return __name__.split('.')[-1]
-
-
 """
 MGM supports two paramaters: 
 * break_mode

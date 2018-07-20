@@ -60,15 +60,6 @@ HEADER_SIZE = 100
 UNIT_SIZE = 5
 
 
-def algo_name() -> str:
-    """
-
-    Returns
-    -------
-    The name of the algorithm implemented by this module : 'gdba'
-    """
-    return __name__.split('.')[-1]
-
 
 def build_computation(comp_def: ComputationDef):
     return GdbaComputation(comp_def.node.variable,

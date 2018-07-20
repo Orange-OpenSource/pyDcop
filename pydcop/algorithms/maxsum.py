@@ -83,16 +83,6 @@ GRAPH_TYPE = 'factor_graph'
 logger = logging.getLogger('pydcop.maxsum')
 
 
-def algo_name() -> str:
-    """
-
-    Returns
-    -------
-    The name of the algorithm implemented by this module : 'maxsum'
-    """
-    return __name__.split('.')[-1]
-
-
 def build_computation(comp_def: ComputationDef):
     if comp_def.node.type == 'VariableComputation':
         factor_names = [l.factor_node for l in comp_def.node.links]

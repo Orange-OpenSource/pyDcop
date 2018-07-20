@@ -56,16 +56,6 @@ HEADER_SIZE = 100
 UNIT_SIZE = 5
 
 
-def algo_name() -> str:
-    """
-
-    Returns
-    -------
-    The name of the algorithm implemented by this module : 'mixeddsa'
-    """
-    return __name__.split('.')[-1]
-
-
 def build_computation(comp_def: ComputationDef):
     return MixedDsaComputation(comp_def.node.variable,
                                comp_def.node.constraints,

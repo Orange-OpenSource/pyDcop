@@ -44,7 +44,6 @@ and avoided some details you would generally care about:
 """
 
 
-import logging
 from typing import Any, Tuple
 
 from numpy import random
@@ -55,10 +54,6 @@ from pydcop.infrastructure.computations import VariableComputation, \
 
 # Type of computations graph that must be used with dsa
 GRAPH_TYPE = 'constraints_hypergraph'
-
-
-# No parameters for our simplistic DSA implementation
-algo_params = []
 
 
 def build_computation(comp_def: ComputationDef):
@@ -82,7 +77,6 @@ class DsaTutoComputation(VariableComputation):
         The constraints the variables depends on
     computation_definition: ComputationDef
         the definition of the computation, given as a ComputationDef instance.
-
 
     """
     def __init__(self, variable, constraints, computation_definition):
@@ -147,4 +141,3 @@ class DsaTutoComputation(VariableComputation):
             if cost < min_cost:
                 min_cost, arg_min = cost, value
         return arg_min, min_cost
-

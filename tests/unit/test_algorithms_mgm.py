@@ -65,18 +65,3 @@ def test_computation_memory_two_constraints():
 
     # here, we have 3 edges , one for each constraint
     assert mgm.computation_memory(v1_node) == mgm.UNIT_SIZE * 3
-
-
-def test_name():
-    assert mgm.algo_name() == 'mgm'
-
-
-def test_name_import_as():
-
-    import pydcop.algorithms.mgm as mgm
-    assert mgm.algo_name() == 'mgm'
-
-    import pydcop.algorithms.mgm as foo
-    assert foo.algo_name() == 'mgm'
-
-

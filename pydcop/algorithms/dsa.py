@@ -93,16 +93,6 @@ UNIT_SIZE = 1
 GRAPH_TYPE = 'constraints_hypergraph'
 
 
-def algo_name() -> str:
-    """
-
-    Returns
-    -------
-    The name of the algorithm implemented by this module : 'dsa'
-    """
-    return __name__.split('.')[-1]
-
-
 def build_computation(comp_def: ComputationDef) -> DcopComputation:
     """Build a DSA computation
 

@@ -120,17 +120,6 @@ UNIT_SIZE = 5
 # Type of computations graph that must be used with dsa
 GRAPH_TYPE = 'constraints_hypergraph'
 
-
-def algo_name() -> str:
-    """
-
-    Returns
-    -------
-    The name of the algorithm implemented by this module : 'dba'
-    """
-    return __name__.split('.')[-1]
-
-
 def build_computation(comp_def: ComputationDef) -> VariableComputation:
     return DbaComputation(comp_def.node.variable,
                           comp_def.node.constraints,

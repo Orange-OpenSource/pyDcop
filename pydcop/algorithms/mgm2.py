@@ -65,16 +65,6 @@ HEADER_SIZE = 100
 UNIT_SIZE = 5
 
 
-def algo_name() -> str:
-    """
-
-    Returns
-    -------
-    The name of the algorithm implemented by this module : 'mgm2'
-    """
-    return __name__.split('.')[-1]
-
-
 def build_computation(comp_def: ComputationDef) -> VariableComputation:
     return Mgm2Computation(comp_def.node.variable,
                            comp_def.node.constraints,
