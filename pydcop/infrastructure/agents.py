@@ -197,7 +197,7 @@ class Agent(object):
         self.logger.debug('Add computation %s - %s ',
                           comp_name, self._messaging)
         computation.message_sender = self._messaging.post_msg
-        computation.periodic_action_handler = self.set_periodic_action
+        computation.periodic_action_handler = self
         self._computations[comp_name] = computation
         self.discovery.register_computation(comp_name, self.name,self.address,
                                             publish=publish)

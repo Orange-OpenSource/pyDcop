@@ -333,7 +333,7 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         return self._periodic_action_handler
 
     @periodic_action_handler.setter
-    def periodic_action_handler(self, handler: Callable[[float], Callable]):
+    def periodic_action_handler(self, handler ):
         if self._periodic_action_handler is not None:
             raise AttributeError('Can only set periodic_action_handler once')
         self._periodic_action_handler = handler
@@ -532,7 +532,11 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
             if not self.is_paused:
                 cb()
 
-        return self.periodic_action_handler(period, call_action)
+        return self.periodic_action_handler.set_periodic_action(period,
+                                                                call_action)
+
+    def remove_periodic_action(self, handle):
+        self.periodic_action_handler.remove_periodic_action(handle)
 
     def __repr__(self):
         return 'MessagePassingComputation({})'.format(self.name)

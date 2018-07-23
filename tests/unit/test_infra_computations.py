@@ -140,6 +140,75 @@ def test_periodic_action_on_computation():
     assert c.mock.call_count == 2
 
 
+def test_remove_periodic_action_on_computation():
+    a = Agent('a', MagicMock())
+
+    class TestComputation(MessagePassingComputation):
+        def __init__(self):
+            super().__init__('test')
+            self.mock = MagicMock()
+
+        def on_start(self):
+            self.handle = self.add_periodic_action(0.1, self.action)
+
+        def action(self):
+            self.mock()
+
+        def test_remove(self):
+            self.remove_periodic_action(self.handle)
+
+    c = TestComputation()
+
+    a.add_computation(c)
+    a.start()
+    a.run()
+    sleep(0.25)
+
+    assert c.mock.call_count == 2
+
+    c.test_remove()
+    c.mock.reset_mock()
+    sleep(0.5)
+
+    c.mock.assert_not_called()
+
+    a.stop()
+
+
+def test_oneshot_delayed_action_on_computation():
+    # To implement a one-shot action, add a periodic action and remove it
+    # the first time it is called:
+    a = Agent('a', MagicMock())
+
+    class TestComputation(MessagePassingComputation):
+        def __init__(self):
+            super().__init__('test')
+            self.mock = MagicMock()
+
+        def on_start(self):
+            self.handle = self.add_periodic_action(0.1, self.action)
+
+        def action(self):
+            self.mock()
+            self.remove_periodic_action(self.handle)
+
+    c = TestComputation()
+    a.add_computation(c)
+    a.start()
+    a.run()
+    sleep(0.25)
+
+    # the action is remove on firts call  there must be one single call
+    assert c.mock.call_count == 1
+
+    c.mock.reset_mock()
+    sleep(0.2)
+
+    c.mock.assert_not_called()
+
+    a.stop()
+
+
 def test_several_periodic_action_on_computation():
 
     a = Agent('a', MagicMock())
