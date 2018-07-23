@@ -752,11 +752,30 @@ class Agent(object):
             a period in second
         cb: Callable
             a callback with no argument
+
+        Returns
+        -------
+        handle:
+            An handle that can be used to remove the periodic action.
+            This handle is actually the callback object itself.
+
         """
         assert period != None
         assert cb != None
         self._periodic_cb[cb] = (period, perf_counter())
         return cb
+
+    def remove_periodic_action(self, handle):
+        """
+        Remove a periodoc action
+
+        Parameters
+        ----------
+        handle:
+            the handle returned by set_periodic_action
+
+        """
+        self._periodic_cb.pop(handle)
 
     def _run(self):
         self.logger.debug('Running agent ' + self._name)

@@ -346,3 +346,21 @@ def test_several_actions_different_period(agent):
     # Depending on the start instant, the cb might be called 2 or 3 times:
     assert 4 <=len(list(mock1.mock_calls)) <= 5
     assert 2 <=len(list(mock2.mock_calls)) <= 3
+
+
+def test_remove_action(agent):
+    mock1 = MagicMock()
+
+    def cb1(*args):
+        mock1(args)
+
+    handle = agent.set_periodic_action(0.1, cb1)
+    agent.start()
+    sleep(0.5)
+    # Depending on the start instant, the cb might be called 2 or 3 times:
+    assert 4 <=len(list(mock1.mock_calls)) <= 5
+
+    agent.remove_periodic_action(handle)
+    mock1.reset_mock()
+    sleep(0.5)
+    mock1.assert_not_called()
