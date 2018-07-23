@@ -83,7 +83,8 @@ def test_deploy_computation_request(orchestrated_agent):
     mgt = orchestrated_agent._mgt_computation
     v1 = Variable('v1', [1, 2, 3])
     comp_node = VariableComputationNode(v1, [])
-    comp_def = ComputationDef(comp_node, AlgoDef('dsa'))
+    comp_def = ComputationDef(
+        comp_node, AlgoDef.build_with_default_param('dsa'))
     mgt.on_message('orchestrator', DeployMessage(comp_def), 0)
 
     # Check the computation is deployed, but not started, on the agent
