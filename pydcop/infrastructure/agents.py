@@ -762,6 +762,7 @@ class Agent(object):
         """
         assert period != None
         assert cb != None
+        self.logger.debug("Add periodic action %s - %s ", period, cb)
         self._periodic_cb[cb] = (period, perf_counter())
         return cb
 
@@ -775,6 +776,7 @@ class Agent(object):
             the handle returned by set_periodic_action
 
         """
+        self.logger.debug("Remove action %s ", handle)
         self._periodic_cb.pop(handle)
 
     def _run(self):
@@ -837,9 +839,12 @@ class Agent(object):
         if self._start_t is not None :
             for cb, (p, last_t) in list(self._periodic_cb.items()):
                 if ct - last_t >= p:
-                    self.logger.info('periodic cb %s %s ', ct, last_t)
-                    cb()
+                    self.logger.info('periodic cb %s, %s %s ', cb, ct, last_t)
+                    # Must update the cb entry BEFORE calling the cb, in case
+                    # the cb attemps to modify (e.g. remove) it's own entry by
+                    # calling remove_periodic_action
                     self._periodic_cb[cb] = (p, ct)
+                    cb()
 
     def is_idle(self):
         """
