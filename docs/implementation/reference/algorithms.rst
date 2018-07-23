@@ -13,6 +13,8 @@ DCOP algorithms currently implemented in pyDCOP:
 
   algorithms/dba
   algorithms/dsa
+  algorithms/adsa
+  algorithms/dsatuto
   algorithms/mgm
   algorithms/mgm2
   algorithms/gdba
@@ -20,7 +22,7 @@ DCOP algorithms currently implemented in pyDCOP:
   algorithms/dpop
 
 
-.. autoclass:: pydcop.algorithms.AlgoParameterDef
+.. autoclass:: pydcop.algorithms.objects.AlgoParameterDef
   :members:
 
-.. autofunction:: pydcop.algorithms.prepare_algo_params
+.. autofunction:: pydcop.algorithms.objects.prepare_algo_params
