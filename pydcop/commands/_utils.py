@@ -41,7 +41,8 @@ from queue import Queue, Empty
 from types import FunctionType
 from typing import List
 
-from pydcop.algorithms.objects import AlgoDef, prepare_algo_params
+from pydcop.algorithms.objects import AlgoDef, prepare_algo_params, \
+    load_algorithm_module
 
 logger = logging.getLogger('pydcop')
 
@@ -114,6 +115,7 @@ columns = {
                'status']
 }
 
+
 def prepare_metrics_files(run, end, mode):
     """
     Prepare files for storing metrics, if requested.
@@ -152,6 +154,7 @@ def prepare_metrics_files(run, end, mode):
 
     return csv_cb
 
+
 def add_csvline(file, mode, metrics):
     data = [metrics[c] for c in columns[mode]]
     line = ', '.join([str(d) for d in data])
@@ -180,8 +183,7 @@ def _load_modules(dist, algo):
             _error('Could not find distribution method {}'.format(dist))
 
     try:
-        algo_module = import_module('pydcop.algorithms.{}'.format(algo))
-        # TODO check the imported module has the right methods ?
+        algo_module = load_algorithm_module(algo)
 
         graph_module = import_module('pydcop.computations_graph.{}'.
                                      format(algo_module.GRAPH_TYPE))

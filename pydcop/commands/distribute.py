@@ -303,7 +303,7 @@ def load_graph_module(graph):
 def load_algo_module(algo):
     algo_module = None
     try:
-        algo_module = import_module('pydcop.algorithms.{}'.format(algo))
+        algo_module = load_algo_module(algo)
     except ImportError as e:
         _error('Could not find dcop algorithm: {}'.format(algo), e)
     return algo_module

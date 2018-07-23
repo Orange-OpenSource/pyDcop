@@ -94,7 +94,8 @@ from threading import Timer
 
 import yaml
 
-from pydcop.algorithms.objects import list_available_algorithms
+from pydcop.algorithms.objects import list_available_algorithms, \
+    load_algorithm_module
 from pydcop.commands._utils import build_algo_def
 from pydcop.dcop.yamldcop import load_dcop_from_file
 from pydcop.distribution.yamlformat import load_dist_from_file
@@ -154,7 +155,7 @@ def run_cmd(args, timer: Timer):
     dcop = load_dcop_from_file(args.dcop_files)
 
     try:
-        algo_module = import_module('pydcop.algorithms.{}'.format(args.algo))
+        algo_module = load_algorithm_module(args.algo)
         algo = build_algo_def(algo_module, args.algo, dcop.objective,
                               [])  # FIXME : algo params needed?
 

@@ -48,6 +48,7 @@ from pulp.constants import LpBinary, LpMinimize, LpStatusOptimal
 from pulp.pulp import LpVariable, LpProblem, lpSum, value, LpAffineExpression
 from pulp.solvers import GLPK_CMD
 
+from pydcop.algorithms.objects import load_algorithm_module
 from pydcop.computations_graph.factor_graph import VariableComputationNode, \
     FactorComputationNode
 from pydcop.computations_graph.objects import ComputationGraph, ComputationNode
@@ -81,7 +82,7 @@ def generate_iot(args):
                 constraints=constraints)
     graph_module = import_module('pydcop.computations_graph.factor_graph')
     cg = graph_module.build_computation_graph(dcop)
-    algo_module = import_module('pydcop.algorithms.maxsum')
+    algo_module = load_algorithm_module('maxsum')
 
     footprints = {c.name: algo_module.computation_memory(c)
                   for c in cg.nodes}

@@ -34,7 +34,7 @@ from multiprocessing import Process
 from queue import Queue
 from typing import Union
 
-from pydcop.algorithms.objects import AlgoDef
+from pydcop.algorithms.objects import AlgoDef, load_algorithm_module
 from pydcop.computations_graph.objects import ComputationGraph
 from pydcop.dcop.dcop import DCOP
 from pydcop.dcop.objects import AgentDef
@@ -98,8 +98,11 @@ def solve(dcop: DCOP,
     """
 
     if isinstance(algo_def, str):
-        algo_def = AlgoDef.build_with_default_param(algo_def)
-    algo_module = import_module('pydcop.algorithms.'+algo_def.algo)
+        algo_module = load_algorithm_module(algo_def.algo)
+        algo_def = AlgoDef.build_with_default_param(
+            algo_def, parameters_definitions=algo_module.algo_params)
+    else:
+        algo_module = load_algorithm_module(algo_def.algo)
 
     if graph is None:
         graph_module = import_module('pydcop.computations_graph.{}'.

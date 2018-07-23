@@ -87,7 +87,7 @@ class AlgoDef(SimpleRepr):
             parameters_definitions: List[AlgoParameterDef]= None):
 
         if parameters_definitions is None:
-            algo_module = import_module('pydcop.algorithms.{}'.format(algo))
+            algo_module = load_algorithm_module(algo)
             parameters_definitions = algo_module.algo_params
 
         params = {} if params is None else params
@@ -279,7 +279,6 @@ def prepare_algo_params(params: Dict[str, Any],
         provided in the input dict, it is added with its default value.
 
     """
-    print("PREPARE ", params)
     selected_params = {}
     all_algo_params = {param_def.name: param_def
                        for param_def in parameters_definitions}

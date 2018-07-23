@@ -172,7 +172,8 @@ import multiprocessing
 from importlib import import_module
 from time import time
 
-from pydcop.algorithms.objects import list_available_algorithms
+from pydcop.algorithms.objects import list_available_algorithms, \
+    load_algorithm_module
 from pydcop.commands._utils import build_algo_def
 from pydcop.dcop.yamldcop import load_dcop_from_file
 from pydcop.distribution.yamlformat import load_dist_from_file
@@ -475,7 +476,7 @@ def _load_modules(dist, algo):
         _error('Could not find distribution method {}'.format(dist))
 
     try:
-        algo_module = import_module('pydcop.algorithms.{}'.format(algo))
+        algo_module = load_algorithm_module(algo)
         # TODO check the imported module has the right methods ?
 
         graph_module = import_module('pydcop.computations_graph.{}'.

@@ -34,6 +34,7 @@ from importlib import import_module
 
 import networkx as nx
 
+from pydcop.algorithms.objects import load_algorithm_module
 from pydcop.dcop.dcop import DCOP
 from pydcop.dcop.objects import Variable, Domain, AgentDef
 from pydcop.dcop.relations import NAryMatrixRelation, assignment_matrix, \
@@ -78,7 +79,7 @@ def generate_small_world(args):
                 constraints=constraints)
     graph_module = import_module('pydcop.computations_graph.factor_graph')
     cg = graph_module.build_computation_graph(dcop)
-    algo_module = import_module('pydcop.algorithms.maxsum')
+    algo_module = load_algorithm_module('maxsum')
 
     footprints = { n.name: algo_module.computation_memory(n) for n in cg.nodes}
     f_vals = footprints.values()

@@ -53,7 +53,8 @@ from typing import Dict, List, Optional, Union, Callable, Tuple
 
 from collections import defaultdict
 
-from pydcop.algorithms.objects import AlgoDef, ComputationDef
+from pydcop.algorithms.objects import AlgoDef, ComputationDef, \
+    load_algorithm_module
 from pydcop.dcop.objects import AgentDef, create_binary_variables
 from pydcop.dcop.objects import BinaryVariable
 from pydcop.dcop.relations import Constraint
@@ -881,7 +882,8 @@ class AgentMetrics(object):
 
 
 from pydcop.computations_graph import constraints_hypergraph as chg
-from pydcop.algorithms import mgm2 as repair_algo
+
+repair_algo = load_algorithm_module('mgm2')
 
 
 class RepairComputationRegistration(object):
@@ -1152,7 +1154,7 @@ class ResilientAgent(Agent):
 
             comp_def = self.replication_comp.replicas[candidate_comp]
             algo = comp_def.algo.algo
-            algo_module = import_module('pydcop.algorithms.{}'.format(algo))
+            algo_module = load_algorithm_module(algo)
             communication_load = algo_module.communication_load
 
             msg_load = 0
@@ -1169,8 +1171,10 @@ class ResilientAgent(Agent):
         # responsible for, i.e. the binary variables x_i^m that correspond to
         # the candidate variable x_i (and a_m is the current agent)
         self._repair_computations.clear()
-        algo_def = AlgoDef(repair_algo.algo_name(),
-                           cycle_stop=10, threshold=0.2)
+        algo_def = AlgoDef.build_with_default_param(
+            repair_algo.algorithm_name,
+            {'cycle_stop': 10, 'threshold': 0.2},
+            repair_algo.algo_params)
         for (comp, agt), candidate_var in candidate_binvars.items():
             self.logger.debug('Building computation for binary variable %s ('
                               'variable %s on %s)', candidate_var, comp, agt)
@@ -1362,7 +1366,7 @@ class RepairComputation(MessagePassingComputation):
             replica.
         """
         self.logger.info('Replica distribution finished for agent '
-                              '%s  : %s', self.name, replica_hosts)
-        self.agent.on_replication_done()
-        dist_msg = ComputationReplicatedMessage(self.name, replica_hosts)
-        self.message_sender.post_send_to_orchestrator(dist_msg)
+                         '%s  : %s', self.name, replica_hosts)
+        # self.agent.on_replication_done()
+        # dist_msg = ComputationReplicatedMessage(self.name, replica_hosts)
+        # self.message_sender.post_send_to_orchestrator(dist_msg)

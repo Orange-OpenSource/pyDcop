@@ -44,7 +44,7 @@ from typing import List, Tuple, Any, Callable
 
 from numpy import random
 
-from pydcop.algorithms.objects import ComputationDef
+from pydcop.algorithms.objects import ComputationDef, load_algorithm_module
 from pydcop.dcop.objects import Variable
 from pydcop.utils.simple_repr import SimpleRepr, SimpleReprException, \
     simple_repr
@@ -847,7 +847,6 @@ def build_computation(comp_def: ComputationDef) -> MessagePassingComputation:
     :param comp_def: the computation definition
     :return: a concrete MessagePassingComputation
     """
-    algo_module = import_module('pydcop.algorithms.{}'
-                                .format(comp_def.algo.algo))
+    algo_module = load_algorithm_module(comp_def.algo.algo)
     computation = algo_module.build_computation(comp_def)
     return computation
