@@ -1273,20 +1273,30 @@ def add_var_to_rel(name: str, original_relation: RelationProtocol,
     return NAryFunctionRelation(new_rel_f, variables, name=name, f_kwargs=True)
 
 
-def find_optimum(rel: RelationProtocol, mode: str) -> float:
+def find_optimum(constraint: Constraint, mode: str) -> float:
     """
-    Compute the optimum of the relation given the mode
-    :param rel:
-    :param mode: 'min' or 'max'
-    :return: The optimum value of the relation as a float
+    Compute the optimum of the relation given the mode.
+
+    Parameters
+    ----------
+    constraint: Constraint
+        a constraint object
+    mode: str
+        'min' or 'max'
+
+    Returns
+    -------
+    float:
+        The best value of the relation, depending on the requested mode,
+        as a float.
 
     """
     if mode != "min" and mode != "max":
-        raise ValueError("mode must be 'min' or 'max'")
-    variables = [v for v in rel.dimensions]
+        raise ValueError("mode must be 'min' or 'max', not " + str(mode))
+    variables = [v for v in constraint.dimensions]
     optimum = None
     for asgt in generate_assignment_as_dict(variables):
-        rel_val = rel(**filter_assignment_dict(asgt, rel.dimensions))
+        rel_val = constraint(**filter_assignment_dict(asgt, constraint.dimensions))
         if optimum is None:
             optimum = rel_val
         elif mode == 'max' and rel_val > optimum:
