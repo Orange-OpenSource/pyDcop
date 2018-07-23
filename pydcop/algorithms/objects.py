@@ -227,7 +227,6 @@ def check_param_value(param_val: Any, param_def: AlgoParameterDef) -> Any:
     if not is_of_type_by_str(param_val, param_def.type):
 
         if param_def.type == 'int':
-            print("INT ", param_val, param_def)
             param_val = int(param_val)
         elif param_def.type == 'float':
             param_val = float(param_val)
