@@ -136,7 +136,6 @@ algo_params = [
     AlgoParameterDef('favor', 'str', 'unilateral',
                      ['unilateral', 'no', 'coordinated']),
     AlgoParameterDef('stop_cycle', 'int', None, 0),
-
 ]
 
 
@@ -613,7 +612,7 @@ class Mgm2Computation(VariableComputation):
 
         """
         self.new_cycle()
-        if self.stop_cycle is not None and self.cycle_count >= self.stop_cycle:
+        if self.stop_cycle and self.cycle_count >= self.stop_cycle:
             # The computation has run for the requested number of cycles :
             # stop it.
             self.logger.info('Computation has reached the number of '
