@@ -33,12 +33,12 @@ from time import sleep
 
 import pydcop.computations_graph.constraints_hypergraph as chg
 
-from pydcop.algorithms import dsa, mgm, mgm2
 from pydcop.algorithms.objects import AlgoDef, ComputationDef
 from pydcop.dcop.objects import Domain, Variable
 from pydcop.dcop.relations import constraint_from_str
 from pydcop.infrastructure.agents import Agent
 from pydcop.infrastructure.communication import InProcessCommunicationLayer
+from pydcop.infrastructure.computations import build_computation
 
 
 def test_api_cg_creation_dsa():
@@ -87,8 +87,8 @@ def test_api_cg_creation_dsa():
     diff_v1_v2 = constraint_from_str('c1', '1 if v1 == v2 else 0', [v1, v2])
     # Computation node for the variable with these constraints
     node_v1 = chg.VariableComputationNode(v1, [cost_v1, diff_v1_v2])
-    comp_def = ComputationDef(node_v1, AlgoDef('dsa'))
-    v1_computation = dsa.build_computation(comp_def)
+    comp_def = ComputationDef(node_v1, AlgoDef.build_with_default_param('dsa'))
+    v1_computation = build_computation(comp_def)
     # and register the computation and the agents for the neighboring
     # computations.
     agt1.add_computation(v1_computation)
@@ -99,8 +99,9 @@ def test_api_cg_creation_dsa():
     diff_v2_v3 = constraint_from_str('c2', '1 if v2 == v3 else 0', [v2, v3])
 
     node_v2 = chg.VariableComputationNode(v2, [cost_v2, diff_v2_v3, diff_v1_v2])
-    comp_def_v2 = ComputationDef(node_v2, AlgoDef('dsa'))
-    v2_computation = dsa.build_computation(comp_def_v2)
+    comp_def_v2 = ComputationDef(node_v2,
+                                 AlgoDef.build_with_default_param('dsa'))
+    v2_computation = build_computation(comp_def_v2)
 
     agt2.add_computation(v2_computation)
     agt2.discovery.register_computation('v1', 'a1', agt1.address)
@@ -110,8 +111,9 @@ def test_api_cg_creation_dsa():
     cost_v3 = constraint_from_str('cv3', '-0.1 if v3 == "G" else 0.1 ', [v3])
 
     node_v3 = chg.VariableComputationNode(v3, [cost_v3, diff_v2_v3])
-    comp_def_v3 = ComputationDef(node_v3, AlgoDef('dsa'))
-    v3_computation = dsa.build_computation(comp_def_v3)
+    comp_def_v3 = ComputationDef(node_v3,
+                                 AlgoDef.build_with_default_param('dsa'))
+    v3_computation = build_computation(comp_def_v3)
 
     agt3.add_computation(v3_computation)
     agt3.discovery.register_computation('v2', 'a2', agt2.address)
@@ -128,9 +130,9 @@ def test_api_cg_creation_dsa():
 
     # As we do not have an ochestrator, we need to collect results manually:
     assert agt1.computation('v1').current_value != \
-           agt2.computation('v2').current_value
+        agt2.computation('v2').current_value
     assert agt3.computation('v3').current_value != \
-           agt2.computation('v2').current_value
+        agt2.computation('v2').current_value
 
 
 def test_api_cg_creation_mgm():
@@ -153,10 +155,13 @@ def test_api_cg_creation_mgm():
     diff_v1_v2 = constraint_from_str('c1', '1 if v1 == v2 else 0', [v1, v2])
 
     node_v1 = chg.VariableComputationNode(v1, [cost_v1, diff_v1_v2])
-    comp_def = ComputationDef(node_v1, AlgoDef('dsa'))
-    v1_computation = mgm.build_computation(comp_def)
+    comp_def = ComputationDef(node_v1,
+                              AlgoDef.build_with_default_param('mgm'))
+    v1_computation = build_computation(comp_def)
 
     agt1.add_computation(v1_computation)
+    # We need to register manually as we are not using the directory hosted by
+    # the orchestrator.
     agt1.discovery.register_computation('v2', 'a2', agt2.address)
 
     # Agent 2 with Variable v2
@@ -164,8 +169,9 @@ def test_api_cg_creation_mgm():
     diff_v2_v3 = constraint_from_str('c2', '1 if v2 == v3 else 0', [v2, v3])
 
     node_v2 = chg.VariableComputationNode(v2, [cost_v2, diff_v2_v3, diff_v1_v2])
-    comp_def_v2 = ComputationDef(node_v2, AlgoDef('dsa'))
-    v2_computation = mgm.build_computation(comp_def_v2)
+    comp_def_v2 = ComputationDef(node_v2,
+                                 AlgoDef.build_with_default_param('mgm'))
+    v2_computation = build_computation(comp_def_v2)
 
     agt2.add_computation(v2_computation)
     agt2.discovery.register_computation('v1', 'a1', agt1.address)
@@ -175,8 +181,9 @@ def test_api_cg_creation_mgm():
     cost_v3 = constraint_from_str('cv3', '-0.1 if v3 == "G" else 0.1 ', [v3])
 
     node_v3 = chg.VariableComputationNode(v3, [cost_v3, diff_v2_v3])
-    comp_def_v3 = ComputationDef(node_v3, AlgoDef('dsa'))
-    v3_computation = mgm.build_computation(comp_def_v3)
+    comp_def_v3 = ComputationDef(node_v3,
+                                 AlgoDef.build_with_default_param('mgm'))
+    v3_computation = build_computation(comp_def_v3)
 
     agt3.add_computation(v3_computation)
     agt3.discovery.register_computation('v2', 'a2', agt2.address)
@@ -191,22 +198,22 @@ def test_api_cg_creation_mgm():
     for a in agts:
         a.stop()
 
-    # As we do not have an ochestrator, we need to collect results manually:
+    # As we do not have an orchestrator, we need to collect results manually:
     # With MGM we will not always be able to get the optimal solution,
     # depending on the start affectation (which may require a coordinated
     # change and thus is not possible with mgm), so we just check the
     # hard constraints
     assert agt1.computation('v1').current_value != \
-           agt2.computation('v2').current_value
+        agt2.computation('v2').current_value
     assert agt3.computation('v3').current_value != \
-           agt2.computation('v2').current_value
+        agt2.computation('v2').current_value
 
 
 def test_api_cg_creation_mgm2():
     # This time we solve the same graph coloring problem with the MGM2
     # algorithm.
-    # As you can see, the only difference is the creation of computation with
-    # mgm.build_computation
+    # As you can see, the only difference is the creation of the AlgoDef
+    # instance with 'mgm2'
     d = Domain('color', '', ['R', 'G'])
     v1 = Variable('v1', d)
     v2 = Variable('v2', d)
@@ -223,10 +230,13 @@ def test_api_cg_creation_mgm2():
     diff_v1_v2 = constraint_from_str('c1', '1 if v1 == v2 else 0', [v1, v2])
 
     node_v1 = chg.VariableComputationNode(v1, [cost_v1, diff_v1_v2])
-    comp_def = ComputationDef(node_v1, AlgoDef('dsa'))
-    v1_computation = mgm2.build_computation(comp_def)
+    comp_def = ComputationDef(node_v1,
+                              AlgoDef.build_with_default_param('mgm2'))
+    v1_computation = build_computation(comp_def)
 
     agt1.add_computation(v1_computation)
+    # We need to register manually as we are not using the directory hosted by
+    # the orchestrator.
     agt1.discovery.register_computation('v2', 'a2', agt2.address)
 
     # Agent 2 with Variable v2
@@ -234,8 +244,9 @@ def test_api_cg_creation_mgm2():
     diff_v2_v3 = constraint_from_str('c2', '1 if v2 == v3 else 0', [v2, v3])
 
     node_v2 = chg.VariableComputationNode(v2, [cost_v2, diff_v2_v3, diff_v1_v2])
-    comp_def_v2 = ComputationDef(node_v2, AlgoDef('dsa'))
-    v2_computation = mgm2.build_computation(comp_def_v2)
+    comp_def_v2 = ComputationDef(node_v2,
+                                 AlgoDef.build_with_default_param('mgm2'))
+    v2_computation = build_computation(comp_def_v2)
 
     agt2.add_computation(v2_computation)
     agt2.discovery.register_computation('v1', 'a1', agt1.address)
@@ -245,8 +256,9 @@ def test_api_cg_creation_mgm2():
     cost_v3 = constraint_from_str('cv3', '-0.1 if v3 == "G" else 0.1 ', [v3])
 
     node_v3 = chg.VariableComputationNode(v3, [cost_v3, diff_v2_v3])
-    comp_def_v3 = ComputationDef(node_v3, AlgoDef('dsa'))
-    v3_computation = mgm2.build_computation(comp_def_v3)
+    comp_def_v3 = ComputationDef(node_v3,
+                                 AlgoDef.build_with_default_param('mgm2'))
+    v3_computation = build_computation(comp_def_v3)
 
     agt3.add_computation(v3_computation)
     agt3.discovery.register_computation('v2', 'a2', agt2.address)
@@ -261,12 +273,12 @@ def test_api_cg_creation_mgm2():
     for a in agts:
         a.stop()
 
-    # As we do not have an ochestrator, we need to collect results manually.
+    # As we do not have an orchestrator, we need to collect results manually.
     # As with MGM, MGM2 does not necessarily find the optimal solution,
     # depending on the start affectation (which may require a 3-coordinated
     # change and thus is not possible with mgm2), so we just check the
     # hard constraints
     assert agt1.computation('v1').current_value != \
-           agt2.computation('v2').current_value
+        agt2.computation('v2').current_value
     assert agt3.computation('v3').current_value != \
-           agt2.computation('v2').current_value
+        agt2.computation('v2').current_value
