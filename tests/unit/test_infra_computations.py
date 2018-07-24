@@ -379,7 +379,7 @@ def test_fallback_memory_footprint():
 
     v1 = Variable('v1', [1,2])
     comp_def = ComputationDef(VariableComputationNode(v1, []),
-                              AlgoDef('dsatuto'))
+                              AlgoDef.build_with_default_param('dsatuto'))
     comp = dsa_module.DsaTutoComputation(v1, [], comp_def)
 
     assert comp.footprint() == 1
@@ -391,7 +391,7 @@ def test_fallback_memory_footprint_from_import_module():
 
     v1 = Variable('v1', [1,2])
     comp_def = ComputationDef(VariableComputationNode(v1, []),
-                              AlgoDef('dsatuto'))
+                              AlgoDef.build_with_default_param('dsatuto'))
     comp = dsa_module.DsaTutoComputation(v1, [], comp_def)
 
     assert comp.footprint() == 1
@@ -403,7 +403,7 @@ def test_fallback_memory_footprint_from_classic_import():
 
     v1 = Variable('v1', [1,2])
     comp_def = ComputationDef(VariableComputationNode(v1, []),
-                              AlgoDef('dsatuto'))
+                              AlgoDef.build_with_default_param('dsatuto'))
     comp = dsa_module.DsaTutoComputation(v1, [], comp_def)
 
     assert comp.footprint() == 1
