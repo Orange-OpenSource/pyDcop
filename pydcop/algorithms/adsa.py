@@ -35,7 +35,7 @@ A-DSA : Asynchronous Distributed Stochastic Algorithm
 
 ADSA :cite:`weiss_distributed_2003`
 is an asynchronous version of DSA, the Distributed Stochastic Algorithm
- :cite:`zhang_distributed_2005` ( stochastic, local search DCOP algorithm.)
+:cite:`zhang_distributed_2005` ( stochastic, local search DCOP algorithm.)
 Instead of waiting for its neighbors, each variables periodically determines if
 it should select a new values, based on the values received from its neighbors.
 
@@ -43,7 +43,6 @@ it should select a new values, based on the values received from its neighbors.
 
 Algorithm Parameters
 ^^^^^^^^^^^^^^^^^^^^
-
 **variant**
   'A', 'B' or 'C' ; the variant of the algorithm,
   as defined in :cite:`zhang_distributed_2005` . Defaults to B.

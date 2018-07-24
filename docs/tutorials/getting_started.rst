@@ -64,7 +64,9 @@ create a text file ``graph_coloring.yaml`` with following content::
 
 You don't need for the moment to understand everything in this file, it's
 enough to know that it represents a `graph coloring problem`__, modeled as a
-DCOP with 3 variables (this example is taken from :cite:`farinelli_decentralised_2008`).
+DCOP with 3 variables
+(this example is taken from
+:cite:`farinelli_decentralised_2008` ).
 
 __  https://en.wikipedia.org/wiki/Graph_coloring
 
