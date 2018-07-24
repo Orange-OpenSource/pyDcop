@@ -238,7 +238,7 @@ class ILPFGDP(unittest.TestCase):
         cg = ComputationsFactorGraph([cv1, cv2, cv3], [cf1])
         hints = DistributionHints(must_host={'a1': ['v1', 'v2']})
 
-        a1.capacity = 10
+        a1.capacity = 15
         agent_mapping = distribute(cg, [a1, a2],
                                    hints=hints,
                                    computation_memory=ms.computation_memory,
