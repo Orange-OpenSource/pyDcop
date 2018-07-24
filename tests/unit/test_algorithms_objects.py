@@ -29,43 +29,41 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-import unittest
-
 from pydcop.algorithms.objects import AlgoDef, load_algorithm_module, \
     list_available_algorithms
 from pydcop.utils.simple_repr import simple_repr, from_repr
 
 
-class AlgoDefTest(unittest.TestCase):
+def test_algo_def():
 
-    def test_algo_def(self):
+    a = AlgoDef('maxsum', {'stability': 0.01}, 'min')
 
-        a = AlgoDef('maxsum', 'min', {'stability': 0.01})
+    assert a.algo == 'maxsum'
+    assert a.mode == 'min'
+    assert 'stability' in a.param_names()
+    assert a.param_value('stability') == 0.01
 
-        self.assertEqual(a.algo, 'maxsum')
-        self.assertEqual(a.mode, 'min')
-        self.assertIn('stability', a.param_names())
-        self.assertEqual(a.param_value('stability'), 0.01)
 
-    def test_simple_repr(self):
+def test_simple_repr():
 
-        a = AlgoDef('maxsum', 'min', {'stability': 0.01})
+    a = AlgoDef('maxsum', {'stability': 0.01}, 'min')
 
-        r = simple_repr(a)
+    r = simple_repr(a)
 
-        self.assertEqual(r['algo'], 'maxsum')
-        self.assertEqual(r['mode'], 'min')
-        self.assertEqual(r['params']['stability'], 0.01)
+    assert r['algo'] == 'maxsum'
+    assert r['mode'] == 'min'
+    assert r['params']['stability'] == 0.01
 
-    def test_from_repr(self):
 
-        a = AlgoDef('maxsum', 'min', {'stability': 0.01})
+def test_from_repr():
 
-        r = simple_repr(a)
-        a2 = from_repr(r)
+    a = AlgoDef('maxsum', {'stability': 0.01}, 'min')
 
-        self.assertEqual(a, a2)
-        self.assertEqual(a2.param_value('stability'), 0.01)
+    r = simple_repr(a)
+    a2 = from_repr(r)
+
+    assert a == a2
+    assert a2.param_value('stability') == 0.01
 
 
 def test_building_algodef_with_default_params():
@@ -73,6 +71,16 @@ def test_building_algodef_with_default_params():
     a = AlgoDef.build_with_default_param('maxsum')
 
     assert a.params['damping'] == 0
+
+
+def test_building_algodef_with_provided_and_default_params():
+
+    a = AlgoDef.build_with_default_param('dsa', {'variant': 'B'}, mode='max')
+
+    assert a.params['variant'] == 'B'  # provided param
+    assert a.params['probability'] == 0.7  # default param
+    assert a.algo == 'dsa'
+    assert a.mode == 'max'
 
 
 def test_load_algorithm():

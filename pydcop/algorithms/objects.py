@@ -55,36 +55,78 @@ class AlgoDef(SimpleRepr):
     run it. These parameter generally depend on a specific algorithm (e.g.
     variant A, B or C for DSA and damping factor for maxsum).
 
-    """
+    Notes
+    -----
+    When using the constructor, params must already be a dict of valid parameter
+    for this algorithm and no validity check is done.
 
-    def __init__(self, algo: str, mode: str='min',
-                 params: Dict[str, Any]= None) -> None:
-        """
+    Most of the time, you should use `AlgoDef.build_with_default_param` static
+    method to create an instance of `AlgoDef', as it automatically
+    uses default arguments for the requested algorithm.
 
-        Notes
-        -----
-        params must already be a dict of valid parameter for this algorithm
-        no check is done. If you want to automatically use default arguments
-        for parameters, use `AlgoDef.build_with_default_param` static method
-        instead.
+    Parameters
+    ----------
 
-        :param algo: name of the algorithm. It must be the name of a module
+    algo: str
+        Name of the algorithm. It must be the name of a module
         in the `pydcop.algorithms` package.
+    params: dict
+        Dictionary of algorithm-specific configuration and parameters
+    mode: str
+        'min' of 'max', defaults to 'min'
 
-        :param mode: min of max
-        :param params: keywords argument for algo-specific configuration and
-        parameters
-        """
+    """
+    def __init__(self, algo: str, params: Dict[str, Any], mode: str='min') \
+            -> None:
         self._algo = algo
         self._mode = mode
-
-        self._params = {} if params is None else params
+        self._params = params
 
     @staticmethod
     def build_with_default_param(
-            algo: str, mode: str='min',
-            params: Dict[str, Any]= None,
+            algo: str, params: Dict[str, Any]= None,
+            mode: str = 'min',
             parameters_definitions: List[AlgoParameterDef]= None):
+        """
+        Creates an `AlgoDef` instance with defaults parameter values.
+
+        Parameters passed as argument are checked for validity.If a value is not
+            provided for some required parameters, their default value is used.
+
+        Parameters
+        ----------
+        algo: str
+            Name of the algorithm. It must be the name of a module
+            in the `pydcop.algorithms` package.
+        mode: str
+            'min' of 'max', defaults to 'min'
+        params: dict
+            Dictionary of algorithm-specific parameters. If a value is not
+            provided for some required parameters, their default value is used.
+        parameters_definitions: list of AlgoParameterDef
+            Algorithms parameters definition. If not provided, their are
+            automatically loaded form the algorithm's module.
+
+        Returns
+        -------
+        An `AlgoDef` instance with defaults parameter values.
+
+        Raises
+        ------
+        ValueError:
+            If an unknown parameter is passed or if a parameter value does not
+            respect the parameter definition.
+
+        Examples
+        --------
+
+        >>> algo_def = AlgoDef.build_with_default_param('dsa', {'variant': 'B'})
+        >>> algo_def.param_value('probability')
+        0.7
+        >>> algo_def.param_value('variant')
+        'B'
+
+        """
 
         if parameters_definitions is None:
             algo_module = load_algorithm_module(algo)
@@ -94,25 +136,74 @@ class AlgoDef(SimpleRepr):
         params = prepare_algo_params(
             params, parameters_definitions)  # type: Dict[str, Any]
 
-        return AlgoDef(algo, mode, params)
-
+        return AlgoDef(algo, params, mode)
 
     @property
     def algo(self) -> str:
+        """
+        The name of the algorithm.
+
+        The name of the algorithm is the name of a module
+        in the `pydcop.algorithms` package.
+
+        Returns
+        -------
+        str: the name of the algorithm.
+        """
         return self._algo
 
     @property
     def mode(self) -> str:
+        """
+        The mode, 'min or 'max'.
+
+        Returns
+        -------
+        str: The mode, 'min or 'max'.
+        """
         return self._mode
 
     def param_names(self) -> Iterable[str]:
+        """
+        names of the parameters for this algorithm.
+
+        Returns
+        -------
+        An iterable of str.
+        """
         return self._params.keys()
 
     def param_value(self, param: str) -> Any:
+        """
+        The value of a parameter.
+
+        Parameters
+        ----------
+        param: str
+            A parameter name
+
+        Returns
+        -------
+        The value of the parameter
+
+        Raises
+        ------
+        KeyError: if there is no parameter with this name.
+        """
         return self._params[param]
 
     @property
     def params(self)-> Dict:
+        """
+        A dictionary of parameters values.
+
+        The dictionary is a copy of the internal parameters and can be safely
+        modified.
+
+        Returns
+        -------
+        A dictionary of parameters values.
+        """
         return dict(self._params)
 
     def _simple_repr(self):
@@ -151,9 +242,16 @@ class ComputationDef(SimpleRepr):
     computation instance that can be run. It can be used when deploying the
     computation or as a replica when distributing copies of a computation for
     resilience.
+
+    Parameters
+    ----------
+    node: ComputationNode
+        A computation node
+    algo: AlgoDef
+        algorithm definition ans an `AlgoDef` instance.
     """
 
-    def __init__(self, node: ComputationNode, algo: 'AlgoDef') -> None:
+    def __init__(self, node: ComputationNode, algo: AlgoDef) -> None:
         self._node = node
         self._algo = algo
 
@@ -207,8 +305,9 @@ def check_param_value(param_val: Any, param_def: AlgoParameterDef) -> Any:
 
     Raises
     ------
-    Raises a ValueError if the value does not satisfies the parameter
-    definition.
+    ValueError:
+        Raises a ValueError if the value does not satisfies the parameter
+        definition.
 
     Examples
     --------
@@ -277,6 +376,12 @@ def prepare_algo_params(params: Dict[str, Any],
         a Dict with all algorithms parameters. If a parameter was not
         provided in the input dict, it is added with its default value.
 
+    Raises
+    ------
+    ValueError:
+        If an unknown parameter is passed or if a parameter value does not
+        respect the parameter definition.
+
     """
     selected_params = {}
     all_algo_params = {param_def.name: param_def
@@ -299,7 +404,14 @@ def prepare_algo_params(params: Dict[str, Any],
     return selected_params
 
 
-def list_available_algorithms():
+def list_available_algorithms() -> List[str]:
+    """
+    The list of available DCOP algorithms
+
+    Returns
+    -------
+    a list of str
+    """
     exclude_list = {'generic_computations', 'graphs', 'objects'}
     algorithms = []
 
@@ -506,7 +618,6 @@ def find_arg_optimal(variable, relation, mode):
         elif current_rel_val == best_rel_val:
             var_val.append(v)
     return var_val, best_rel_val
-
 
 
 def is_of_type_by_str(value: Any, type_str: str):
