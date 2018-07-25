@@ -81,9 +81,13 @@ def build_algo_def(algo_module, algo_name: str, objective,
             logger.info('Using default parameters for %s', algo_name)
 
         try:
+            params = prepare_algo_params(params, algo_module.algo_params)
+            logger.info('parameters for %s : %s', algo_name, params)
 
-            return AlgoDef(algo_name, objective,
-                           prepare_algo_params(params, algo_module.algo_params))
+            return AlgoDef.build_with_default_param(
+                algo=algo_name,
+                params=params,
+                mode=objective)
 
         except Exception as e:
             param_msgs = []
@@ -97,12 +101,12 @@ def build_algo_def(algo_module, algo_name: str, objective,
             msg = str(e)
             msg += '\nAvailable parameters for {}:\n'.format(algo_name)
             msg += '\n'.join(param_msgs)
-            _error(msg)
+            _error(msg, e)
 
     else:
         if cli_params:
             _error('Algo {} does not support any parameter'.format(algo_name))
-        return AlgoDef(algo_name, objective)
+        return AlgoDef(algo_name, {}, objective=objective)
 
 
 # Files for logging metrics

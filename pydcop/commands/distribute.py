@@ -147,7 +147,8 @@ from importlib import import_module
 import sys
 import yaml
 
-from pydcop.algorithms.objects import list_available_algorithms
+from pydcop.algorithms.objects import list_available_algorithms, \
+    load_algorithm_module
 from pydcop.commands._utils import _error
 from pydcop.dcop.yamldcop import load_dcop_from_file
 from pydcop.distribution.objects import ImpossibleDistributionException
@@ -303,7 +304,7 @@ def load_graph_module(graph):
 def load_algo_module(algo):
     algo_module = None
     try:
-        algo_module = load_algo_module(algo)
+        algo_module = load_algorithm_module(algo)
     except ImportError as e:
         _error('Could not find dcop algorithm: {}'.format(algo), e)
     return algo_module
