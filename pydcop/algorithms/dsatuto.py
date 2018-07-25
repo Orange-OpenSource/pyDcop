@@ -55,13 +55,6 @@ from pydcop.infrastructure.computations import VariableComputation, \
 # Type of computations graph that must be used with dsa
 GRAPH_TYPE = 'constraints_hypergraph'
 
-
-def build_computation(comp_def: ComputationDef):
-    return DsaTutoComputation(comp_def.node.variable,
-                              comp_def.node.constraints,
-                              computation_definition= comp_def)
-
-
 DsaMessage = message_type("DsaMessage", ["value"])
 
 
@@ -79,10 +72,13 @@ class DsaTutoComputation(VariableComputation):
         the definition of the computation, given as a ComputationDef instance.
 
     """
-    def __init__(self, variable, constraints, computation_definition):
-        super().__init__(variable, computation_definition)
+    def __init__(self, computation_definition):
+        super().__init__(computation_definition.node.variable,
+                         computation_definition)
 
-        self.constraints = list(constraints)
+        assert computation_definition.algo.algo == 'dsatuto'
+
+        self.constraints = computation_definition.node.constraints
         self.current_cycle = {}
         self.next_cycle = {}
 

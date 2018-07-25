@@ -30,6 +30,7 @@
 import pkgutil
 from collections import namedtuple
 from importlib import import_module
+import inspect
 from typing import Iterable, Dict, Any, List
 
 import numpy as np
@@ -456,7 +457,34 @@ def load_algorithm_module(algo_name: str):
     if not hasattr(algo_module, 'computation_memory'):
         algo_module.computation_memory = lambda *a, **ka: 1
 
+    if not hasattr(algo_module, 'build_computation'):
+        # Injecting the build_computation method will only work
+        # with algorithms that defines a single computation type.
+        implementations = find_computation_implementation(algo_module)
+        algo_module.build_computation = implementations[0]
+
     return algo_module
+
+
+def find_computation_implementation(algorithm_module):
+    """
+    Find VariableComputation subclasses in an algorithm module
+
+    Parameters
+    ----------
+    algorithm_module
+
+    Returns
+    -------
+    A list of VariableComputation subclasses.
+    """
+
+    from pydcop.infrastructure.computations import VariableComputation
+    implementations = []
+    for m in inspect.getmembers(algorithm_module, inspect.isclass):
+        if m[1] != VariableComputation and issubclass(m[1], VariableComputation):
+            implementations.append(m[1])
+    return implementations
 
 
 def get_data_type_max(data_type):

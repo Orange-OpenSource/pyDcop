@@ -112,24 +112,23 @@ UNIT_SIZE = 1
 # Type of computations graph that must be used with dsa
 GRAPH_TYPE = 'constraints_hypergraph'
 
+# Dsa supports several parameters:
+#
+#     variant: str
+#         The DSA variant to use (A, B or C)
+#     probability: float
+#         The probability threshold for changing value. Used differently
+#         depending on the variant of DSA. See (Zhang, 2005) for details
+#     stop_cycle: int
+#         the number of cycle after which the computation must stop. If not
+#         given, the computation does not stop automatically.
 
-def build_computation(comp_def: ComputationDef) -> DcopComputation:
-    """Build a DSA computation
 
-    Parameters
-    ----------
-    comp_def: a ComputationDef object
-        the definition of the DSA computation
-
-    Returns
-    -------
-    MessagePassingComputation
-        a message passing computation that implements the DSA algorithm for
-        one variable.
-
-    """
-    return DsaComputation(comp_def=comp_def)
-
+algo_params = [
+    AlgoParameterDef('probability', 'float', None, 0.7),
+    AlgoParameterDef('variant', 'str', ['A', 'B', 'C'], 'B'),
+    AlgoParameterDef('stop_cycle', 'int', None, 0),
+]
 
 def computation_memory(computation: VariableComputationNode) -> float:
     """Return the memory footprint of a DSA computation.
@@ -178,23 +177,6 @@ def communication_load(src: VariableComputationNode, target: str) -> float:
     """
     return UNIT_SIZE + HEADER_SIZE
 
-# Dsa supports several parameters:
-#
-#     variant: str
-#         The DSA variant to use (A, B or C)
-#     probability: float
-#         The probability threshold for changing value. Used differently
-#         depending on the variant of DSA. See (Zhang, 2005) for details
-#     stop_cycle: int
-#         the number of cycle after which the computation must stop. If not
-#         given, the computation does not stop automatically.
-
-
-algo_params = [
-    AlgoParameterDef('probability', 'float', None, 0.7),
-    AlgoParameterDef('variant', 'str', ['A', 'B', 'C'], 'B'),
-    AlgoParameterDef('stop_cycle', 'int', None, 0),
-]
 
 
 class DsaMessage(Message):

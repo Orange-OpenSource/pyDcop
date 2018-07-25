@@ -82,13 +82,6 @@ algo_params = [
 ]
 
 
-def build_computation(comp_def: ComputationDef):
-    return MgmComputation(comp_def.node.variable, comp_def.node.constraints,
-                          mode=comp_def.algo.mode,
-                          **comp_def.algo.params,
-                          comp_def=comp_def)
-
-
 def computation_memory(computation: VariableComputationNode) -> float:
     """Return the memory footprint of a MGM computation.
 
@@ -224,12 +217,7 @@ class MgmComputation(VariableComputation):
 
     """
 
-    def __init__(self, variable: Variable,
-                 utilities: Iterable[RelationProtocol],
-                 mode='min', msg_sender=None,
-                 break_mode='lexic',
-                 stop_cycle= None,
-                 comp_def=None):
+    def __init__(self, comp_def=None):
         """
         :param variable: a variable object for which this computation is
                          responsible
@@ -238,11 +226,10 @@ class MgmComputation(VariableComputation):
         :param mode: optimization mode, 'min' or 'max'. Defaults to min
         """
 
-        super().__init__(variable, comp_def)
-        self._msg_sender = msg_sender
+        super().__init__(comp_def.node.variable, comp_def)
 
-        self.__utilities__ = list(utilities)
-        self._mode = mode  # min or max
+        self.__utilities__ = list(comp_def.node.constraints)
+        self._mode = comp_def.algo.mode # min or max
 
         # Handling messages arriving during wrong mode
         self.__postponed_gain_messages__ = []
@@ -253,8 +240,8 @@ class MgmComputation(VariableComputation):
 
         # Some constraints might be unary, and our variable can have several
         # constraints involving the same variable
-        self._neighbors = set([v.name for c in utilities
-                               for v in c.dimensions if v != variable])
+        self._neighbors = set([v.name for c in self.__utilities__
+                               for v in c.dimensions if v != self.variable])
 
         # Agent view of its neighbors resp. for values and gains state
         self._neighbors_values = {}  # type: Dict[str, Any]
@@ -262,8 +249,8 @@ class MgmComputation(VariableComputation):
         self._gain = None
         self._new_value = None
 
-        self.stop_cycle = stop_cycle
-        self.__break_mode__ = break_mode
+        self.stop_cycle = comp_def.algo.param_value('stop_cycle')
+        self.__break_mode__ = comp_def.algo.param_value('break_mode')
         self.__random_nb__ = 0  # used in case break_mode is 'random'
 
     @property
