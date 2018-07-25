@@ -78,7 +78,7 @@ MGM supports two paramaters:
 """
 algo_params = [
     AlgoParameterDef('break_mode', 'str', ['lexic', 'random'], 'lexic'),
-    AlgoParameterDef('stop_cycle', 'int', None, None),
+    AlgoParameterDef('stop_cycle', 'int', None, 0),
 ]
 
 
