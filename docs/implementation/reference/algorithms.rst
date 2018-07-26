@@ -22,6 +22,14 @@ DCOP algorithms currently implemented in pyDCOP:
   algorithms/dpop
 
 
+
+.. autoclass:: pydcop.algorithms.objects.ComputationDef
+  :members:
+
+
+.. autoclass:: pydcop.algorithms.objects.AlgoDef
+  :members:
+
 .. autoclass:: pydcop.algorithms.objects.AlgoParameterDef
   :members:
 

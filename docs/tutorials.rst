@@ -14,4 +14,5 @@ Tutorials
   tutorials/problem_modeling
   tutorials/dynamic_dcops
   tutorials/agent_gui
+  tutorials/algo_implementation
 

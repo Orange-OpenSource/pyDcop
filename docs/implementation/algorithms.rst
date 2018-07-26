@@ -2,8 +2,13 @@
 
 .. _implementation_algorithms:
 
-Implementing a DCOP algorithm
-=============================
+DCOP algorithm Implemention
+===========================
+
+**Note:** This document build upon the tutorial
+:ref:`tutorials_algorithm_implementation`,
+you should follow it before reading this.
+
 
 By providing all the infrastructure, pyDCOP makes it easier to implement a
 new DCOP algorithm ; you only have one python module to implement,
@@ -14,10 +19,13 @@ To implement an algorithm you need:
 
 - to create a python module
 - to define one or several :py:class:`.Message`
-- to implement your logic in a
+- to implement your logic in one or several
   :py:class:`.DcopComputation` class
+
+Optionnaly, you may also
+
 - to implement some predefined utility methods and attributes
-- optionally, you may also implement some other methods used for some
+- you may also implement some other methods used for some
   distribution methods
 
 
@@ -84,6 +92,8 @@ for your message to be serializable.
 This is necessary when running the agents in
 different processes, as messages will be sent over the network.
 
+
+TODO message handler
 
 Computation
 -----------
@@ -158,12 +168,15 @@ Cycles
 
 
 
+
 Various
 -------
 
 * finishing a computation : using a `finished` signal
+* builder method
+* foot print
+* communication load
 
-* changing cycle
 
 Parameters
 ^^^^^^^^^^

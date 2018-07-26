@@ -62,7 +62,7 @@ class AlgoDef(SimpleRepr):
     for this algorithm and no validity check is done.
 
     Most of the time, you should use `AlgoDef.build_with_default_param` static
-    method to create an instance of `AlgoDef', as it automatically
+    method to create an instance of `AlgoDef`, as it automatically
     uses default arguments for the requested algorithm.
 
     Parameters
@@ -91,8 +91,9 @@ class AlgoDef(SimpleRepr):
         """
         Creates an `AlgoDef` instance with defaults parameter values.
 
-        Parameters passed as argument are checked for validity.If a value is not
-            provided for some required parameters, their default value is used.
+        Parameters passed as argument are checked for validity.
+        If a value is not provided for some required parameters,
+        their default value is used.
 
         Parameters
         ----------
@@ -100,17 +101,18 @@ class AlgoDef(SimpleRepr):
             Name of the algorithm. It must be the name of a module
             in the `pydcop.algorithms` package.
         mode: str
-            'min' of 'max', defaults to 'min'
+            `min` of `max`, defaults to `min`
         params: dict
             Dictionary of algorithm-specific parameters. If a value is not
             provided for some required parameters, their default value is used.
-        parameters_definitions: list of AlgoParameterDef
+        parameters_definitions: list of :class:`AlgoParameterDef`
             Algorithms parameters definition. If not provided, their are
             automatically loaded form the algorithm's module.
 
         Returns
         -------
-        An `AlgoDef` instance with defaults parameter values.
+        algodef: :class:`AlgoDef`
+            An instance with defaults parameter values.
 
         Raises
         ------

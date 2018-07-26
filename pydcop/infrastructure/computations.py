@@ -56,16 +56,14 @@ class Message(SimpleRepr):
     Base class for messages.
 
     you generally sub-class ``Message`` to define the message type for a DCOP
-    algorithm. Alternatively you can use :py:func:`message_type` to create
+    algorithm.
+    Alternatively you can use :py:func:`message_type` to create
     your own message type.
 
-    See Also
-    --------
-    message_type
 
     Parameters
     ----------
-    msg_type: string
+    msg_type: str
        the message type ; this will be used to select the correct handler
        for a message in a DcopComputation instance.
     content: Any
@@ -83,8 +81,10 @@ class Message(SimpleRepr):
         """
         Returns the size of the message.
 
-        Optional, will be used when computing the communication load of an
-        algorithm and by some distribution methods.
+        You should overwrite this methods in subclasses,
+        will be used when computing the communication load of an
+        algorithm and by some distribution methods that optimize
+        the distribution of computation for communication load.
 
         Returns
         -------
@@ -96,7 +96,7 @@ class Message(SimpleRepr):
     @property
     def type(self) -> str:
         """
-        The type of the message
+        The type of the message.
 
         Returns
         -------
@@ -145,8 +145,8 @@ def message_type(msg_type: str, fields: List[str]):
     -------
     A class type that can be used as a message type.
 
-    Examples
-    --------
+    Example
+    -------
 
     >>> MyMessage = message_type('MyMessage', ['foo', 'bar'])
     >>> msg1 = MyMessage(foo=42, bar=21)
@@ -256,7 +256,7 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
 
     When subclassing `MessagePassingComputation`, you can use the `@register`
     decorator on your subclass methods to register then as handler for a
-    specific kind of message. For example
+    specific kind of message. For example::
 
     > class MyComputation(MessagePassingComputation):
     >    ...
@@ -264,8 +264,8 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
     >    def handler_c(self, s, m, t):
     >        print("received messages", m, "from", s)
 
-    Notes
-    -----
+    Note
+    ----
     A computation is always be hosted and run on an agent, which works with a
     single thread. This means that its methods do not need to be thread safe
     as they will always be called sequentially in the same single thread.
@@ -457,10 +457,10 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
 
         Notes
         -----
-        Subclasses of AbstractMessagePassingAlgorithm should not override
+        Subclasses of :class:`MessagePassingComputation` should not override
         this method, as it is used for storing received messages during pause.
-        Instead, they should register a method for each message type in
-        `_msg_handlers`.
+        Instead, they should register a method for each message type by using
+        the :func:`register` decorator.
 
         Parameters
         ----------
@@ -564,8 +564,9 @@ class register(object):
     msg_type: str
         the type of message
 
-    Examples
-    --------
+    Example
+    -------
+    ::
 
     > class C(MessagePassingComputation):
     >    ...
