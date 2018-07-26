@@ -32,18 +32,17 @@
 import unittest
 from unittest.mock import MagicMock
 
-from pydcop.computations_graph.constraints_hypergraph import ConstraintLink, \
+from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
-from pydcop.dcop.relations import UnaryFunctionRelation, AsNAryFunctionRelation, \
-    constraint_from_str, relation_from_str
+from pydcop.dcop.relations import UnaryFunctionRelation, \
+    AsNAryFunctionRelation, constraint_from_str
 
 from pydcop.algorithms import mgm2
-from pydcop.algorithms.objects import ComputationDef
+from pydcop.algorithms.objects import ComputationDef, AlgoDef
 from pydcop.algorithms.mgm2 import Mgm2Computation, Mgm2ValueMessage, \
     Mgm2OfferMessage, Mgm2GainMessage, Mgm2ResponseMessage, Mgm2GoMessage
 from pydcop.dcop.objects import Variable
 from tests.unit.test_algorithms_dpop import DummySender
-
 
 
 def test_communication_load():
@@ -57,7 +56,7 @@ def test_communication_load():
     v1_node = VariableComputationNode(v1, [c1, c2, c3])
 
     assert mgm2.UNIT_SIZE * 10 * 10 * 3 + mgm2.HEADER_SIZE \
-           == mgm2.communication_load(v1_node, 'v2')
+        == mgm2.communication_load(v1_node, 'v2')
 
 
 def test_computation_memory_one_constraint():
@@ -68,7 +67,7 @@ def test_computation_memory_one_constraint():
     v1_node = VariableComputationNode(v1, [c1])
 
     # here, we have an hyper-edges with 3 vertices
-    assert mgm2.computation_memory(v1_node) == mgm2.UNIT_SIZE * 2 *2
+    assert mgm2.computation_memory(v1_node) == mgm2.UNIT_SIZE * 2 * 2
 
 
 def test_computation_memory_two_constraints():
@@ -90,13 +89,16 @@ def test_no_neighbors():
     cost_x1 = constraint_from_str('cost_x1', 'x1 *2 ', [x1])
 
     computation = Mgm2Computation(
-        x1, [cost_x1], mode='max', comp_def=MagicMock())
+        ComputationDef(
+            VariableComputationNode(x1, [cost_x1]),
+            AlgoDef.build_with_default_param('mgm2', mode='max')
+        ))
 
     computation.value_selection = MagicMock()
     computation.finished = MagicMock()
     vals, cost = computation._compute_best_value()
     assert cost == 18
-    assert set(vals) ==  {9}
+    assert set(vals) == {9}
 
     computation.on_start()
     computation.value_selection.assert_called_once_with(9, 18)
@@ -108,7 +110,12 @@ class TestsValueComputation(unittest.TestCase):
         x = Variable("x", list(range(5)))
         phi = UnaryFunctionRelation("phi", x,
                                     lambda x_: 1 if x_ in [0, 2, 3] else 0)
-        computation = Mgm2Computation(x, [phi], comp_def=MagicMock())
+
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
         computation.__value__ = 0
         bests, best = computation._compute_best_value()
 
@@ -123,7 +130,12 @@ class TestsValueComputation(unittest.TestCase):
         def phi(x1_, x2_):
             return x1_ + x2_
 
-        computation = Mgm2Computation(x1, [phi], comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+
         computation._neighbors_values['x2'] = 1
         bests, best = computation._compute_best_value()
 
@@ -139,7 +151,10 @@ class TestsValueComputation(unittest.TestCase):
             return x1_ + x2_
 
         computation = Mgm2Computation(
-            x1, [phi], mode='max', comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2', mode='max')
+            ))
         computation._neighbors_values['x2'] = 1
         bests, best = computation._compute_best_value()
 
@@ -155,7 +170,11 @@ class TestsValueComputation(unittest.TestCase):
         def phi(x1_, x2_, x3_):
             return x1_ + x2_ + x3_
 
-        computation = Mgm2Computation(x1, [phi], comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
         computation._neighbors_values['x2'] = 1
         computation._neighbors_values['x3'] = 1
         bests, best = computation._compute_best_value()
@@ -172,8 +191,11 @@ class TestsValueComputation(unittest.TestCase):
         def phi(x1_, x2_, x3_):
             return x1_ + x2_ + x3_
 
-        computation = Mgm2Computation(x1, [phi], mode='max',
-                                      comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2', mode='max')
+            ))
         computation._neighbors_values['x2'] = 1
         computation._neighbors_values['x3'] = 1
         bests, best = computation._compute_best_value()
@@ -192,7 +214,11 @@ class TestsCostComputation(unittest.TestCase):
         #          return x1_
         phi = UnaryFunctionRelation("phi", x,
                                     lambda x_: 1 if x_ in [0, 2, 3] else 0)
-        computation = Mgm2Computation(x, [phi], comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
         computation.__value__ = 0
 
         self.assertEqual(computation._compute_cost({'x': 0}), 1)
@@ -205,7 +231,11 @@ class TestsCostComputation(unittest.TestCase):
         def phi(x1_, x2_):
             return x1_ + x2_
 
-        computation = Mgm2Computation(x1, [phi], comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
         self.assertEqual(computation._compute_cost({'x1': 0, 'x2': 0}), 0)
         self.assertEqual(computation._compute_cost({'x1': 0, 'x2': 1}), 1)
         self.assertEqual(computation._compute_cost({'x1': 1, 'x2': 0}), 1)
@@ -220,7 +250,11 @@ class TestsCostComputation(unittest.TestCase):
         def phi(x1_, x2_, x3_):
             return x1_ + x2_ + x3_
 
-        computation = Mgm2Computation(x1, [phi], comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
         self.assertEqual(computation._compute_cost({'x1': 0, 'x2': 0,
                                                     'x3': 1}), 1)
         self.assertEqual(computation._compute_cost({'x1': 0, 'x2': 1,
@@ -239,9 +273,17 @@ class TestsCostComputation(unittest.TestCase):
         #          return x1_
         phi = UnaryFunctionRelation("phi", x,
                                     lambda x_: 1 if x_ in [0, 2, 3] else 0)
-        computation = Mgm2Computation(x, [phi], comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
         computation.__value__ = 0
-        computation2 = Mgm2Computation(x, [phi], comp_def=MagicMock())
+        computation2 = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
         computation2.__value__ = 1
 
         self.assertEqual(computation._current_local_cost(), 1)
@@ -255,10 +297,19 @@ class TestsCostComputation(unittest.TestCase):
         def phi(x1_, x2_):
             return x1_ + x2_
 
-        computation = Mgm2Computation(x1, [phi], comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
         computation.__value__ = 1
         computation._neighbors_values['x2'] = 0
-        computation2 = Mgm2Computation(x1, [phi], comp_def=MagicMock())
+
+        computation2 = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
         computation2.__value__ = 0
         computation2._neighbors_values['x2'] = 0
         self.assertEqual(computation._current_local_cost(), 1)
@@ -273,11 +324,20 @@ class TestsCostComputation(unittest.TestCase):
         def phi(x1_, x2_, x3_):
             return x1_ + x2_ + x3_
 
-        computation = Mgm2Computation(x1, [phi], comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
         computation.__value__ = 1
         computation._neighbors_values['x2'] = 0
         computation._neighbors_values['x3'] = 1
-        computation2 = Mgm2Computation(x1, [phi], comp_def=MagicMock())
+
+        computation2 = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
         computation2.__value__ = 0
         computation2._neighbors_values['x2'] = 0
         computation2._neighbors_values['x3'] = 1
@@ -297,8 +357,11 @@ class TestsChangeState(unittest.TestCase):
             return x1_ + x2_ + x3_
 
         computation = Mgm2Computation(
-            x1, [phi], mode='max', msg_sender=DummySender(),
-            comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2', mode='max')
+            ))
+        computation.message_sender = DummySender()
         computation.__value__ = 1
 
         computation._postponed_msg['value'] = [('x2', Mgm2ValueMessage(5))]
@@ -318,9 +381,12 @@ class TestsChangeState(unittest.TestCase):
         def phi(x1_, x2_, x3_):
             return x1_ + x2_ + x3_
 
-        computation = Mgm2Computation(x1, [phi], mode='max',
-                                      msg_sender=DummySender(),
-                                      comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2', mode='max')
+            ))
+        computation.message_sender = DummySender()
 
         computation._postponed_msg['offer'] = \
             [('x2', Mgm2OfferMessage({(1, 1): 5}, is_offering=True))]
@@ -342,7 +408,11 @@ class TestsChangeState(unittest.TestCase):
             return x1_ + x2_ + x3_
 
         computation = Mgm2Computation(
-            x1, [phi], mode='max', comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2', mode='max')
+            ))
+        computation.message_sender = DummySender()
 
         computation._enter_state('answer?')
 
@@ -358,8 +428,11 @@ class TestsChangeState(unittest.TestCase):
             return x1_ + x2_ + x3_
 
         computation = Mgm2Computation(
-            x1, [phi], mode='max',
-            msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2', mode='max')
+            ))
+        computation.message_sender = DummySender()
 
         computation._postponed_msg['gain'] = [('x2', Mgm2GainMessage(3))]
 
@@ -369,7 +442,7 @@ class TestsChangeState(unittest.TestCase):
         self.assertEqual(computation._postponed_msg['gain'], [])
         self.assertEqual(computation._neighbors_gains['x2'], 3)
 
-    def test_enter_offer_state(self):
+    def test_enter_go_state(self):
         x1 = Variable("x1", list(range(2)))
         x2 = Variable('x2', list(range(2)))
         x3 = Variable('x3', list(range(2)))
@@ -379,8 +452,11 @@ class TestsChangeState(unittest.TestCase):
             return x1_ + x2_ + x3_
 
         computation = Mgm2Computation(
-            x1, [phi], mode='max',
-            msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2', mode='max')
+            ))
+        computation.message_sender = DummySender()
 
         computation._enter_state('go?')
 
@@ -398,11 +474,15 @@ class TestsOffersComputations(unittest.TestCase):
         def phi(x1_, x2_, x3_):
             if x1_ == x3_:
                 return 2
-            elif  x1_ == x2_:
+            elif x1_ == x2_:
                 return 1
             return 0
 
-        computation = Mgm2Computation(x1, [phi], comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
 
         computation._neighbors_values = {'x2': 0, 'x3': 0}
         computation._partner = x2
@@ -410,7 +490,7 @@ class TestsOffersComputations(unittest.TestCase):
         computation.__cost__ = 2
         offers = computation._compute_offers_to_send()
 
-        self.assertEqual(offers, {(1,0): 2, (1,1): 1})
+        self.assertEqual(offers, {(1, 0): 2, (1, 1): 1})
 
     def test_compute_offers_max_mode(self):
         x1 = Variable("x1", list(range(2)))
@@ -421,12 +501,15 @@ class TestsOffersComputations(unittest.TestCase):
         def phi(x1_, x2_, x3_):
             if x1_ == x3_:
                 return 2
-            elif  x1_ == x2_:
+            elif x1_ == x2_:
                 return 1
             return 0
 
-        computation = Mgm2Computation(x1, [phi], mode='max',
-                                      comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2', mode='max')
+            ))
 
         computation._neighbors_values = {'x2': 0, 'x3': 0}
         computation._partner = x2
@@ -434,7 +517,7 @@ class TestsOffersComputations(unittest.TestCase):
         computation.__cost__ = 0
         offers = computation._compute_offers_to_send()
 
-        self.assertEqual(offers, {(0,0): -2, (0,1): -2, (1,1): -1})
+        self.assertEqual(offers, {(0, 0): -2, (0, 1): -2, (1, 1): -1})
 
     def test_find_best_offer_min_mode_one_offerer(self):
         x1 = Variable("x1", list(range(2)))
@@ -446,7 +529,7 @@ class TestsOffersComputations(unittest.TestCase):
         def phi(x1_, x2_, x3_):
             if x1_ == x3_:
                 return 2
-            elif  x1_ == x2_:
+            elif x1_ == x2_:
                 return 1
             return 0
 
@@ -456,21 +539,25 @@ class TestsOffersComputations(unittest.TestCase):
                 return 1
             return 0
 
-        computation = Mgm2Computation(x1, [phi, psi], comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi, psi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
 
         computation._neighbors_values = {'x2': 0, 'x3': 0, 'x4': 0}
         computation.__value__ = 0
         computation.__cost__ = 3
 
         bests, best_gain = computation._find_best_offer(
-            [('x2', {(0,0): 1, (0,1): 5, (1,0): 3})])
+            [('x2', {(0, 0): 1, (0, 1): 5, (1, 0): 3})])
         bests2, best_gain2 = computation._find_best_offer(
-            [('x2', {(0,0): 1, (0,1): 5, (1,0): 6})])
+            [('x2', {(0, 0): 1, (0, 1): 5, (1, 0): 6})])
 
         self.assertEqual(bests, [(0, 1, 'x2')])
         self.assertEqual(best_gain, 8)
         self.assertEqual(set(bests2), 
-                         set([(0, 1, 'x2'), (1, 0, 'x2')]))
+                         {(0, 1, 'x2'), (1, 0, 'x2')})
         self.assertEqual(best_gain2, 8)
 
     def test_find_best_offer_max_mode_one_offerer(self):
@@ -483,7 +570,7 @@ class TestsOffersComputations(unittest.TestCase):
         def phi(x1_, x2_, x3_):
             if x1_ == x3_:
                 return 2
-            elif  x1_ == x2_:
+            elif x1_ == x2_:
                 return 1
             return 0
 
@@ -492,23 +579,28 @@ class TestsOffersComputations(unittest.TestCase):
             if x1_ == x4_:
                 return 1
             return 0
-
-        computation = Mgm2Computation(x1, [phi, psi], mode='max',
-                                      comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi, psi]),
+                AlgoDef.build_with_default_param('mgm2', mode='max')
+            ))
 
         computation._neighbors_values = {'x2': 0, 'x3': 1, 'x4': 1}
         computation.__value__ = 0
         computation.__cost__ = 1
 
         bests, best_gain = computation._find_best_offer(
-            [('x2', {(0,0): -1, (0,1): -5, (1,0): -3})]) # global gain: -1 -5 -5
+            [('x2', {(0, 0): -1, (0, 1): -5, (1, 0): -3})])
+        # global gain: -1 -5 -5
+
         bests2, best_gain2 = computation._find_best_offer(
-            [('x2', {(0,0): -1, (0,1): -5, (1,0): -6})]) # global gain: -1 -5 -5
+            [('x2', {(0, 0): -1, (0, 1): -5, (1, 0): -6})])
+        # global gain: -1 -5 -5
 
         self.assertEqual(bests, [(0, 1, 'x2')])
         self.assertEqual(best_gain, -5)
         self.assertEqual(set(bests2),
-                         set([(0, 1, 'x2'), (1, 0, 'x2')]))
+                         {(0, 1, 'x2'), (1, 0, 'x2')})
         self.assertEqual(best_gain2, -5)
 
     def test_find_best_offer_min_mode_2_offerers(self):
@@ -521,7 +613,7 @@ class TestsOffersComputations(unittest.TestCase):
         def phi(x1_, x2_, x3_):
             if x1_ == x3_:
                 return 2
-            elif  x1_ == x2_:
+            elif x1_ == x2_:
                 return 1
             return 0
 
@@ -531,18 +623,22 @@ class TestsOffersComputations(unittest.TestCase):
                 return 1
             return 0
 
-        computation = Mgm2Computation(x1, [phi, psi], comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi, psi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
 
         computation._neighbors_values = {'x2': 0, 'x3': 0, 'x4': 0}
         computation.__value__ = 0
         computation.__cost__ = 3
 
         bests, best_gain = computation._find_best_offer(
-            [('x2', {(0,0): 1, (0,1): 5, (1,0): 3}),
-             ('x4', {(1,0): 7, (0,1): 2, (1,1): 3})])
+            [('x2', {(0, 0): 1, (0, 1): 5, (1, 0): 3}),
+             ('x4', {(1, 0): 7, (0, 1): 2, (1, 1): 3})])
 
         self.assertEqual(set(bests), 
-                         set([(0, 1, 'x2'), (1, 0, 'x4')]))
+                         {(0, 1, 'x2'), (1, 0, 'x4')})
         self.assertEqual(best_gain, 8)
 
     def test_find_best_offer_max_mode_2_offerers(self):
@@ -555,7 +651,7 @@ class TestsOffersComputations(unittest.TestCase):
         def phi(x1_, x2_, x3_):
             if x1_ == x3_:
                 return 2
-            elif  x1_ == x2_:
+            elif x1_ == x2_:
                 return 1
             return 0
 
@@ -565,8 +661,11 @@ class TestsOffersComputations(unittest.TestCase):
                 return 1
             return 0
 
-        computation = Mgm2Computation(x1, [phi, psi], mode='max',
-                                      comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi, psi]),
+                AlgoDef.build_with_default_param('mgm2', mode='max')
+            ))
 
         computation._neighbors_values = {'x2': 0, 'x3': 1, 'x4': 1}
         computation._partner = x2
@@ -574,11 +673,11 @@ class TestsOffersComputations(unittest.TestCase):
         computation.__cost__ = 1
 
         bests, best_gain = computation._find_best_offer(
-            [('x2', {(0,0): -1, (0,1): -5, (1,0): -3}),
+            [('x2', {(0, 0): -1, (0, 1): -5, (1, 0): -3}),
              ('x4', {(1, 0): -5, (0, 1): -4, (1, 1): -3})])
 
         self.assertEqual(set(bests),
-                         set([(0, 1, 'x2'), (0, 1, 'x4'), (1, 0, 'x4')]))
+                         {(0, 1, 'x2'), (0, 1, 'x4'), (1, 0, 'x4')})
         self.assertEqual(best_gain, -5)
 
 
@@ -593,8 +692,11 @@ class TestsHandleMessage(unittest.TestCase):
         def phi(x1_, x2_, x3_):
             return x1_ + x2_ + x3_
 
-        computation = Mgm2Computation(x1, [phi], mode='max',
-                                      comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2', mode='max')
+            ))
         computation._state = 'value'
         computation._handle_value_message('x2', Mgm2ValueMessage(0))
 
@@ -609,8 +711,12 @@ class TestsHandleMessage(unittest.TestCase):
         def phi(x1_, x2_):
             return x1_ + x2_
 
-        computation = Mgm2Computation(x1, [phi], msg_sender=DummySender(),
-                                      comp_def = MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation.message_sender = DummySender()
         computation._state = 'value'
         computation.__value__ = 1
         computation._handle_value_message('x2', Mgm2ValueMessage(0))
@@ -620,9 +726,12 @@ class TestsHandleMessage(unittest.TestCase):
         self.assertEqual(computation._potential_gain, 1)
         self.assertEqual(computation._potential_value, 0)
 
-        computation2 = Mgm2Computation(x1, [phi], mode='max',
-                                       msg_sender=DummySender(),
-                                       comp_def=MagicMock())
+        computation2 = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2', mode='max')
+            ))
+        computation2.message_sender = DummySender()
         computation2._state = 'value'
         computation2.__value__ = 1
         computation2._handle_value_message('x2', Mgm2ValueMessage(0))
@@ -640,37 +749,58 @@ class TestsHandleMessage(unittest.TestCase):
         def phi(x1_, x2_, x3_):
             return x1_ + x2_ + x3_
         # Receives a fake offer
-        computation = Mgm2Computation(x1, [phi], comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation.message_sender = DummySender()
         computation._state = 'offer'
         computation._handle_offer_msg('x2', Mgm2OfferMessage())
         self.assertEqual(computation._state, 'offer')
         self.assertEqual(computation._offers, [])
         # Received only fake offers
         computation2 = Mgm2Computation(
-            x1, [phi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation2.message_sender = DummySender()
         computation2._state = 'offer'
         computation2.__nb_received_offers__ = 1
         computation2._handle_offer_msg('x2', Mgm2OfferMessage())
         self.assertEqual(computation2._state, 'gain')
         self.assertEqual(computation2._offers, [])
+
         # Receives a real offer (but still expects other OfferMessages)
-        computation3 = Mgm2Computation(x1, [phi], comp_def=MagicMock())
+        computation3 = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation3.message_sender = DummySender()
         computation3._state = 'offer'
-        computation3._handle_offer_msg('x2', Mgm2OfferMessage({(1,1): 8},
-                                                            is_offering=True))
+        computation3._handle_offer_msg('x2',
+                                       Mgm2OfferMessage({(1, 1): 8},
+                                                        is_offering=True))
         self.assertEqual(computation3._state, 'offer')
-        self.assertEqual(computation3._offers, [('x2', {(1,1): 8})])
+        self.assertEqual(computation3._offers, [('x2', {(1, 1): 8})])
         # Receives a real offer and is the last expected OfferMessage
         computation4 = Mgm2Computation(
-            x1, [phi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation4.message_sender = DummySender()
         computation4._state = 'offer'
         computation4._neighbors_values = {'x2': 0, 'x3': 1}
         computation4.__value__ = 0
         computation4.__cost__ = 1
         computation4.__nb_received_offers__ = 1
-        computation4._handle_offer_msg('x2', Mgm2OfferMessage({(1,1): 8},
-                                                            is_offering=True))
-        self.assertEqual(computation4._offers, [('x2', {(1,1): 8})])
+        computation4._handle_offer_msg('x2',
+                                       Mgm2OfferMessage({(1, 1): 8},
+                                                        is_offering=True))
+        self.assertEqual(computation4._offers, [('x2', {(1, 1): 8})])
         self.assertEqual(computation4._state, 'gain')
         self.assertEqual(computation4._potential_gain, 9)
         self.assertEqual(computation4._potential_value, 1)
@@ -684,7 +814,12 @@ class TestsHandleMessage(unittest.TestCase):
         def phi(x1_, x2_, x3_):
             return x1_ + x2_ + x3_
         # Receives a fake offer
-        computation = Mgm2Computation(x1, [phi], comp_def=MagicMock())
+        computation = Mgm2Computation(
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation.message_sender = DummySender()
         computation._state = 'offer'
         computation._is_offerer = True
         computation._handle_offer_msg('x2', Mgm2OfferMessage())
@@ -692,7 +827,11 @@ class TestsHandleMessage(unittest.TestCase):
         self.assertEqual(computation._offers, [])
         # Received only fake offers
         computation2 = Mgm2Computation(
-            x1, [phi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation2.message_sender = DummySender()
         computation2._state = 'offer'
         computation2.__nb_received_offers__ = 1
         computation2._handle_offer_msg('x2', Mgm2OfferMessage())
@@ -700,24 +839,34 @@ class TestsHandleMessage(unittest.TestCase):
         self.assertEqual(computation2._offers, [])
         # receives a real offer
         computation3 = Mgm2Computation(
-            x1, [phi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation3.message_sender = DummySender()
         computation3._state = 'offer'
         computation3._is_offerer = True
         computation3.__cost__ = 15
-        computation3._handle_offer_msg('x2', Mgm2OfferMessage({(1,1): 8},
-                                                            is_offering=True))
+        computation3._handle_offer_msg('x2',
+                                       Mgm2OfferMessage({(1, 1): 8},
+                                                        is_offering=True))
         self.assertEqual(computation3._state, 'offer')
         self.assertEqual(computation3._offers, [])
         self.assertEqual(computation3._potential_gain, 0)
         self.assertIsNone(computation3._potential_value)
         # Receives a real offer which is the last expected one
         computation4 = Mgm2Computation(
-            x1, [phi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation4.message_sender = DummySender()
         computation4._state = 'offer'
         computation4._is_offerer = True
         computation4.__nb_received_offers__ = 1
-        computation4._handle_offer_msg('x2', Mgm2OfferMessage({(1,1): 8},
-                                                            is_offering=True))
+        computation4._handle_offer_msg('x2',
+                                       Mgm2OfferMessage({(1, 1): 8},
+                                                        is_offering=True))
         self.assertEqual(computation4._offers, [])
         self.assertEqual(computation4._state, 'answer?')
         self.assertEqual(computation4._potential_gain, 0)
@@ -742,17 +891,22 @@ class TestsHandleMessage(unittest.TestCase):
 
         # Receives a real offer from last neighbor
         computation = Mgm2Computation(
-            x1, [phi, psi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi, psi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation.message_sender = DummySender()
+
         computation._state = 'offer'
         computation._neighbors_values = {'x2': 1, 'x3': 1}
         computation.__value__ = 1
         computation.__cost__ = 9
-        computation._potential_gain = 9 # best unilateral move
-        computation._potential_value = 0 # best unilateral move
+        computation._potential_gain = 9  # best unilateral move
+        computation._potential_value = 0  # best unilateral move
         computation.__nb_received_offers__ = 1
-        computation._handle_offer_msg('x2', Mgm2OfferMessage({(0,1): 1},
-                                                            is_offering=True))
-        self.assertEqual(computation._offers, [('x2', {(0,1): 1})])
+        computation._handle_offer_msg('x2', Mgm2OfferMessage({(0, 1): 1},
+                                                             is_offering=True))
+        self.assertEqual(computation._offers, [('x2', {(0, 1): 1})])
         self.assertEqual(computation._state, 'gain')
         self.assertEqual(computation._potential_gain, 9)
         self.assertEqual(computation._potential_value, 0)
@@ -775,14 +929,18 @@ class TestsHandleMessage(unittest.TestCase):
             return 0
 
         computation = Mgm2Computation(
-            x1, [phi, psi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi, psi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation.message_sender = DummySender()
         computation._state = 'answer?'
         computation._is_offerer = True
         computation._neighbors_values = {'x2': 1, 'x3': 1}
         computation.__value__ = 1
         computation.__cost__ = 9
-        computation._potential_gain = 9 # best unilateral move
-        computation._potential_value = 2 # best unilateral move
+        computation._potential_gain = 9  # best unilateral move
+        computation._potential_value = 2  # best unilateral move
         computation._partner = x3
 
         computation._handle_response_msg('x3',
@@ -812,14 +970,18 @@ class TestsHandleMessage(unittest.TestCase):
             return 0
 
         computation = Mgm2Computation(
-            x1, [phi, psi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi, psi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation.message_sender = DummySender()
         computation._state = 'answer?'
         computation._is_offerer = True
         computation._neighbors_values = {'x2': 1, 'x3': 1}
         computation.__value__ = 1
         computation.__cost__ = 9
-        computation._potential_gain = 9 # best unilateral move
-        computation._potential_value = 2 # best unilateral move
+        computation._potential_gain = 9  # best unilateral move
+        computation._potential_value = 2  # best unilateral move
         computation._partner = x3
 
         computation._handle_response_msg('x3', Mgm2ResponseMessage(False))
@@ -848,7 +1010,11 @@ class TestsHandleMessage(unittest.TestCase):
             return 0
 
         computation = Mgm2Computation(
-            x1, [phi, psi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi, psi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation.message_sender = DummySender()
         computation._neighbors_values = {'x2': 1, 'x3': 1}
         computation.__value__ = 1
         computation.__cost__ = 9
@@ -888,7 +1054,12 @@ class TestsHandleMessage(unittest.TestCase):
             return 0
 
         computation = Mgm2Computation(
-            x1, [phi, psi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi, psi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation.message_sender = DummySender()
+
         computation._neighbors_values = {'x2': 1, 'x3': 1}
         computation.__value__ = 1
         computation.__cost__ = 9
@@ -912,9 +1083,9 @@ class TestsHandleMessage(unittest.TestCase):
         self.assertFalse(computation._is_offerer)
         self.assertFalse(computation._can_move)
 
-        #If cannot move
+        # If cannot move
         self.assertEqual(computation.current_value, 1)
-        #If can move
+        # If can move
         computation._can_move = True
         computation._state = 'go?'
         computation._potential_value = 0
@@ -939,7 +1110,12 @@ class TestsHandleMessage(unittest.TestCase):
             return 0
 
         computation = Mgm2Computation(
-            x1, [phi, psi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi, psi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation.message_sender = DummySender()
+
         computation._neighbors_values = {'x2': 1, 'x3': 1}
         computation.__value__ = 1
         computation._potential_value = 0
@@ -970,7 +1146,12 @@ class TestsHandleMessage(unittest.TestCase):
             return 0
 
         computation = Mgm2Computation(
-            x1, [phi, psi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi, psi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation.message_sender = DummySender()
+
         computation._neighbors_values = {'x2': 1, 'x3': 1}
         computation.__value__ = 1
         computation._state = 'go?'
@@ -1012,7 +1193,12 @@ class TestsHandleMessage(unittest.TestCase):
             return 0
 
         computation = Mgm2Computation(
-            x1, [phi, psi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi, psi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation.message_sender = DummySender()
+
         computation._state = 'gain'
         computation._handle_gain_message('x2', Mgm2GainMessage(5))
 
@@ -1034,9 +1220,13 @@ class TestsHandleMessage(unittest.TestCase):
             if x1_ == x3_:
                 return 8
             return 0
-
         computation = Mgm2Computation(
-            x1, [phi, psi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi, psi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation.message_sender = DummySender()
+
         computation._neighbors_values = {'x2': 1, 'x3': 0}
 
         # If potential gain is 0
@@ -1083,7 +1273,7 @@ class TestsHandleMessage(unittest.TestCase):
         # If not committed and has best gain not alone: no test as it could (in
         # the future) be randomly chosen
 
-        #If not committed and not best gain
+        # If not committed and not best gain
         computation._state = 'go?'
         computation.__value__ = 1
         computation.__cost__ = 1
@@ -1116,7 +1306,12 @@ class TestsHandleMessage(unittest.TestCase):
             return 0
 
         computation = Mgm2Computation(
-            x1, [phi, psi], msg_sender=DummySender(), comp_def=MagicMock())
+            ComputationDef(
+                VariableComputationNode(x1, [phi, psi]),
+                AlgoDef.build_with_default_param('mgm2')
+            ))
+        computation.message_sender = DummySender()
+
         computation._neighbors_values = {'x2': 1, 'x3': 1}
         computation.__value__ = 1
         computation.__nb_received_offers__ = 2
@@ -1126,7 +1321,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation._potential_value = 10
         computation._neighbors_values = {'x2': 1, 'x3': 0}
         computation._neighbors_gains = {'x2': 5, 'x3': 1}
-        computation._offers = [(1,1,'x2')]
+        computation._offers = [(1, 1, 'x2')]
         computation._committed = True
         computation._is_offerer = True
         computation._can_move = True
