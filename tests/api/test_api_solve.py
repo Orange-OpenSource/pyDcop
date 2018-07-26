@@ -42,9 +42,7 @@ def test_api_solve_maxsum():
 
     assignment = solve(dcop, 'maxsum','adhoc', timeout=3)
 
-    assert (assignment == {'v1': 'R', 'v2': 'G', 'v3': 'R'}) or \
-           (assignment == {'v1': 'G', 'v2': 'R', 'v3': 'G'})
-
+    check_suboptimal_result(assignment)
 
 def test_api_solve_dsa():
 
@@ -53,10 +51,7 @@ def test_api_solve_dsa():
 
     assignment = solve(dcop, 'dsa','oneagent', timeout=3)
 
-    # An incomplete algo does not always find the best solution but finds one of two solution that
-    # does not break hard constraints.
-    assert (assignment == {'v1': 'R', 'v2': 'G', 'v3': 'R'}) or \
-           (assignment == {'v1': 'G', 'v2': 'R', 'v3': 'G'})
+    check_suboptimal_result(assignment)
 
 
 def test_api_solve_dsatuto():
@@ -66,10 +61,7 @@ def test_api_solve_dsatuto():
 
     assignment = solve(dcop, 'dsatuto','oneagent', timeout=3)
 
-    # An incomplete algo does not always find the best solution but finds one of two solution that
-    # does not break hard constraints.
-    assert (assignment == {'v1': 'R', 'v2': 'G', 'v3': 'R'}) or \
-           (assignment == {'v1': 'G', 'v2': 'R', 'v3': 'G'})
+    check_suboptimal_result(assignment)
 
 
 def test_api_solve_mgm():
@@ -79,10 +71,7 @@ def test_api_solve_mgm():
 
     assignment = solve(dcop, 'mgm','oneagent', timeout=3)
 
-    # An incomplete algo does not always find the best solution but finds one of two solution that
-    # does not break hard constraints.
-    assert (assignment == {'v1': 'R', 'v2': 'G', 'v3': 'R'}) or \
-           (assignment == {'v1': 'G', 'v2': 'R', 'v3': 'G'})
+    check_suboptimal_result(assignment)
 
 
 def test_api_solve_mgm2():
@@ -92,10 +81,7 @@ def test_api_solve_mgm2():
 
     assignment = solve(dcop, 'mgm2','oneagent', timeout=3)
 
-    # An incomplete algo does not always find the best solution but finds one of two solution that
-    # does not break hard constraints.
-    assert (assignment == {'v1': 'R', 'v2': 'G', 'v3': 'R'}) or \
-           (assignment == {'v1': 'G', 'v2': 'R', 'v3': 'G'})
+    check_suboptimal_result(assignment)
 
 
 def test_api_solve_dpop():
@@ -105,4 +91,15 @@ def test_api_solve_dpop():
 
     assignment = solve(dcop, 'dpop','oneagent', timeout=3)
 
+    check_optimal_result(assignment)
+
+
+def check_optimal_result(assignment):
     assert assignment == {'v1': 'R', 'v2': 'G', 'v3': 'R'}
+
+def check_suboptimal_result(assignment):
+    # An incomplete algo does not always find the best solution but
+    # finds one of two solution that does not break hard constraints.
+    one_of_two = (assignment == {'v1': 'R', 'v2': 'G', 'v3': 'R'}) or \
+           (assignment == {'v1': 'G', 'v2': 'R', 'v3': 'G'})
+    assert one_of_two
