@@ -65,14 +65,6 @@ HEADER_SIZE = 100
 UNIT_SIZE = 5
 
 
-def build_computation(comp_def: ComputationDef) -> VariableComputation:
-    return Mgm2Computation(comp_def.node.variable,
-                           comp_def.node.constraints,
-                           mode=comp_def.algo.mode,
-                           **comp_def.algo.params,
-                           comp_def=comp_def)
-
-
 def computation_memory(computation: VariableComputationNode) -> float:
     """Return the memory footprint of a MGM2 computation.
 
@@ -133,8 +125,8 @@ def communication_load(src: VariableComputationNode, target: str) -> float:
 
 algo_params = [
     AlgoParameterDef('threshold', 'float', None, 0.5),
-    AlgoParameterDef('favor', 'str', 'unilateral',
-                     ['unilateral', 'no', 'coordinated']),
+    AlgoParameterDef('favor', 'str',
+                     ['unilateral', 'no', 'coordinated'], 'unilateral'),
     AlgoParameterDef('stop_cycle', 'int', None, 0),
 ]
 
@@ -426,15 +418,11 @@ class Mgm2Computation(VariableComputation):
 
     """
 
-    def __init__(self, variable: Variable,
-                 constraints: Iterable[RelationProtocol],
-                 threshold: float =0.5,
-                 mode: str='min',
-                 msg_sender=None,
-                 favor: str='unilateral', stop_cycle: int=None,
-                 comp_def: ComputationDef=None):
+    def __init__(self, computation_def: ComputationDef=None):
+        assert computation_def.algo.algo == 'mgm2'
+        super().__init__(computation_def.node.variable,
+                         computation_def)
 
-        super().__init__(variable, comp_def)
         # MGM2 a 5 different states, each with a specific handler method:
         self.states = {
             'value': self._handle_value_message,
@@ -444,8 +432,10 @@ class Mgm2Computation(VariableComputation):
             'go?': self._handle_go_message
         }
 
-        self._msg_sender = msg_sender
-        self.stop_cycle = stop_cycle
+        self._mode = computation_def.algo.mode
+        self.stop_cycle = computation_def.algo.param_value('stop_cycle')
+        self._threshold = computation_def.algo.param_value('threshold')
+        self._favor = computation_def.algo.param_value('favor')
 
         # Handling messages arriving during wrong mode
         self._postponed_msg = defaultdict(lambda: [])  # type: Dict[str, List]
@@ -453,18 +443,15 @@ class Mgm2Computation(VariableComputation):
         self._partner = None
         self._committed = False
         self._is_offerer = False
-        self._threshold = threshold
-        self._favor = favor
 
-        self._constraints = list(constraints)
-        self._mode = mode  # min or max
+        self._constraints = list(computation_def.node.constraints)
         self._state = None  # 'value', 'gain', 'offer', 'answer?' or 'go?'
         #  according to what the agent is currently waiting for
 
         # some constraints might be unary, and our variable can have several
         # constraints involving the same variable
-        self._neighbors = set([v for c in constraints
-                               for v in c.dimensions if v != variable])
+        self._neighbors = set([v for c in self._constraints
+                               for v in c.dimensions if v != self.variable])
         # Agent view of its neighbors resp. for ok and improve modes
         self._neighbors_values = {}
         self._neighbors_gains = {}

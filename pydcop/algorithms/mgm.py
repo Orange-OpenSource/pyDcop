@@ -215,21 +215,22 @@ class MgmComputation(VariableComputation):
     Algorithms for DCOP: A Graphical-Game-Base Approach' (R. Maheswaran,
     J. Pearce, M. Tambe, 2004).
 
+    Parameters
+    ----------
+    computation_definition: ComputationDef
+
+
     """
 
-    def __init__(self, comp_def=None):
-        """
-        :param variable: a variable object for which this computation is
-                         responsible
-        :param utilities: the list of utilities/constraints involving this
-                          variable
-        :param mode: optimization mode, 'min' or 'max'. Defaults to min
-        """
+    def __init__(self, computation_definition: ComputationDef):
 
-        super().__init__(comp_def.node.variable, comp_def)
+        assert computation_definition.algo.algo == 'mgm'
 
-        self.__utilities__ = list(comp_def.node.constraints)
-        self._mode = comp_def.algo.mode # min or max
+        super().__init__(computation_definition.node.variable,
+                         computation_definition)
+
+        self.__utilities__ = list(computation_definition.node.constraints)
+        self._mode = computation_definition.algo.mode # min or max
 
         # Handling messages arriving during wrong mode
         self.__postponed_gain_messages__ = []
@@ -249,13 +250,13 @@ class MgmComputation(VariableComputation):
         self._gain = None
         self._new_value = None
 
-        self.stop_cycle = comp_def.algo.param_value('stop_cycle')
-        self.__break_mode__ = comp_def.algo.param_value('break_mode')
-        self.__random_nb__ = 0  # used in case break_mode is 'random'
+        self.stop_cycle = computation_definition.algo.param_value('stop_cycle')
+        self.break_mode = computation_definition.algo.param_value('break_mode')
+        self._random_nb = 0  # used in case break_mode is 'random'
 
     @property
     def random_nb(self) -> float:
-        return self.__random_nb__
+        return self._random_nb
 
     @property
     def utilities(self) -> Iterable[RelationProtocol]:
@@ -512,7 +513,7 @@ class MgmComputation(VariableComputation):
                                if n not in self._neighbors_gains])
 
     def _break_ties(self, max_gain):
-        if self.__break_mode__ == random:
+        if self.break_mode == random:
             ties = sorted([(rand_nb, name) for name, (gain, rand_nb) in
                            self._neighbors_gains.items()
                            if gain == max_gain] + [(self.random_nb,
