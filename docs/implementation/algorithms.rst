@@ -2,8 +2,8 @@
 
 .. _implementation_algorithms:
 
-DCOP algorithm Implemention
-===========================
+DCOP algorithm Implementation
+=============================
 
 **Note:** This document build upon the tutorial
 :ref:`tutorials_algorithm_implementation`,
@@ -15,11 +15,11 @@ new DCOP algorithm ; you only have one python module to implement,
 with only one mandatory class.
 
 
-To implement an algorithm you need:
+To implement an algorithm you must:
 
-- to create a python module
-- to define one or several :class:`.Message`
-- to implement your logic in one or several
+- create a python module
+- define one or several :class:`.Message`
+- implement your logic in one or several
   :class:`.DcopComputation` class
 
 Optionally, you may also

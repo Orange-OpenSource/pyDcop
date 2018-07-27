@@ -66,6 +66,14 @@ to describe and define DCOP algorithms' computations.
   AlgorithmDef
   AlgoParameterDef
 
+.. rubric:: Functions
+
+.. autosummary::
+
+  list_available_algorithms
+  load_algorithm_module
+  prepare_algo_params
+  check_param_value
 
 
 
@@ -173,19 +181,19 @@ class AlgorithmDef(SimpleRepr):
             mode: str = 'min',
             parameters_definitions: List[AlgoParameterDef]= None):
         """
-        Creates an `AlgoDef` instance with defaults parameter values.
+        Creates an :class:`AlgoDef` instance with defaults parameter values.
 
         Parameters passed as argument are checked for validity.
         If a value is not provided for some required parameters,
-        their default value is used.
+        the default value is used.
 
         Parameters
         ----------
         algo: str
             Name of the algorithm. It must be the name of a module
-            in the `pydcop.algorithms` package.
+            in the :mod:`pydcop.algorithms` package.
         mode: str
-            `min` of `max`, defaults to `min`
+            ``'min'`` of ``'max'``, defaults to ``'min'``
         params: dict
             Dictionary of algorithm-specific parameters. If a value is not
             provided for some required parameters, their default value is used.
@@ -231,7 +239,7 @@ class AlgorithmDef(SimpleRepr):
         The name of the algorithm.
 
         The name of the algorithm is the name of a module
-        in the `pydcop.algorithms` package.
+        in the :mod:`pydcop.algorithms` package.
 
         Returns
         -------
@@ -242,7 +250,7 @@ class AlgorithmDef(SimpleRepr):
     @property
     def mode(self) -> str:
         """
-        The mode, 'min or 'max'.
+        The mode, ``'min'`` or ``'max'``.
 
         Returns
         -------
@@ -252,7 +260,7 @@ class AlgorithmDef(SimpleRepr):
 
     def param_names(self) -> Iterable[str]:
         """
-        names of the parameters for this algorithm.
+        Names of the parameters for this algorithm.
 
         Returns
         -------
@@ -325,6 +333,8 @@ class AlgorithmDef(SimpleRepr):
 
 class ComputationDef(SimpleRepr):
     """
+    Full definition of a Computation.
+
     A Computation node contains all the information needed to create a
     computation instance that can be run. It can be used when deploying the
     computation or as a replica when distributing copies of a computation for
@@ -434,6 +444,8 @@ def check_param_value(param_val: Any, param_def: AlgoParameterDef) -> Any:
 def prepare_algo_params(params: Dict[str, Any],
                         parameters_definitions: List[AlgoParameterDef]):
     """
+    Ensure algorithm's parameters are valid.
+
     Check validity of algorithm parameters and add default value for missing
     parameters.
 
@@ -493,7 +505,7 @@ def prepare_algo_params(params: Dict[str, Any],
 
 def list_available_algorithms() -> List[str]:
     """
-    The list of available DCOP algorithms
+    The list of available DCOP algorithms.
 
     Returns
     -------
