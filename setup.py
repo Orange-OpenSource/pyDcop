@@ -102,7 +102,7 @@ setup(
 
     scripts=[
         'pydcop/pydcop',
-        'pydcop/dcop.py'
+        'pydcop/dcop_cli.py'
     ],
 
     packages =find_packages(),
