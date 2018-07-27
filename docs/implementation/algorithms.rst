@@ -18,14 +18,14 @@ with only one mandatory class.
 To implement an algorithm you need:
 
 - to create a python module
-- to define one or several :py:class:`.Message`
+- to define one or several :class:`.Message`
 - to implement your logic in one or several
-  :py:class:`.DcopComputation` class
+  :class:`.DcopComputation` class
 
-Optionnaly, you may also
+Optionally, you may also
 
-- to implement some predefined utility methods and attributes
-- you may also implement some other methods used for some
+- implement some predefined utility methods and attributes
+- implement some other methods used for some
   distribution methods
 
 
@@ -33,14 +33,14 @@ Module
 ------
 
 An algorithm must be defined in it's own module in :py:mod:`pydcop.algorithms`.
-For example, `dsa` is implemented in the module :py:mod:`pydcop.algorithm.dsa`.
+For example, ``dsa`` is implemented in the module :py:mod:`pydcop.algorithms.dsa`.
 The name of the module is the name you will use
 when running your algorithm with the ``pydcop``
 command line interface (``-a`` or ``--algo`` parameter).
 For example, for a new algorithm named ``my_algorithm``,
 you simply create a file ``my_algorithm.py`` in ``pydcop/algorithms``.
 You will then be able to use this algorithm
-to solve a DCOP with the following command::
+to :ref:`solve<pydcop_commands_solve>` a DCOP with the following command::
 
   pydcop solve --algo my_algorithm [...]
 

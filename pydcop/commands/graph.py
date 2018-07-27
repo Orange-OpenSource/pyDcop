@@ -76,7 +76,7 @@ Example
 
 ::
 
-  dcop.py graph --graph factor_graph graph_coloring1.yaml
+  pydcop graph --graph factor_graph graph_coloring1.yaml
 
 Example output::
 

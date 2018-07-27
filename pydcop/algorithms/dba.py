@@ -61,8 +61,8 @@ Example
 ^^^^^^^
 ::
 
-    dcop.py -t 2 solve -a dba -p infinity:10000 max_distance:3 \
-      -d adhoc graph_coloring_csp.yaml
+    pydcop -t 2 solve -a dba -p infinity:10000 max_distance:3 \
+           -d adhoc graph_coloring_csp.yaml
     {
       "assignment": {
         "v1": "G",

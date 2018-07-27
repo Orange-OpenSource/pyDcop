@@ -35,11 +35,9 @@ import numpy as np
 import pytest
 
 import pydcop.algorithms
-import pydcop.algorithms.objects
 import pydcop.dcop.relations
 import pydcop.utils
 import pydcop.utils.various
-from pydcop import algorithms
 from pydcop.infrastructure.computations import Message
 from pydcop.dcop.objects import VariableDomain, Variable
 from pydcop.dcop.relations import UnaryFunctionRelation, constraint_from_str, \

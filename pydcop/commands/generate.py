@@ -260,9 +260,9 @@ def parser_graph_coloring(subparsers):
 
 
 def run_cmd(args):
-    print('"dcop.py generate" can generate several kind of dcop\n'
-          'Run "dcop.py generate graphcoloring --help" or \n'
-          '    "dcop.py generate mixed_problem --help"  \n'
+    print('"pydcop generate" can generate several kind of dcop\n'
+          'Run "pydcop generate graphcoloring --help" or \n'
+          '    "pydcop generate mixed_problem --help"  \n'
           'for help')
 
 

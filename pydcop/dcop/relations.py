@@ -36,11 +36,13 @@ from copy import deepcopy
 import numpy as np
 from typing import Dict, Iterable, Any, Tuple, Callable, List, Union
 
-from pydcop.algorithms import DEFAULT_TYPE
 from pydcop.dcop.objects import Variable
 from pydcop.utils.simple_repr import SimpleRepr
 from pydcop.utils.various import func_args
 from pydcop.utils.expressionfunction import ExpressionFunction
+
+
+DEFAULT_TYPE = np.int32
 
 
 class RelationProtocol(object):

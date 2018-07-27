@@ -89,7 +89,7 @@ class SecpSimple1(unittest.TestCase):
 
 def run_graph(filename, graph):
     filename = instance_path(filename)
-    cmd = 'dcop.py graph -g {graph} {file}'.format(graph=graph,
+    cmd = 'pydcop graph -g {graph} {file}'.format(graph=graph,
                                                    file=filename)
     output = check_output(cmd, stderr=STDOUT, timeout=10, shell=True)
     return yaml.load(output.decode(encoding='utf-8'))

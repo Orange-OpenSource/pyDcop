@@ -33,7 +33,7 @@ import unittest
 from collections import namedtuple
 
 from pydcop.computations_graph.factor_graph import ComputationsFactorGraph, \
-    VariableComputationNode, FactorComputationNode, FactorGraphLink
+    VariableComputationNode, FactorComputationNode
 from pydcop.dcop.objects import Variable, VariableDomain, AgentDef
 from pydcop.dcop.relations import relation_from_str
 from pydcop.distribution.adhoc import distribute
@@ -104,7 +104,7 @@ class TestDistributionAdHocFactorGraph(unittest.TestCase):
         cv1 = VariableComputationNode(v1, ['f1'])
         cv2 = VariableComputationNode(v2, [])
         cf1 = FactorComputationNode(f1)
-        link = FactorGraphLink('f1', 'v1')
+        # link = FactorGraphLink('f1', 'v1')
         cg = ComputationsFactorGraph([cv1, cv2], [cf1])
 
         hints = DistributionHints({'a1': ['v1'], 'a2': ['v2']}, None)
@@ -256,7 +256,7 @@ class TestDistributionAdHocFactorGraphSecp(unittest.TestCase):
 
         # rule r2 only depends on v3, it must be hosted on the same agent
         self.assertEqual(agent_mapping.agent_for('v3'),
-                      agent_mapping.agent_for('r2'))
+                         agent_mapping.agent_for('r2'))
 
         self.assertTrue(is_all_hosted(self.cg, agent_mapping))
 

@@ -47,8 +47,9 @@ from pydcop.infrastructure.computations import Message, VariableComputation, \
 from pydcop.dcop.objects import Variable
 from pydcop.dcop.relations import NAryMatrixRelation, RelationProtocol, \
     Constraint, get_data_type_max, get_data_type_min, generate_assignment, \
-    generate_assignment_as_dict, filter_assignment_dict, find_arg_optimal
-from pydcop.algorithms import DEFAULT_TYPE, ALGO_STOP, ALGO_CONTINUE, \
+    generate_assignment_as_dict, filter_assignment_dict, find_arg_optimal, \
+    DEFAULT_TYPE
+from pydcop.algorithms import ALGO_STOP, ALGO_CONTINUE, \
     ComputationDef
 
 GRAPH_TYPE = 'pseudotree'

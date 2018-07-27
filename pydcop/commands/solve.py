@@ -188,8 +188,8 @@ The simplest form is to simply specify an algorithm and a dcop yaml file.
 Beware that, depending on the algorithm, this command may never return and
 need to be stopped with CTRL+C::
 
-    dcop.py solve --algo maxsum  graph_coloring1.yaml
-    dcop.py -t 5 solve --algo maxsum  graph_coloring1.yaml
+    pydcop solve --algo maxsum  graph_coloring1.yaml
+    pydcop -t 5 solve --algo maxsum  graph_coloring1.yaml
 
 
 Solving with MGM, with two algorithm parameter and a log configuration file::

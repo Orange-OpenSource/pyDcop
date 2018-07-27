@@ -101,8 +101,6 @@ class GraphColoring1(unittest.TestCase):
         result = run_distribute('graph_coloring1.yaml', 'adhoc',
                                 'constraints_hypergraph', algo='dsa')
         dist = result['distribution']
-        for a in dist:
-            self.assertLessEqual(len(dist[a]), 1)
 
         self.assertTrue(is_hosted(dist, 'v1'))
         self.assertTrue(is_hosted(dist, 'v2'))
@@ -176,7 +174,7 @@ def run_distribute(filename, distribution, graph=None, algo=None):
     filename = instance_path(filename)
     algo_opt = '' if algo is None else '-a ' + algo
     graph_opt = '' if graph is None else '-g ' + graph
-    cmd = 'dcop.py distribute -d {distribution} {graph_opt} ' \
+    cmd = 'pydcop distribute -d {distribution} {graph_opt} ' \
           '{algo_opt} {file}'.format(distribution=distribution,
                                      graph_opt=graph_opt,
                                      algo_opt=algo_opt,

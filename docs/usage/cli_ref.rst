@@ -19,11 +19,11 @@ pyDCOP command line reference
    cli/distribute
 
 
-pyDCOP command line interface can be called either using ``dcop.py`` or
-``pydcop`` (which is simply a shell script pointing to ``dcop.py``). For example,
+pyDCOP command line interface can be called either using ``dcop_cli.py`` or
+``pydcop`` (which is simply a shell script pointing to ``dcop_cli.py``). For example,
 the two following commands are strictly equivalent::
 
-  dcop.py --version
+  dcop_cli.py --version
   pydcop --version
 
 pyDCOP command line script works with an 'command' concept, similar to ``git``

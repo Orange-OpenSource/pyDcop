@@ -115,14 +115,14 @@ required here as the ``oneagent`` distribution algorithm does not depends on
 the computation's characteristics (as it simply assign one computation to each
 agent)::
 
-  dcop.py distribute --graph factor_graph \\
-                     --dist oneagent graph_coloring1.yaml
+  pydcop distribute --graph factor_graph \\
+                    --dist oneagent graph_coloring1.yaml
 
 The following command gives the same result. Here, we can deduce the required
 graph model, as maxsum works on a factor graph::
 
-  dcop.py distribute --algo maxsum \\
-                     --dist oneagent graph_coloring1.yaml
+  pydcop distribute --algo maxsum \\
+                    --dist oneagent graph_coloring1.yaml
 
 Example output::
 

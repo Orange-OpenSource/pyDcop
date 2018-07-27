@@ -27,6 +27,50 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+"""
+
+The ``pydcop.algorithms`` module  contains the implementation of all DCOP
+algorithm supported by pyDCOP.
+
+.. toctree::
+  :maxdepth: 1
+
+  algorithms/dba
+  algorithms/dsa
+  algorithms/adsa
+  algorithms/dsatuto
+  algorithms/mgm
+  algorithms/mgm2
+  algorithms/gdba
+  algorithms/maxsum
+  algorithms/dpop
+
+
+For documentation on how to develop new algorithms,
+look at the this
+:ref:`tutorial<tutorials_algorithm_implementation>`
+and this
+:ref:`documentation<implementation_algorithms>`.
+
+
+``pydcop.algorithms`` also defines objects and functions that are used
+to describe and define DCOP algorithms' computations.
+
+
+
+.. rubric:: Classes
+
+.. autosummary::
+
+  ComputationDef
+  AlgoDef
+  AlgoParameterDef
+
+
+
+
+
+"""
 
 import inspect
 import pkgutil
@@ -34,12 +78,9 @@ from collections.__init__ import namedtuple
 from importlib import import_module
 from typing import Dict, Any, List, Iterable
 
-import numpy as np
-
 from pydcop.computations_graph.objects import ComputationNode
 from pydcop.utils.simple_repr import SimpleRepr, simple_repr, from_repr
 
-DEFAULT_TYPE = np.int32
 ALGO_STOP = 0
 ALGO_CONTINUE = 1
 ALGO_NO_STOP_CONDITION = 2

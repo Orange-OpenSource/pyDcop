@@ -61,7 +61,7 @@ Example
 
 ::
 
-    dcop.py -t 3 solve -algo dsa  \\
+    pydcop -t 3 solve -algo dsa  \\
       --algo_param stop_cycle:30 \\
       --algo_param variant:C \\
       --algo_param probability:0.5 \\
