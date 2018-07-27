@@ -111,7 +111,6 @@ class AlgoParameterDef(NamedTuple):
 
     """
 
-
     name: str
     """
     Name of the parameter (str).
@@ -123,14 +122,14 @@ class AlgoParameterDef(NamedTuple):
     This must be either ``int``, ``float`` or ``str`` 
     """
 
-    values: Optional[List[str]]
+    values: Optional[List[str]] = None
     """
     List of valid values for this parameter.
     
     Can be ``None`` if non-applicable (for a ``float`` paramater, for example).
     """
 
-    default_value: Union[str, int, float]
+    default_value: Union[str, int, float] = None
     """
     Default value of the parameter.
     """
