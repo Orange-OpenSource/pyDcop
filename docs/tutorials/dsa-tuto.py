@@ -77,8 +77,8 @@ class DsaTutoComputation(VariableComputation):
         self.logger.debug('Full neighbors assignment for cycle %s : %s ',
                           self.cycle_count, self.current_cycle)
 
-        self.current_cycle[self.variable.name] = self.current_value
         arg_min, min_cost = self.compute_best_value()
+        self.current_cycle[self.variable.name] = self.current_value
         current_cost = assignment_cost(self.current_cycle, self.constraints)
 
         self.logger.debug(

@@ -110,8 +110,8 @@ class DsaTutoComputation(VariableComputation):
                           self.cycle_count, self.current_cycle)
 
         self.current_cycle[self.variable.name] = self.current_value
-        arg_min, min_cost = self.compute_best_value()
         current_cost = assignment_cost(self.current_cycle, self.constraints)
+        arg_min, min_cost = self.compute_best_value()
 
         self.logger.debug(
             "Evaluate cycle %s: current cost %s - best cost %s",
@@ -142,4 +142,6 @@ class DsaTutoComputation(VariableComputation):
             cost = assignment_cost(self.current_cycle, self.constraints)
             if cost < min_cost:
                 min_cost, arg_min = cost, value
+        self.logger.debug('Best cost %s - %s with constraints %s',
+                          min_cost, arg_min, self.constraints)
         return arg_min, min_cost

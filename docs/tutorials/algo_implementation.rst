@@ -160,8 +160,8 @@ by computing the potential gain and drawing a random number::
     def evaluate_cycle(self):
 
         self.current_cycle[self.variable.name] = self.current_value
-        arg_min, min_cost = self.compute_best_value()
         current_cost = assignment_cost(self.current_cycle, self.constraints)
+        arg_min, min_cost = self.compute_best_value()
 
         if current_cost - min_cost > 0 and 0.5 > random.random():
             # Select a new value
