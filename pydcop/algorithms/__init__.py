@@ -63,7 +63,7 @@ to describe and define DCOP algorithms' computations.
 .. autosummary::
 
   ComputationDef
-  AlgoDef
+  AlgorithmDef
   AlgoParameterDef
 
 
@@ -74,9 +74,8 @@ to describe and define DCOP algorithms' computations.
 
 import inspect
 import pkgutil
-from collections.__init__ import namedtuple
 from importlib import import_module
-from typing import Dict, Any, List, Iterable
+from typing import Dict, Any, List, Iterable, NamedTuple, Optional, Union
 
 from pydcop.computations_graph.objects import ComputationNode
 from pydcop.utils.simple_repr import SimpleRepr, simple_repr, from_repr
@@ -84,35 +83,82 @@ from pydcop.utils.simple_repr import SimpleRepr, simple_repr, from_repr
 ALGO_STOP = 0
 ALGO_CONTINUE = 1
 ALGO_NO_STOP_CONDITION = 2
-AlgoParameterDef = namedtuple('AlgoParameterDef',
-                              ['name', 'type', 'values', 'default_value'])
 
 
-class AlgoDef(SimpleRepr):
+class AlgoParameterDef(NamedTuple):
     """
-    An AlgoDef represent a given dpop algorithm with all parameter needed to
-    run it. These parameter generally depend on a specific algorithm (e.g.
-    variant A, B or C for DSA and damping factor for maxsum).
+    Definition of an algorithm's parameter.
+
+    :class:`AlgoParameterDef` instances are used to describe the parameters supported
+    by an algorithms.
+
+    For example, dsa supports 3 parameters, which declared with a module-level
+    variable in ``dsa.py`` ::
+
+      algo_params = [
+        AlgoParameterDef('probability', 'float', None, 0.7),
+        AlgoParameterDef('variant', 'str', ['A', 'B', 'C'], 'B'),
+        AlgoParameterDef('stop_cycle', 'int', None, 0)]
+
+
+    """
+
+
+    name: str
+    """
+    Name of the parameter (str).
+    """
+    type: str
+    """
+    Type of the parameter (str)
+    
+    This must be either ``int``, ``float`` or ``str`` 
+    """
+
+    values: Optional[List[str]]
+    """
+    List of valid values for this parameter.
+    
+    Can be ``None`` if non-applicable (for a ``float`` paramater, for example).
+    """
+
+    default_value: Union[str, int, float]
+    """
+    Default value of the parameter.
+    """
+
+
+class AlgorithmDef(SimpleRepr):
+    """
+    Full definition of an algorithm's instance.
+
+    An :class:`AlgorithmDef` represents a DCOP algorithm instance
+    with all parameters needed to run it.
+    These parameters depend on the considered algorithm (e.g.
+    variant A, B or C for DSA and damping factor for maxsum)
+    and are defined with :class:`AlgoParameterDef`.
 
     Notes
     -----
-    When using the constructor, params must already be a dict of valid parameter
-    for this algorithm and no validity check is done.
+    When using the constructor,
+    params must already be a dict of valid parameters
+    for this algorithm and no validity check is performed.
 
-    Most of the time, you should use `AlgoDef.build_with_default_param` static
-    method to create an instance of `AlgoDef`, as it automatically
+    Most of the time, you should use
+    the :meth:`AlgorithmDef.build_with_default_param`
+    static method to create an instance of :class:`AlgorithmDef`,
+    as it automatically
     uses default arguments for the requested algorithm.
 
     Parameters
     ----------
-
     algo: str
         Name of the algorithm. It must be the name of a module
-        in the `pydcop.algorithms` package.
+        in the :mod:`pydcop.algorithms` package.
     params: dict
         Dictionary of algorithm-specific configuration and parameters
     mode: str
-        'min' of 'max', defaults to 'min'
+        ``'min'`` of ``'max'``, defaults to ``'min'``
 
     """
     def __init__(self, algo: str, params: Dict[str, Any], mode: str='min') \
@@ -161,7 +207,7 @@ class AlgoDef(SimpleRepr):
         Examples
         --------
 
-        >>> algo_def = AlgoDef.build_with_default_param('dsa', {'variant': 'B'})
+        >>> algo_def = AlgorithmDef.build_with_default_param('dsa', {'variant': 'B'})
         >>> algo_def.param_value('probability')
         0.7
         >>> algo_def.param_value('variant')
@@ -177,7 +223,7 @@ class AlgoDef(SimpleRepr):
         params = prepare_algo_params(
             params, parameters_definitions)  # type: Dict[str, Any]
 
-        return AlgoDef(algo, params, mode)
+        return AlgorithmDef(algo, params, mode)
 
     @property
     def algo(self) -> str:
@@ -262,13 +308,13 @@ class AlgoDef(SimpleRepr):
         return algo
 
     def __str__(self):
-        return 'AlgoDef({})'.format(self.algo)
+        return 'AlgorithmDef({})'.format(self.algo)
 
     def __repr__(self):
-        return 'AlgoDef({}, {}, {})'.format(self.algo, self.mode, self._params)
+        return 'AlgorithmDef({}, {}, {})'.format(self.algo, self.mode, self._params)
 
     def __eq__(self, other):
-        if type(other) != AlgoDef:
+        if type(other) != AlgorithmDef:
             return False
         if self.algo != other.algo or self.mode != other.mode:
             return False
@@ -288,16 +334,16 @@ class ComputationDef(SimpleRepr):
     ----------
     node: ComputationNode
         A computation node
-    algo: AlgoDef
+    algo: AlgorithmDef
         algorithm definition ans an `AlgoDef` instance.
     """
 
-    def __init__(self, node: ComputationNode, algo: AlgoDef) -> None:
+    def __init__(self, node: ComputationNode, algo: AlgorithmDef) -> None:
         self._node = node
         self._algo = algo
 
     @property
-    def algo(self) -> 'AlgoDef':
+    def algo(self) -> 'AlgorithmDef':
         return self._algo
 
     @property

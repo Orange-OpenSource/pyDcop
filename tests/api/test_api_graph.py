@@ -33,7 +33,7 @@ from time import sleep
 
 import pydcop.computations_graph.constraints_hypergraph as chg
 
-from pydcop.algorithms import AlgoDef, ComputationDef
+from pydcop.algorithms import AlgorithmDef, ComputationDef
 from pydcop.dcop.objects import Domain, Variable
 from pydcop.dcop.relations import constraint_from_str
 from pydcop.infrastructure.agents import Agent
@@ -87,7 +87,7 @@ def test_api_cg_creation_dsa():
     diff_v1_v2 = constraint_from_str('c1', '1 if v1 == v2 else 0', [v1, v2])
     # Computation node for the variable with these constraints
     node_v1 = chg.VariableComputationNode(v1, [cost_v1, diff_v1_v2])
-    comp_def = ComputationDef(node_v1, AlgoDef.build_with_default_param('dsa'))
+    comp_def = ComputationDef(node_v1, AlgorithmDef.build_with_default_param('dsa'))
     v1_computation = build_computation(comp_def)
     # and register the computation and the agents for the neighboring
     # computations.
@@ -100,7 +100,7 @@ def test_api_cg_creation_dsa():
 
     node_v2 = chg.VariableComputationNode(v2, [cost_v2, diff_v2_v3, diff_v1_v2])
     comp_def_v2 = ComputationDef(node_v2,
-                                 AlgoDef.build_with_default_param('dsa'))
+                                 AlgorithmDef.build_with_default_param('dsa'))
     v2_computation = build_computation(comp_def_v2)
 
     agt2.add_computation(v2_computation)
@@ -112,7 +112,7 @@ def test_api_cg_creation_dsa():
 
     node_v3 = chg.VariableComputationNode(v3, [cost_v3, diff_v2_v3])
     comp_def_v3 = ComputationDef(node_v3,
-                                 AlgoDef.build_with_default_param('dsa'))
+                                 AlgorithmDef.build_with_default_param('dsa'))
     v3_computation = build_computation(comp_def_v3)
 
     agt3.add_computation(v3_computation)
@@ -156,7 +156,7 @@ def test_api_cg_creation_mgm():
 
     node_v1 = chg.VariableComputationNode(v1, [cost_v1, diff_v1_v2])
     comp_def = ComputationDef(node_v1,
-                              AlgoDef.build_with_default_param('mgm'))
+                              AlgorithmDef.build_with_default_param('mgm'))
     v1_computation = build_computation(comp_def)
 
     agt1.add_computation(v1_computation)
@@ -170,7 +170,7 @@ def test_api_cg_creation_mgm():
 
     node_v2 = chg.VariableComputationNode(v2, [cost_v2, diff_v2_v3, diff_v1_v2])
     comp_def_v2 = ComputationDef(node_v2,
-                                 AlgoDef.build_with_default_param('mgm'))
+                                 AlgorithmDef.build_with_default_param('mgm'))
     v2_computation = build_computation(comp_def_v2)
 
     agt2.add_computation(v2_computation)
@@ -182,7 +182,7 @@ def test_api_cg_creation_mgm():
 
     node_v3 = chg.VariableComputationNode(v3, [cost_v3, diff_v2_v3])
     comp_def_v3 = ComputationDef(node_v3,
-                                 AlgoDef.build_with_default_param('mgm'))
+                                 AlgorithmDef.build_with_default_param('mgm'))
     v3_computation = build_computation(comp_def_v3)
 
     agt3.add_computation(v3_computation)
@@ -212,7 +212,7 @@ def test_api_cg_creation_mgm():
 def test_api_cg_creation_mgm2():
     # This time we solve the same graph coloring problem with the MGM2
     # algorithm.
-    # As you can see, the only difference is the creation of the AlgoDef
+    # As you can see, the only difference is the creation of the AlgorithmDef
     # instance with 'mgm2'
     d = Domain('color', '', ['R', 'G'])
     v1 = Variable('v1', d)
@@ -231,7 +231,7 @@ def test_api_cg_creation_mgm2():
 
     node_v1 = chg.VariableComputationNode(v1, [cost_v1, diff_v1_v2])
     comp_def = ComputationDef(node_v1,
-                              AlgoDef.build_with_default_param('mgm2'))
+                              AlgorithmDef.build_with_default_param('mgm2'))
     v1_computation = build_computation(comp_def)
 
     agt1.add_computation(v1_computation)
@@ -245,7 +245,7 @@ def test_api_cg_creation_mgm2():
 
     node_v2 = chg.VariableComputationNode(v2, [cost_v2, diff_v2_v3, diff_v1_v2])
     comp_def_v2 = ComputationDef(node_v2,
-                                 AlgoDef.build_with_default_param('mgm2'))
+                                 AlgorithmDef.build_with_default_param('mgm2'))
     v2_computation = build_computation(comp_def_v2)
 
     agt2.add_computation(v2_computation)
@@ -257,7 +257,7 @@ def test_api_cg_creation_mgm2():
 
     node_v3 = chg.VariableComputationNode(v3, [cost_v3, diff_v2_v3])
     comp_def_v3 = ComputationDef(node_v3,
-                                 AlgoDef.build_with_default_param('mgm2'))
+                                 AlgorithmDef.build_with_default_param('mgm2'))
     v3_computation = build_computation(comp_def_v3)
 
     agt3.add_computation(v3_computation)

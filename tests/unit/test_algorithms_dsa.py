@@ -31,7 +31,7 @@
 
 from unittest.mock import MagicMock, call
 
-from pydcop.algorithms import dsa, AlgoDef, ComputationDef
+from pydcop.algorithms import dsa, AlgorithmDef, ComputationDef
 from pydcop.algorithms.dsa import DsaComputation, DsaMessage
 from pydcop.computations_graph.constraints_hypergraph \
     import VariableComputationNode
@@ -79,7 +79,7 @@ def test_footprint_on_computation_object():
     n1 = VariableComputationNode(v1, [c1])
     n2 = VariableComputationNode(v2, [c1])
     comp_def = ComputationDef(
-        n1, AlgoDef.build_with_default_param('dsa', mode='min'))
+        n1, AlgorithmDef.build_with_default_param('dsa', mode='min'))
     c = DsaComputation(comp_def)
 
     # Must fix unit size otherwise the tests fails when we change the default
@@ -94,7 +94,7 @@ def test_build_computation_default_params():
     v1 = Variable('v1', [0, 1, 2, 3, 4])
     n1 = VariableComputationNode(v1, [])
     comp_def = ComputationDef(
-        n1, AlgoDef.build_with_default_param('dsa'))
+        n1, AlgorithmDef.build_with_default_param('dsa'))
     c = DsaComputation(comp_def)
     assert c.mode == 'min'
     assert c.variant == 'B'
@@ -106,7 +106,7 @@ def test_build_computation_max_mode():
     v1 = Variable('v1', [0, 1, 2, 3, 4])
     n1 = VariableComputationNode(v1, [])
     comp_def = ComputationDef(
-        n1, AlgoDef.build_with_default_param('dsa', mode='max'))
+        n1, AlgorithmDef.build_with_default_param('dsa', mode='max'))
     c = DsaComputation(comp_def)
     assert c.mode == 'max'
 
@@ -115,7 +115,7 @@ def test_build_computation_with_params():
     v1 = Variable('v1', [0, 1, 2, 3, 4])
     n1 = VariableComputationNode(v1, [])
     comp_def = ComputationDef(
-        n1, AlgoDef.build_with_default_param(
+        n1, AlgorithmDef.build_with_default_param(
             'dsa', mode='max', params={'variant': 'C', 'stop_cycle': 10,
                                        'probability': 0.5}))
     c = DsaComputation(comp_def)
@@ -131,7 +131,7 @@ def test_1_unary_constraint_means_no_neighbors():
 
     node = VariableComputationNode(variable, [c1])
     comp_def = ComputationDef(node,
-                              AlgoDef.build_with_default_param('dsa'))
+                              AlgorithmDef.build_with_default_param('dsa'))
 
     computation = DsaComputation(comp_def=comp_def)
     assert len(computation.neighbors) == 0
@@ -144,7 +144,7 @@ def test_2_unary_constraint_means_no_neighbors():
 
     node = VariableComputationNode(variable, [c1, c2])
     comp_def = ComputationDef(node,
-                              AlgoDef.build_with_default_param('dsa'))
+                              AlgorithmDef.build_with_default_param('dsa'))
 
     computation = DsaComputation(comp_def=comp_def)
     assert len(computation.neighbors) == 0
@@ -161,7 +161,7 @@ def test_one_binary_constraint_one_neighbors():
 
     node = VariableComputationNode(v1, [c1])
     comp_def = ComputationDef(node,
-                              AlgoDef.build_with_default_param('dsa'))
+                              AlgorithmDef.build_with_default_param('dsa'))
 
     computation = DsaComputation(comp_def=comp_def)
     assert len(computation.neighbors) == 1
@@ -181,7 +181,7 @@ def test_2_binary_constraint_one_neighbors():
 
     node = VariableComputationNode(v1, [c1, c2])
     comp_def = ComputationDef(node,
-                              AlgoDef.build_with_default_param('dsa'))
+                              AlgorithmDef.build_with_default_param('dsa'))
 
     computation = DsaComputation(comp_def=comp_def)
     assert len(computation.neighbors) == 1
@@ -198,7 +198,7 @@ def test_3ary_constraint_2_neighbors():
 
     node = VariableComputationNode(v1, [c1])
     comp_def = ComputationDef(node,
-                              AlgoDef.build_with_default_param('dsa'))
+                              AlgorithmDef.build_with_default_param('dsa'))
 
     computation = DsaComputation(comp_def=comp_def)
     assert len(computation.neighbors) == 2
@@ -219,7 +219,7 @@ def test_select_and_send_random_value_when_starting():
 
     node = VariableComputationNode(v1, [c1])
     comp_def = ComputationDef(node,
-                              AlgoDef.build_with_default_param('dsa'))
+                              AlgorithmDef.build_with_default_param('dsa'))
 
     computation = DsaComputation(comp_def=comp_def)
     message_sender = MagicMock()
@@ -245,7 +245,7 @@ def test_best_value_one_unary_constraint():
 
     computation = DsaComputation(
         ComputationDef(VariableComputationNode(v1, [c1]),
-                       AlgoDef.build_with_default_param('dsa')))
+                       AlgorithmDef.build_with_default_param('dsa')))
 
     val, sum_costs = computation.find_best_values()
     assert val == [2]
@@ -259,7 +259,7 @@ def test_2_unary_constraints():
 
     computation = DsaComputation(
         ComputationDef(VariableComputationNode(variable, [c1, c2]),
-                       AlgoDef.build_with_default_param('dsa')))
+                       AlgorithmDef.build_with_default_param('dsa')))
 
     val, sum_costs = computation.find_best_values()
     assert val == [1]
@@ -277,7 +277,7 @@ def test_1_binary_constraint():
 
     computation = DsaComputation(
         ComputationDef(VariableComputationNode(v1, [c1]),
-                       AlgoDef.build_with_default_param('dsa')))
+                       AlgorithmDef.build_with_default_param('dsa')))
 
     computation.current_cycle = {'v2': 1}
     val, sum_costs = computation.find_best_values()
@@ -298,7 +298,7 @@ def test_several_best_values():
 
     computation = DsaComputation(
         ComputationDef(VariableComputationNode(v1, [c1]),
-                       AlgoDef.build_with_default_param('dsa')))
+                       AlgorithmDef.build_with_default_param('dsa')))
 
     computation.current_cycle = {'v2': 3}
     val, sum_costs = computation.find_best_values()
@@ -312,7 +312,7 @@ def test_str_dsa_class():
 
     computation = DsaComputation(
         ComputationDef(VariableComputationNode(variable, [c1]),
-                       AlgoDef.build_with_default_param('dsa')))
+                       AlgorithmDef.build_with_default_param('dsa')))
 
     assert str(computation) == "dsa.DsaComputation(a)"
 
@@ -323,6 +323,6 @@ def test_repr_dsa_class():
 
     computation = DsaComputation(
         ComputationDef(VariableComputationNode(variable, [c1]),
-                       AlgoDef.build_with_default_param('dsa')))
+                       AlgorithmDef.build_with_default_param('dsa')))
 
     assert repr(computation) == "dsa.DsaComputation(a)"

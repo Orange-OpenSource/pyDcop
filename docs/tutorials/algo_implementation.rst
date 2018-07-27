@@ -89,7 +89,7 @@ The constructor of our class must accept
 a :class:`.ComputationDef` instance as argument.
 As its name implies, a :class:`.ComputationDef` instance is an object
 that fully describes a computation an can be used to instanciate one.
-It is made of a :class:`.ComputationNode` and a :class:`.AlgoDef`.
+It is made of a :class:`.ComputationNode` and a :class:`.AlgorithmDef`.
 You don't need to bother with this for now, these instances will
 be automatically be created by pyDCOP and passed to your constructor.
 With this, we can now write our computation's constructor::

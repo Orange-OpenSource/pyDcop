@@ -34,7 +34,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from pydcop.algorithms import AlgoDef, ComputationDef
+from pydcop.algorithms import AlgorithmDef, ComputationDef
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
 from pydcop.dcop.objects import AgentDef, Variable
@@ -84,7 +84,7 @@ def test_deploy_computation_request(orchestrated_agent):
     v1 = Variable('v1', [1, 2, 3])
     comp_node = VariableComputationNode(v1, [])
     comp_def = ComputationDef(
-        comp_node, AlgoDef.build_with_default_param('dsa'))
+        comp_node, AlgorithmDef.build_with_default_param('dsa'))
     mgt.on_message('orchestrator', DeployMessage(comp_def), 0)
 
     # Check the computation is deployed, but not started, on the agent

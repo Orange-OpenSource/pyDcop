@@ -219,7 +219,7 @@ class DsaComputation(VariableComputation):
     Parameters
     ----------
     comp_def: ComputationDef
-        a computation definition. The AlgoDef object in this computation
+        a computation definition. The AlgorithmDef object in this computation
         definition MUST be an algorithm definition with dsa.
 
     Examples
@@ -227,7 +227,7 @@ class DsaComputation(VariableComputation):
 
     > computation = DsaComputation(
     >     ComputationDef(VariableComputationNode(v1, [c1]),
-    >                    AlgoDef.build_with_default_param('dsa')))
+    >                    AlgorithmDef.build_with_default_param('dsa')))
 
 
     See Also

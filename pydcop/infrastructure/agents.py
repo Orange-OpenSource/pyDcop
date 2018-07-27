@@ -53,7 +53,7 @@ from typing import Dict, List, Optional, Union, Callable, Tuple
 
 from collections import defaultdict
 
-from pydcop.algorithms import AlgoDef, ComputationDef, load_algorithm_module
+from pydcop.algorithms import AlgorithmDef, ComputationDef, load_algorithm_module
 from pydcop.dcop.objects import AgentDef, create_binary_variables
 from pydcop.dcop.objects import BinaryVariable
 from pydcop.dcop.relations import Constraint
@@ -1194,7 +1194,7 @@ class ResilientAgent(Agent):
         # responsible for, i.e. the binary variables x_i^m that correspond to
         # the candidate variable x_i (and a_m is the current agent)
         self._repair_computations.clear()
-        algo_def = AlgoDef.build_with_default_param(
+        algo_def = AlgorithmDef.build_with_default_param(
             repair_algo.algorithm_name,
             {'cycle_stop': 10, 'threshold': 0.2},
             repair_algo.algo_params)

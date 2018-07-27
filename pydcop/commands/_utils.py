@@ -41,7 +41,7 @@ from queue import Queue, Empty
 from types import FunctionType
 from typing import List
 
-from pydcop.algorithms import AlgoDef, prepare_algo_params, \
+from pydcop.algorithms import AlgorithmDef, prepare_algo_params, \
     load_algorithm_module
 
 logger = logging.getLogger('pydcop')
@@ -50,7 +50,7 @@ logger = logging.getLogger('pydcop')
 def build_algo_def(algo_module, algo_name: str, objective,
                    cli_params: List[str]):
     """
-    Build the AlgoDef, which contains the full algorithm specification (
+    Build the AlgorithmDef, which contains the full algorithm specification (
     name, objective and parameters)
 
     Parameters
@@ -66,7 +66,7 @@ def build_algo_def(algo_module, algo_name: str, objective,
 
     Returns
     -------
-    algorithm definition, as an ``AlgoDef`` object.
+    algorithm definition, as an ``AlgorithmDef`` object.
     """
 
     # Parameters for the algorithm:
@@ -84,7 +84,7 @@ def build_algo_def(algo_module, algo_name: str, objective,
             params = prepare_algo_params(params, algo_module.algo_params)
             logger.info('parameters for %s : %s', algo_name, params)
 
-            return AlgoDef.build_with_default_param(
+            return AlgorithmDef.build_with_default_param(
                 algo=algo_name,
                 params=params,
                 mode=objective)
@@ -106,7 +106,7 @@ def build_algo_def(algo_module, algo_name: str, objective,
     else:
         if cli_params:
             _error('Algo {} does not support any parameter'.format(algo_name))
-        return AlgoDef(algo_name, {}, objective=objective)
+        return AlgorithmDef(algo_name, {}, objective=objective)
 
 
 # Files for logging metrics

@@ -29,14 +29,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from pydcop.algorithms import AlgoDef, list_available_algorithms, \
+from pydcop.algorithms import AlgorithmDef, list_available_algorithms, \
     load_algorithm_module
 from pydcop.utils.simple_repr import simple_repr, from_repr
 
 
 def test_algo_def():
 
-    a = AlgoDef('maxsum', {'stability': 0.01}, 'min')
+    a = AlgorithmDef('maxsum', {'stability': 0.01}, 'min')
 
     assert a.algo == 'maxsum'
     assert a.mode == 'min'
@@ -46,7 +46,7 @@ def test_algo_def():
 
 def test_simple_repr():
 
-    a = AlgoDef('maxsum', {'stability': 0.01}, 'min')
+    a = AlgorithmDef('maxsum', {'stability': 0.01}, 'min')
 
     r = simple_repr(a)
 
@@ -57,7 +57,7 @@ def test_simple_repr():
 
 def test_from_repr():
 
-    a = AlgoDef('maxsum', {'stability': 0.01}, 'min')
+    a = AlgorithmDef('maxsum', {'stability': 0.01}, 'min')
 
     r = simple_repr(a)
     a2 = from_repr(r)
@@ -68,14 +68,14 @@ def test_from_repr():
 
 def test_building_algodef_with_default_params():
 
-    a = AlgoDef.build_with_default_param('maxsum')
+    a = AlgorithmDef.build_with_default_param('maxsum')
 
     assert a.params['damping'] == 0
 
 
 def test_building_algodef_with_provided_and_default_params():
 
-    a = AlgoDef.build_with_default_param('dsa', {'variant': 'B'}, mode='max')
+    a = AlgorithmDef.build_with_default_param('dsa', {'variant': 'B'}, mode='max')
 
     assert a.params['variant'] == 'B'  # provided param
     assert a.params['probability'] == 0.7  # default param

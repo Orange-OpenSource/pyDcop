@@ -40,7 +40,7 @@ from collections import defaultdict
 
 import yaml
 
-from pydcop.algorithms import AlgoDef, ComputationDef
+from pydcop.algorithms import AlgorithmDef, ComputationDef
 from pydcop.dcop.relations import filter_assignment_dict
 from pydcop.computations_graph.objects import ComputationGraph
 from pydcop.dcop.dcop import DCOP
@@ -96,7 +96,7 @@ class Orchestrator(object):
 
     Parameters
     ----------
-    algo: AlgoDef,
+    algo: AlgorithmDef,
         algorithm used to solve the dcop
     cg: ComputationGraph,
         computation graph
@@ -115,7 +115,7 @@ class Orchestrator(object):
 
     """
 
-    def __init__(self, algo: AlgoDef, cg: ComputationGraph,
+    def __init__(self, algo: AlgorithmDef, cg: ComputationGraph,
                  agent_mapping: Distribution,
                  comm: CommunicationLayer,
                  dcop: DCOP,
@@ -535,7 +535,7 @@ class AgentsMgt(MessagePassingComputation):
 
     Parameters
     ----------
-    algo: AlgoDef
+    algo: AlgorithmDef
         The algorithm used to solve the DCOP
     cg: ComputationGraph
         The computation graph containing all the computations fro the dcop
@@ -551,7 +551,7 @@ class AgentsMgt(MessagePassingComputation):
         metrics collection mode
     """
 
-    def __init__(self, algo: AlgoDef, cg: ComputationGraph,
+    def __init__(self, algo: AlgorithmDef, cg: ComputationGraph,
                  agent_mapping: Distribution,
                  dcop: DCOP,
                  orchestrator_agent: Agent, orchestrator: Orchestrator,

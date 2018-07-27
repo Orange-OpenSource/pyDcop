@@ -239,7 +239,7 @@ When deploying  the computation, concrete ``MessagePassingComputation`` objects
 must be instantiated on their assigned agent. For this, an algorithm
 module **must** also provide a factory method to build computation object::
 
-    def build_computation(node: ComputationNode, links: Iterable[Link], algo: AlgoDef)-> MessagePassingComputation:
+    def build_computation(node: ComputationNode, links: Iterable[Link], algo: AlgorithmDef)-> MessagePassingComputation:
     """
     Build a computation instance for a given algorithm (and parameters)
     """

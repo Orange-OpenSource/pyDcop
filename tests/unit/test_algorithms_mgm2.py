@@ -37,7 +37,7 @@ from pydcop.computations_graph.constraints_hypergraph import \
 from pydcop.dcop.relations import UnaryFunctionRelation, \
     AsNAryFunctionRelation, constraint_from_str
 
-from pydcop.algorithms import mgm2, AlgoDef, ComputationDef
+from pydcop.algorithms import mgm2, AlgorithmDef, ComputationDef
 from pydcop.algorithms.mgm2 import Mgm2Computation, Mgm2ValueMessage, \
     Mgm2OfferMessage, Mgm2GainMessage, Mgm2ResponseMessage, Mgm2GoMessage
 from pydcop.dcop.objects import Variable
@@ -90,7 +90,7 @@ def test_no_neighbors():
     computation = Mgm2Computation(
         ComputationDef(
             VariableComputationNode(x1, [cost_x1]),
-            AlgoDef.build_with_default_param('mgm2', mode='max')
+            AlgorithmDef.build_with_default_param('mgm2', mode='max')
         ))
 
     computation.value_selection = MagicMock()
@@ -113,7 +113,7 @@ class TestsValueComputation(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.__value__ = 0
         bests, best = computation._compute_best_value()
@@ -132,7 +132,7 @@ class TestsValueComputation(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
 
         computation._neighbors_values['x2'] = 1
@@ -152,7 +152,7 @@ class TestsValueComputation(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2', mode='max')
+                AlgorithmDef.build_with_default_param('mgm2', mode='max')
             ))
         computation._neighbors_values['x2'] = 1
         bests, best = computation._compute_best_value()
@@ -172,7 +172,7 @@ class TestsValueComputation(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation._neighbors_values['x2'] = 1
         computation._neighbors_values['x3'] = 1
@@ -193,7 +193,7 @@ class TestsValueComputation(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2', mode='max')
+                AlgorithmDef.build_with_default_param('mgm2', mode='max')
             ))
         computation._neighbors_values['x2'] = 1
         computation._neighbors_values['x3'] = 1
@@ -216,7 +216,7 @@ class TestsCostComputation(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.__value__ = 0
 
@@ -233,7 +233,7 @@ class TestsCostComputation(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         self.assertEqual(computation._compute_cost({'x1': 0, 'x2': 0}), 0)
         self.assertEqual(computation._compute_cost({'x1': 0, 'x2': 1}), 1)
@@ -252,7 +252,7 @@ class TestsCostComputation(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         self.assertEqual(computation._compute_cost({'x1': 0, 'x2': 0,
                                                     'x3': 1}), 1)
@@ -275,13 +275,13 @@ class TestsCostComputation(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.__value__ = 0
         computation2 = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation2.__value__ = 1
 
@@ -299,7 +299,7 @@ class TestsCostComputation(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.__value__ = 1
         computation._neighbors_values['x2'] = 0
@@ -307,7 +307,7 @@ class TestsCostComputation(unittest.TestCase):
         computation2 = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation2.__value__ = 0
         computation2._neighbors_values['x2'] = 0
@@ -326,7 +326,7 @@ class TestsCostComputation(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.__value__ = 1
         computation._neighbors_values['x2'] = 0
@@ -335,7 +335,7 @@ class TestsCostComputation(unittest.TestCase):
         computation2 = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation2.__value__ = 0
         computation2._neighbors_values['x2'] = 0
@@ -358,7 +358,7 @@ class TestsChangeState(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2', mode='max')
+                AlgorithmDef.build_with_default_param('mgm2', mode='max')
             ))
         computation.message_sender = DummySender()
         computation.__value__ = 1
@@ -383,7 +383,7 @@ class TestsChangeState(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2', mode='max')
+                AlgorithmDef.build_with_default_param('mgm2', mode='max')
             ))
         computation.message_sender = DummySender()
 
@@ -409,7 +409,7 @@ class TestsChangeState(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2', mode='max')
+                AlgorithmDef.build_with_default_param('mgm2', mode='max')
             ))
         computation.message_sender = DummySender()
 
@@ -429,7 +429,7 @@ class TestsChangeState(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2', mode='max')
+                AlgorithmDef.build_with_default_param('mgm2', mode='max')
             ))
         computation.message_sender = DummySender()
 
@@ -453,7 +453,7 @@ class TestsChangeState(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2', mode='max')
+                AlgorithmDef.build_with_default_param('mgm2', mode='max')
             ))
         computation.message_sender = DummySender()
 
@@ -480,7 +480,7 @@ class TestsOffersComputations(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
 
         computation._neighbors_values = {'x2': 0, 'x3': 0}
@@ -507,7 +507,7 @@ class TestsOffersComputations(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2', mode='max')
+                AlgorithmDef.build_with_default_param('mgm2', mode='max')
             ))
 
         computation._neighbors_values = {'x2': 0, 'x3': 0}
@@ -541,7 +541,7 @@ class TestsOffersComputations(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi, psi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
 
         computation._neighbors_values = {'x2': 0, 'x3': 0, 'x4': 0}
@@ -581,7 +581,7 @@ class TestsOffersComputations(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi, psi]),
-                AlgoDef.build_with_default_param('mgm2', mode='max')
+                AlgorithmDef.build_with_default_param('mgm2', mode='max')
             ))
 
         computation._neighbors_values = {'x2': 0, 'x3': 1, 'x4': 1}
@@ -625,7 +625,7 @@ class TestsOffersComputations(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi, psi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
 
         computation._neighbors_values = {'x2': 0, 'x3': 0, 'x4': 0}
@@ -663,7 +663,7 @@ class TestsOffersComputations(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi, psi]),
-                AlgoDef.build_with_default_param('mgm2', mode='max')
+                AlgorithmDef.build_with_default_param('mgm2', mode='max')
             ))
 
         computation._neighbors_values = {'x2': 0, 'x3': 1, 'x4': 1}
@@ -694,7 +694,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2', mode='max')
+                AlgorithmDef.build_with_default_param('mgm2', mode='max')
             ))
         computation._state = 'value'
         computation._handle_value_message('x2', Mgm2ValueMessage(0))
@@ -713,7 +713,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.message_sender = DummySender()
         computation._state = 'value'
@@ -728,7 +728,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation2 = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2', mode='max')
+                AlgorithmDef.build_with_default_param('mgm2', mode='max')
             ))
         computation2.message_sender = DummySender()
         computation2._state = 'value'
@@ -751,7 +751,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.message_sender = DummySender()
         computation._state = 'offer'
@@ -762,7 +762,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation2 = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation2.message_sender = DummySender()
         computation2._state = 'offer'
@@ -775,7 +775,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation3 = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation3.message_sender = DummySender()
         computation3._state = 'offer'
@@ -788,7 +788,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation4 = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation4.message_sender = DummySender()
         computation4._state = 'offer'
@@ -816,7 +816,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.message_sender = DummySender()
         computation._state = 'offer'
@@ -828,7 +828,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation2 = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation2.message_sender = DummySender()
         computation2._state = 'offer'
@@ -840,7 +840,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation3 = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation3.message_sender = DummySender()
         computation3._state = 'offer'
@@ -857,7 +857,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation4 = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation4.message_sender = DummySender()
         computation4._state = 'offer'
@@ -892,7 +892,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi, psi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.message_sender = DummySender()
 
@@ -930,7 +930,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi, psi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.message_sender = DummySender()
         computation._state = 'answer?'
@@ -971,7 +971,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi, psi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.message_sender = DummySender()
         computation._state = 'answer?'
@@ -1011,7 +1011,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi, psi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.message_sender = DummySender()
         computation._neighbors_values = {'x2': 1, 'x3': 1}
@@ -1055,7 +1055,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi, psi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.message_sender = DummySender()
 
@@ -1111,7 +1111,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi, psi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.message_sender = DummySender()
 
@@ -1147,7 +1147,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi, psi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.message_sender = DummySender()
 
@@ -1194,7 +1194,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi, psi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.message_sender = DummySender()
 
@@ -1222,7 +1222,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi, psi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.message_sender = DummySender()
 
@@ -1307,7 +1307,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation = Mgm2Computation(
             ComputationDef(
                 VariableComputationNode(x1, [phi, psi]),
-                AlgoDef.build_with_default_param('mgm2')
+                AlgorithmDef.build_with_default_param('mgm2')
             ))
         computation.message_sender = DummySender()
 

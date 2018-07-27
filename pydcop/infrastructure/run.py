@@ -33,7 +33,7 @@ from multiprocessing import Process
 from queue import Queue
 from typing import Union
 
-from pydcop.algorithms import AlgoDef, load_algorithm_module
+from pydcop.algorithms import AlgorithmDef, load_algorithm_module
 from pydcop.computations_graph.objects import ComputationGraph
 from pydcop.dcop.dcop import DCOP
 from pydcop.dcop.objects import AgentDef
@@ -50,7 +50,7 @@ INFINITY = 10000
 
 
 def solve(dcop: DCOP,
-          algo_def: Union[str, AlgoDef],
+          algo_def: Union[str, AlgorithmDef],
           distribution: Union[str, Distribution],
           graph: Union[str, ComputationGraph]=None,
           timeout=5):
@@ -63,12 +63,12 @@ def solve(dcop: DCOP,
     ----------
     dcop : DCOP
         a DCOP object
-    algo_def: string or AlgoDef object
+    algo_def: string or AlgorithmDef object
         The algorithm that should be used to solve the DCOP. If `algo_def` is
         a string, it is interpreted as an algorithm module in
         the package `pydcop.algorithms`, and this algorithm is used with it's
         default parameters. If `algo_def` is not a string, it must be an
-        AlgoDef object.
+        AlgorithmDef object.
     distribution: either a Distribution object or a string
         If `distribution` is a string, it is interpreted as the name of a module
         in the package pydcop.distribution. This module is the loaded and used
@@ -98,7 +98,7 @@ def solve(dcop: DCOP,
 
     if isinstance(algo_def, str):
         algo_module = load_algorithm_module(algo_def)
-        algo_def = AlgoDef.build_with_default_param(
+        algo_def = AlgorithmDef.build_with_default_param(
             algo_def, parameters_definitions=algo_module.algo_params)
     else:
         algo_module = load_algorithm_module(algo_def.algo)
@@ -140,7 +140,7 @@ def solve(dcop: DCOP,
         orchestrator.stop()
 
 
-def run_local_thread_dcop(algo: AlgoDef,
+def run_local_thread_dcop(algo: AlgorithmDef,
                           cg: ComputationGraph,
                           distribution: Distribution,
                           dcop: DCOP,
@@ -157,7 +157,7 @@ def run_local_thread_dcop(algo: AlgoDef,
 
     Parameters
     ----------
-    algo: AlgoDef
+    algo: AlgorithmDef
         Definition of DCOP algorithm, with associated parameters
     cg: ComputationGraph
         The computation graph used to solve the DCOP with the given algorithm
@@ -220,7 +220,7 @@ def run_local_thread_dcop(algo: AlgoDef,
     return orchestrator
 
 
-def run_local_process_dcop(algo: AlgoDef, cg: ComputationGraph,
+def run_local_process_dcop(algo: AlgorithmDef, cg: ComputationGraph,
                            distribution: Distribution, dcop: DCOP,
                            infinity,  # FIXME : this has nothing to to here, #41
                            collector: Queue=None,

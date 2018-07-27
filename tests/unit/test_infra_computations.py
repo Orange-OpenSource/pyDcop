@@ -34,7 +34,7 @@ from unittest.mock import MagicMock, ANY
 
 import pytest
 
-from pydcop.algorithms import AlgoDef, ComputationDef, load_algorithm_module
+from pydcop.algorithms import AlgorithmDef, ComputationDef, load_algorithm_module
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
 from pydcop.dcop.objects import Variable
@@ -335,7 +335,7 @@ def test_memory_footprint():
 
     v1 = Variable('v1', [1,2])
     comp_def = ComputationDef(FGVariableComputationNode(v1, []),
-                              AlgoDef.build_with_default_param('maxsum'))
+                              AlgorithmDef.build_with_default_param('maxsum'))
     comp = maxsum_module.VariableAlgo(v1, [], comp_def=comp_def)
 
     # The variable has no neighbors : footprint is 0
@@ -350,7 +350,7 @@ def test_memory_footprint_from_import_module():
 
     v1 = Variable('v1', [1,2])
     comp_def = ComputationDef(FGVariableComputationNode(v1, []),
-                              AlgoDef.build_with_default_param('maxsum'))
+                              AlgorithmDef.build_with_default_param('maxsum'))
     comp = maxsum_module.VariableAlgo(v1, [], comp_def=comp_def)
 
     # The variable has no neighbors : footprint is 0
@@ -365,7 +365,7 @@ def test_memory_footprint_from_classic_import():
 
     v1 = Variable('v1', [1,2])
     comp_def = ComputationDef(FGVariableComputationNode(v1, []),
-                              AlgoDef.build_with_default_param('maxsum'))
+                              AlgorithmDef.build_with_default_param('maxsum'))
     comp = maxsum_module.VariableAlgo(v1, [], comp_def=comp_def)
 
     # The variable has no neighbors : footprint is 0
@@ -378,7 +378,7 @@ def test_fallback_memory_footprint():
 
     v1 = Variable('v1', [1,2])
     comp_def = ComputationDef(VariableComputationNode(v1, []),
-                              AlgoDef.build_with_default_param('dsatuto'))
+                              AlgorithmDef.build_with_default_param('dsatuto'))
     comp = dsa_module.DsaTutoComputation(comp_def)
 
     assert comp.footprint() == 1
@@ -390,7 +390,7 @@ def test_fallback_memory_footprint_from_import_module():
 
     v1 = Variable('v1', [1,2])
     comp_def = ComputationDef(VariableComputationNode(v1, []),
-                              AlgoDef.build_with_default_param('dsatuto'))
+                              AlgorithmDef.build_with_default_param('dsatuto'))
     comp = dsa_module.DsaTutoComputation(comp_def)
 
     assert comp.footprint() == 1
@@ -402,7 +402,7 @@ def test_fallback_memory_footprint_from_classic_import():
 
     v1 = Variable('v1', [1,2])
     comp_def = ComputationDef(VariableComputationNode(v1, []),
-                              AlgoDef.build_with_default_param('dsatuto'))
+                              AlgorithmDef.build_with_default_param('dsatuto'))
     comp = dsa_module.DsaTutoComputation(comp_def)
 
     assert comp.footprint() == 1
