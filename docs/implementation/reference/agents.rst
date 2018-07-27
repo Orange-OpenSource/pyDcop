@@ -21,7 +21,7 @@ agents may run on different computers and  communication uses the network.
 Current implementation is based on HTTP+JSON
 but other network communication mecanism (zeromq, CoAP, BSON, etc.)
 could easily be implemented by subclassing
-`pydcop.infrastructure.communication.CommunicationLayer`
+:class:`.CommunicationLayer`
 
 
 The Orchestrator is a special agent that is not part of the DCOP :
