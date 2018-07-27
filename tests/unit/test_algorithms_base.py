@@ -40,10 +40,10 @@ import pydcop.dcop.relations
 import pydcop.utils
 import pydcop.utils.various
 from pydcop import algorithms
-from pydcop.algorithms import assignment_cost
 from pydcop.infrastructure.computations import Message
 from pydcop.dcop.objects import VariableDomain, Variable
-from pydcop.dcop.relations import UnaryFunctionRelation, constraint_from_str
+from pydcop.dcop.relations import UnaryFunctionRelation, constraint_from_str, \
+    assignment_cost
 from pydcop.utils.simple_repr import simple_repr, from_repr
 
 
@@ -102,7 +102,7 @@ class GenerateAssignementTestCase(unittest.TestCase):
 
         x1 = Variable('x1', ['a', 'b', 'c'])
 
-        ass = list(pydcop.algorithms.generate_assignment([x1]))
+        ass = list(pydcop.dcop.relations.generate_assignment([x1]))
 
         self.assertEqual(len(ass), len(x1.domain))
         self.assertIn(['a'], ass)
@@ -112,7 +112,7 @@ class GenerateAssignementTestCase(unittest.TestCase):
     def test_generate_1var_generator(self):
         x1 = Variable('x1', ['a', 'b', 'c'])
 
-        ass = pydcop.algorithms.generate_assignment([x1])
+        ass = pydcop.dcop.relations.generate_assignment([x1])
 
         res = [['a'], ['b'], ['c']]
         for a in ass:
@@ -126,7 +126,7 @@ class GenerateAssignementTestCase(unittest.TestCase):
         x1 = Variable('x1', ['a', 'b', 'c'])
         x2 = Variable('x2', ['a', 'b', 'c'])
 
-        ass = list(pydcop.algorithms.generate_assignment([x1, x2]))
+        ass = list(pydcop.dcop.relations.generate_assignment([x1, x2]))
         print(ass)
         self.assertEqual(len(ass), len(x1.domain) * len(x2.domain))
         self.assertIn(['a', 'a'], ass)
@@ -138,7 +138,7 @@ class GenerateAssignementTestCase(unittest.TestCase):
         x2 = Variable('x2', ['b1'])
         x3 = Variable('x3', ['c1', 'c2'])
 
-        ass = list(pydcop.algorithms.generate_assignment([x1, x2, x3]))
+        ass = list(pydcop.dcop.relations.generate_assignment([x1, x2, x3]))
 
         self.assertEqual(len(ass), len(x1.domain) * len(x2.domain) * len(
             x3.domain))
@@ -151,7 +151,7 @@ class GenerateAssignementAsDictTestCase(unittest.TestCase):
     def test_generate_1var(self):
         x1 = Variable('x1', ['a', 'b', 'c'])
 
-        ass = list(pydcop.algorithms.generate_assignment_as_dict([x1]))
+        ass = list(pydcop.dcop.relations.generate_assignment_as_dict([x1]))
 
         self.assertEqual(len(ass), len(x1.domain))
         self.assertIn({'x1': 'a'}, ass)
@@ -163,7 +163,7 @@ class GenerateAssignementAsDictTestCase(unittest.TestCase):
         x2 = Variable('x2', ['a', 'b', 'c'])
 
         ass = list(
-            pydcop.algorithms.generate_assignment_as_dict([x1, x2]))
+            pydcop.dcop.relations.generate_assignment_as_dict([x1, x2]))
         print(ass)
         self.assertEqual(len(ass), len(x1.domain) * len(x2.domain))
         self.assertIn({'x1':'a', 'x2':'a'}, ass)
@@ -181,7 +181,7 @@ class FindArgOptimalTestCase(unittest.TestCase):
                                                                      np.int8))
 
         # take the projection of u1 along x1
-        m, c = pydcop.algorithms.find_arg_optimal(x1, u1, mode='max')
+        m, c = pydcop.dcop.relations.find_arg_optimal(x1, u1, mode='max')
 
         self.assertEqual(len(m), 1)
         self.assertEqual(m[0], 'c')
@@ -195,7 +195,7 @@ class FindArgOptimalTestCase(unittest.TestCase):
                                                                      np.int8))
 
         # take the projection of u1 along x1
-        m, c= pydcop.algorithms.find_arg_optimal(x1, u1, mode='min')
+        m, c= pydcop.dcop.relations.find_arg_optimal(x1, u1, mode='min')
 
         self.assertEqual(len(m), 1)
         self.assertEqual(m[0], 'a')
@@ -206,7 +206,7 @@ class FindArgOptimalTestCase(unittest.TestCase):
         v1 = Variable('v1', list(range(10)))
         f1 = UnaryFunctionRelation('f1', v1, lambda x: abs(x-5))
 
-        m, c = pydcop.algorithms.find_arg_optimal(v1, f1, mode='min')
+        m, c = pydcop.dcop.relations.find_arg_optimal(v1, f1, mode='min')
 
         self.assertEqual(len(m), 1)
         self.assertEqual(m[0], 5)
@@ -216,7 +216,7 @@ class FindArgOptimalTestCase(unittest.TestCase):
         v1 = Variable('v1', list(range(10)))
         f1 = UnaryFunctionRelation('f1', v1, lambda x: 2 if 3 < x < 6 else 10)
 
-        values, c = pydcop.algorithms.find_arg_optimal(v1, f1, mode='min')
+        values, c = pydcop.dcop.relations.find_arg_optimal(v1, f1, mode='min')
 
         self.assertEqual(len(values), 2)
         self.assertIn(4, values)

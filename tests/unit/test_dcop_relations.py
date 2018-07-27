@@ -32,7 +32,6 @@
 import unittest
 
 import numpy as np
-from pydcop.algorithms import generate_assignment, generate_assignment_as_dict
 
 import pydcop.dcop.objects
 from pydcop.dcop.objects import VariableDomain, Variable, ExternalVariable, \
@@ -42,7 +41,8 @@ from pydcop.dcop.relations import NAryFunctionRelation, \
     AsNAryFunctionRelation, relation_from_str, \
     find_dependent_relations, NAryMatrixRelation, UnaryBooleanRelation, \
     UnaryFunctionRelation, ZeroAryRelation, add_var_to_rel, NeutralRelation, \
-    assignment_matrix, random_assignment_matrix
+    assignment_matrix, random_assignment_matrix, generate_assignment, \
+    generate_assignment_as_dict
 from pydcop.utils.expressionfunction import ExpressionFunction
 from pydcop.utils.simple_repr import simple_repr, from_repr, \
     SimpleReprException

@@ -57,8 +57,8 @@ from collections import defaultdict
 from pydcop.computations_graph.factor_graph import VariableComputationNode, \
     FactorComputationNode
 from pydcop.dcop.objects import VariableNoisyCostFunc, Variable
-from pydcop.algorithms import AlgoParameterDef, ComputationDef, \
-    generate_assignment_as_dict
+from pydcop.algorithms import AlgoParameterDef, ComputationDef
+from pydcop.dcop.relations import generate_assignment_as_dict
 from pydcop.infrastructure.computations import Message, DcopComputation, \
     VariableComputation, register
 

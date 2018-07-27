@@ -36,10 +36,10 @@ import random
 import functools
 from typing import Dict, List, Tuple
 
-from pydcop.dcop.relations import RelationProtocol
+from pydcop.dcop.relations import RelationProtocol, generate_assignment_as_dict, \
+    filter_assignment_dict
 
-from pydcop.algorithms import AlgoParameterDef, ComputationDef, \
-    generate_assignment_as_dict, filter_assignment_dict
+from pydcop.algorithms import AlgoParameterDef, ComputationDef
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
 

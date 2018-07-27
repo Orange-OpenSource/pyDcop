@@ -96,15 +96,14 @@ import random
 
 from typing import Any, Tuple, List
 
-from pydcop.algorithms import AlgoParameterDef, ComputationDef, assignment_cost, \
-    filter_assignment_dict
+from pydcop.algorithms import AlgoParameterDef, ComputationDef
 from pydcop.infrastructure.computations import MessagePassingComputation, \
     Message, VariableComputation, DcopComputation, register
 
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
-from pydcop.dcop.relations import find_optimum
-
+from pydcop.dcop.relations import find_optimum, assignment_cost, \
+    filter_assignment_dict
 
 HEADER_SIZE = 0
 UNIT_SIZE = 1

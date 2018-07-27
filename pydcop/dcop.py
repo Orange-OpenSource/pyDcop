@@ -165,8 +165,8 @@ def _configure_logs(level: int, log_conf: str):
     # Remove ui and communication layer logs:
     comm_logger = logging.getLogger('infrastructure.communication')
     comm_logger.setLevel(logging.ERROR)
-    comm_logger = logging.getLogger('pydcop.agent.ui')
-    comm_logger.setLevel(logging.ERROR)
+    ui_logger = logging.getLogger('pydcop.agent.ui')
+    ui_logger.setLevel(logging.ERROR)
 
     levels = {
         0: logging.ERROR,

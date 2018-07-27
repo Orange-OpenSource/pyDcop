@@ -47,15 +47,15 @@ import functools as fp
 from collections import defaultdict
 from typing import Iterable, Dict, Any, Tuple, List
 
-from pydcop.algorithms import AlgoParameterDef, ComputationDef, \
-    generate_assignment_as_dict, filter_assignment_dict
+from pydcop.algorithms import AlgoParameterDef, ComputationDef
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
 
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
 from pydcop.dcop.objects import Variable
-from pydcop.dcop.relations import RelationProtocol, find_dependent_relations
+from pydcop.dcop.relations import RelationProtocol, find_dependent_relations, \
+    generate_assignment_as_dict, filter_assignment_dict
 
 __author__ = "Pierre Nagellen, Pierre Rust"
 

@@ -48,7 +48,8 @@ from typing import Any, Tuple
 
 from numpy import random
 
-from pydcop.algorithms import ComputationDef, assignment_cost
+from pydcop.algorithms import ComputationDef
+from pydcop.dcop.relations import assignment_cost
 from pydcop.infrastructure.computations import VariableComputation, \
     message_type, register
 

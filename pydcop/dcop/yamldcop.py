@@ -35,13 +35,12 @@ from typing import Dict, Iterable, Union
 
 import yaml
 
-from pydcop.algorithms import generate_assignment_as_dict
 from pydcop.dcop.objects import VariableDomain, Variable, \
     ExternalVariable, VariableWithCostFunc, VariableNoisyCostFunc, AgentDef
 from pydcop.dcop.scenario import EventAction, DcopEvent, Scenario
 from pydcop.dcop.dcop import DCOP
 from pydcop.dcop.relations import relation_from_str, RelationProtocol, \
-    NAryMatrixRelation, assignment_matrix
+    NAryMatrixRelation, assignment_matrix, generate_assignment_as_dict
 from pydcop.utils.expressionfunction import ExpressionFunction
 from pydcop.distribution.objects import DistributionHints
 

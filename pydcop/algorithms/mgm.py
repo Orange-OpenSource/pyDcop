@@ -56,11 +56,12 @@ from typing import Dict
 from typing import Iterable, Set
 
 from pydcop.algorithms import AlgoParameterDef, ComputationDef, \
-    check_param_value, filter_assignment_dict, find_arg_optimal
+    check_param_value
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
 from pydcop.dcop.objects import Variable
-from pydcop.dcop.relations import RelationProtocol
+from pydcop.dcop.relations import RelationProtocol, filter_assignment_dict, \
+    find_arg_optimal
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
 

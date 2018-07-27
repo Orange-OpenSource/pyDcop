@@ -37,7 +37,6 @@ from typing import Dict, Any, List, Iterable
 import numpy as np
 
 from pydcop.computations_graph.objects import ComputationNode
-from pydcop.dcop.objects import Variable
 from pydcop.utils.simple_repr import SimpleRepr, simple_repr, from_repr
 
 DEFAULT_TYPE = np.int32
@@ -232,7 +231,7 @@ class AlgoDef(SimpleRepr):
             return False
         if self.algo != other.algo or self.mode != other.mode:
             return False
-        if self._params != other._params:
+        if self._params != other.params:
             return False
         return True
 
@@ -482,170 +481,10 @@ def find_computation_implementation(algorithm_module):
     from pydcop.infrastructure.computations import VariableComputation
     implementations = []
     for m in inspect.getmembers(algorithm_module, inspect.isclass):
-        if m[1] != VariableComputation and issubclass(m[1], VariableComputation):
+        if m[1] != VariableComputation and \
+                issubclass(m[1], VariableComputation):
             implementations.append(m[1])
     return implementations
-
-
-def get_data_type_max(data_type):
-    # see http://docs.scipy.org/doc/numpy/user/basics.types.html
-
-    if data_type == np.int8:
-        return 127
-    elif data_type == np.int16:
-        return 32767
-    elif data_type == np.int32:
-        return 2147483647
-
-
-def get_data_type_min(data_type):
-
-    if data_type == np.int8:
-        return -128
-    elif data_type == np.int16:
-        return -32768
-    elif data_type == np.int32:
-        return -2147483648
-
-
-def generate_assignment(variables: List[Variable]):
-    """
-    Returns a generator iterating on all possible assignments for the set of
-    variables vars.
-
-    An assignment is represented as a list of values, in the same order as
-    the list of variables.
-
-    Parameters
-    ----------
-
-    variables: a list of variable objects.
-
-    Returns
-    -------
-    a generator iterating on all possible assignments for the set of
-    variables vars
-    """
-
-    if len(variables) == 0:
-        yield []
-    else:
-        for d in variables[-1].domain:
-            for ass in generate_assignment(variables[:-1]):
-                ass.append(d)
-                yield ass
-
-
-def generate_assignment_as_dict(variables: List[Variable]):
-    """
-    Returns a generator iterating on all possible assignments for the set of
-    variables vars.
-
-    An assignment is represented as a dict {var_name => var_value}.
-
-    Parameters
-    ----------
-    variables: a list of variable objects.
-
-    Returns
-    -------
-    a generator iterating on all possible assignments for the set of
-    variables vars
-    """
-
-    if len(variables) == 0:
-        yield {}
-    else:
-        current_var = variables[-1]
-        for d in current_var.domain:
-            for ass in generate_assignment_as_dict(variables[:-1]):
-                ass[current_var.name] = d
-                yield ass
-
-
-def assignment_cost(assignment: Dict[str, Any],
-                    constraints: Iterable['Constraint']):
-    """
-    Compute the cost of an assignment over a set of constraints.
-
-    Parameters
-    ----------
-    assignment: Dict[str, Any]
-        The assignment given as a dict of variable_name : value
-    constraints: Iterable['Constraint']
-        a list of constraints
-
-    Raises
-    ------
-    TypeError:
-        If some variables are missing in the assignment.
-
-    Returns
-    -------
-    The sum of the costs of the constraints for this assignment.
-
-    """
-    cost = 0
-    for c in constraints:
-        cost += c(**filter_assignment_dict(assignment, c.dimensions))
-    return cost
-
-
-def filter_assignment_dict(assignment, target_vars):
-    """
-    Filter an assignment to keep only the values of the variable that are
-    present in target_var.
-
-    :param assignment: a dict { variable_name -> value}
-    :param target_vars: a list of Variable objects
-    :return: a dict { variable_name -> value} with only values for variables
-    in target_vars
-    """
-
-    filtered_ass = {}
-    target_vars_names = [v.name for v in target_vars]
-    for v in assignment:
-        if v in target_vars_names:
-            filtered_ass[v] = assignment[v]
-    return filtered_ass
-
-
-def find_arg_optimal(variable, relation, mode):
-    """
-    Find the value in the domain of variable that yield the optimal value  on
-    this relation. Optimal can be min on max depending on the value of mode.
-
-    :param variable: the variable
-    :param relation: a function or an object implementing the Relation
-    protocol and depending only on the var 'variable'
-    :param mode: type of optimization, 'min' or 'max'
-
-    :return: a pair (values, rel_value) where values is a list of values from
-    the variable domain that gives the best (according to mode) value for
-    this relation.
-    """
-    if mode == 'min':
-        best_rel_val = get_data_type_max(DEFAULT_TYPE)
-    elif mode == 'max':
-        best_rel_val = get_data_type_min(DEFAULT_TYPE)
-    else:
-        raise ValueError('Invalid optimization mode: ' + mode)
-
-    if hasattr(relation, 'dimensions'):
-        if len(relation.dimensions) != 1 or relation.dimensions[0] != variable:
-            raise ValueError('For find_arg_optimal, the relation must depend '
-                             'only on the given variable : {} {}'
-                             .format(relation, variable))
-    var_val = list()
-    for v in variable.domain:
-        current_rel_val = relation(v)
-        if (mode == 'max' and best_rel_val < current_rel_val) or \
-                (mode == 'min' and best_rel_val > current_rel_val):
-            best_rel_val = current_rel_val
-            var_val = [v]
-        elif current_rel_val == best_rel_val:
-            var_val.append(v)
-    return var_val, best_rel_val
 
 
 def is_of_type_by_str(value: Any, type_str: str):

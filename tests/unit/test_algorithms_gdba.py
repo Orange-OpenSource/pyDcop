@@ -33,12 +33,11 @@ import unittest
 from unittest.mock import MagicMock
 
 import numpy
-from pydcop.algorithms import generate_assignment_as_dict
 
 from pydcop.algorithms.gdba import GdbaComputation
 from pydcop.dcop.objects import Variable
 from pydcop.dcop.relations import AsNAryFunctionRelation, NAryMatrixRelation, \
-    UnaryFunctionRelation, NAryFunctionRelation
+    UnaryFunctionRelation, NAryFunctionRelation, generate_assignment_as_dict
 
 
 class GdbaAlgoTest(unittest.TestCase):

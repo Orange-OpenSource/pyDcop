@@ -32,11 +32,10 @@
 import collections
 from typing import List, Tuple, Dict, Iterable, Union, Mapping
 
-from pydcop.algorithms import filter_assignment_dict
 from pydcop.dcop.objects import AgentDef, Variable, VariableDomain, \
     ExternalVariable, Domain
 from pydcop.dcop.relations import RelationProtocol, constraint_from_str, \
-    Constraint
+    Constraint, filter_assignment_dict
 
 
 class DCOP(object):

@@ -40,7 +40,8 @@ from collections import defaultdict
 
 import yaml
 
-from pydcop.algorithms import AlgoDef, ComputationDef, filter_assignment_dict
+from pydcop.algorithms import AlgoDef, ComputationDef
+from pydcop.dcop.relations import filter_assignment_dict
 from pydcop.computations_graph.objects import ComputationGraph
 from pydcop.dcop.dcop import DCOP
 from pydcop.dcop.scenario import Scenario

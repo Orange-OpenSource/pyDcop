@@ -101,15 +101,14 @@ import random
 
 from typing import Iterable, Dict
 
-from pydcop.algorithms import AlgoParameterDef, ComputationDef, \
-    filter_assignment_dict
+from pydcop.algorithms import AlgoParameterDef, ComputationDef
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
 
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
 from pydcop.dcop.objects import Variable
-from pydcop.dcop.relations import RelationProtocol
+from pydcop.dcop.relations import RelationProtocol, filter_assignment_dict
 
 INFINITY = 10000
 
@@ -563,8 +562,8 @@ class DbaComputation(VariableComputation):
                 self.post_msg(n, msg)
 
     def _increase_weights(self, constraints):
-        self.logger.warning('%s increase the weights of the constraints %s',
-                            self.name, constraints)
+        self.logger.info('Increasing the weights of the constraints %s',
+                            constraints)
         for i in constraints:
             self.__constraints_weights__[i] += 1
 

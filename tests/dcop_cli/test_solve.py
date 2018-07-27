@@ -145,7 +145,7 @@ class GraphColoring1(unittest.TestCase):
         self.check_results(result)
 
     def test_dpop_oneagent(self):
-        result = run_solve('dpop', 'oneagent', 'graph_coloring1.yaml', 1)
+        result = run_solve('dpop', 'oneagent', 'graph_coloring1.yaml', 2)
         self.check_results(result, 'FINISHED')
 
     def test_dpop_oneagent_process(self):
@@ -207,31 +207,31 @@ class GraphColoringCsp(unittest.TestCase):
 
     def check_results(self, results):
         # No convergence detection for now, always stop on timeout
-        self.assertEqual(results['status'], 'TIMEOUT')
+        self.assertEqual(results['status'], 'FINISHED')
         assignment = results['assignment']
         self.assertEqual(results['cost'], 0)
 
     def test_dba_adhoc(self):
-        result = run_solve('dba', 'adhoc', 'graph_coloring_csp.yaml', 2)
+        result = run_solve('dba', 'adhoc', 'graph_coloring_csp.yaml', 3)
         self.check_results(result)
 
     def test_dba_adhoc_process(self):
-        result = run_solve('dba', 'adhoc', 'graph_coloring_csp.yaml', 2,
+        result = run_solve('dba', 'adhoc', 'graph_coloring_csp.yaml', 3,
                            'process')
         self.check_results(result)
 
     def test_dba_oneagent(self):
-        result = run_solve('dba', 'oneagent', 'graph_coloring_csp.yaml', 2)
+        result = run_solve('dba', 'oneagent', 'graph_coloring_csp.yaml', 3)
         self.check_results(result)
 
     def test_dba_oneagent_params(self):
-        result = run_solve('dba', 'oneagent', 'graph_coloring_csp.yaml', 2,
-                           algo_params='infinity:10000 max_distance:3')
+        result = run_solve('dba', 'oneagent', 'graph_coloring_csp.yaml', 3,
+                           algo_params=['infinity:10000', 'max_distance:3'])
         self.check_results(result)
 
     def test_dba_oneagent_params_process(self):
-        result = run_solve('dba', 'oneagent', 'graph_coloring_csp.yaml', 2,
-                           algo_params='infinity:10000 max_distance:3',
+        result = run_solve('dba', 'oneagent', 'graph_coloring_csp.yaml', 4,
+                           algo_params=['infinity:10000', 'max_distance:3'],
                            mode='process')
         self.check_results(result)
 
@@ -239,17 +239,20 @@ class GraphColoringCsp(unittest.TestCase):
 def run_solve(algo, distribution, filename, timeout: int, mode='thread',
               algo_params=''):
     filename = instance_path(filename)
-    algo_params = '-p '+algo_params if algo_params else ''
-    cmd = 'pydcop -t {timeout} solve -a {algo} {params} -d {' \
+    param_str = ''
+    for p in algo_params:
+        param_str += ' --algo_param '+ p
+    cmd = 'pydcop -v 0 -t {timeout} solve -a {algo} {params} -d {' \
           'distribution} ' \
           '-m {mode} ' \
           '{file}'.format(timeout=timeout,
                           algo=algo,
-                          params=algo_params,
+                          params=param_str,
                           distribution=distribution,
                           file=filename,
                           mode=mode)
     extra = 4 if mode == 'thread' else 5
+    print("Running command ", cmd)
     output = check_output(cmd, stderr=STDOUT, timeout=timeout+extra,
                           shell=True)
     print(output)
