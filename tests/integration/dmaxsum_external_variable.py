@@ -68,8 +68,7 @@ import sys
 import time
 
 from pydcop.algorithms.objects import filter_assignment_dict
-from pydcop.algorithms.generic_computations import \
-    ExternalVariableComputation
+from pydcop.infrastructure.computations import ExternalVariableComputation
 from pydcop.algorithms.maxsum_dynamic import DynamicFactorComputation, \
     DynamicFactorVariableComputation
 from pydcop.dcop.objects import VariableDomain, VariableNoisyCostFunc, \

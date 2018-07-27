@@ -845,6 +845,70 @@ class VariableComputation(DcopComputation):
         pass
 
 
+class ExternalVariableComputation(DcopComputation):
+    """
+    Computation representing an external variable.
+
+    An external variable is a variable that we cannot select a value for ;
+    i.e. it is not a decision variable, its value is controlled by an
+    external mechanism.
+    External variables can be used to represent the environment-sensing
+    aspect of an agent.
+
+    As we cannot select a value for an external variable,the role of an
+    ExternalVariableComputation instance, is simply to provide an API
+    to change the value from 'outside' of the DCOp system and to
+    notify other computations of this change.
+
+    """
+
+    def __init__(self, external_var, msg_sender=None, comp_def=None):
+        super().__init__(external_var.name, comp_def)
+        self._msg_handlers['SUBSCRIBE'] = self._on_subscribe_msg
+
+        self._external_var = external_var.clone()
+        self._msg_sender = msg_sender
+        self.subscribers = set()
+
+        self._external_var.subscribe(self._on_variable_change)
+
+    @property
+    def name(self):
+        return self._external_var.name
+
+    @property
+    def current_value(self):
+        return self._external_var.value
+
+    def on_start(self):
+        return {}
+
+    def _on_variable_change(self, _):
+        self._fire()
+
+    def _on_subscribe_msg(self, var_name, _, t):
+        self.subscribers.add(var_name)
+        self._msg_sender.post_msg(self.name, var_name,
+                                  Message('VARIABLE_VALUE',
+                                          self._external_var.value))
+
+    def change_value(self, value):
+        self._external_var.value = value
+
+    def _fire(self):
+        for s in self.subscribers:
+            self._msg_sender.post_msg(self.name, s,
+                                      Message('VARIABLE_VALUE',
+                                              self._external_var.value))
+
+    def __str__(self):
+        return 'External variable computation for ' + \
+               self._external_var.name
+
+    def __repr__(self):
+        return 'External variable computation for ' + self._external_var.name
+
+
 def build_computation(comp_def: ComputationDef) -> MessagePassingComputation:
     """
     Build a concrete computation instance from a computation definition.
@@ -855,3 +919,4 @@ def build_computation(comp_def: ComputationDef) -> MessagePassingComputation:
     algo_module = load_algorithm_module(comp_def.algo.algo)
     computation = algo_module.build_computation(comp_def)
     return computation
+

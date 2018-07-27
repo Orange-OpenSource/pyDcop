@@ -32,7 +32,7 @@
 import unittest
 from collections import namedtuple
 
-from pydcop.algorithms.graphs import as_bipartite_graph, Node, \
+from pydcop.utils.graphs import as_bipartite_graph, Node, \
     find_furthest_node, \
     calc_diameter, as_networkx_graph, all_pairs, cycles_count, graph_diameter
 from pydcop.dcop.objects import Variable
