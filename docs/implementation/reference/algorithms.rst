@@ -23,14 +23,14 @@ DCOP algorithms currently implemented in pyDCOP:
 
 
 
-.. autoclass:: pydcop.algorithms.objects.ComputationDef
+.. autoclass:: pydcop.algorithms.ComputationDef
   :members:
 
 
-.. autoclass:: pydcop.algorithms.objects.AlgoDef
+.. autoclass:: pydcop.algorithms.AlgoDef
   :members:
 
-.. autoclass:: pydcop.algorithms.objects.AlgoParameterDef
+.. autoclass:: pydcop.algorithms.AlgoParameterDef
   :members:
 
-.. autofunction:: pydcop.algorithms.objects.prepare_algo_params
+.. autofunction:: pydcop.algorithms.prepare_algo_params
