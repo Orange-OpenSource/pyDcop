@@ -27,8 +27,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-
+import logging
 from importlib import import_module
 from multiprocessing import Process
 from queue import Queue
@@ -274,4 +273,13 @@ def _build_process_agent(agt_def: AgentDef, port, orchestrator_address,
                               replication=replication,
                               delay=delay,
                               ui_port=uiport)
+
+    # Disable all non-error logging for agent's processes, we don't want
+    # all agents trying to log in the same console
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.ERROR)
+    root_logger = logging.getLogger('')
+    root_logger.setLevel(logging.ERROR)
+    root_logger.addHandler(console_handler)
+
     agent.start()
