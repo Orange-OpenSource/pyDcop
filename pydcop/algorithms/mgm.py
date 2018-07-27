@@ -55,8 +55,8 @@ from typing import Any
 from typing import Dict
 from typing import Iterable, Set
 
-from pydcop.algorithms.objects import filter_assignment_dict, find_arg_optimal, \
-    ComputationDef, check_param_value, AlgoParameterDef
+from pydcop.algorithms import AlgoParameterDef, ComputationDef, \
+    check_param_value, filter_assignment_dict, find_arg_optimal
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
 from pydcop.dcop.objects import Variable

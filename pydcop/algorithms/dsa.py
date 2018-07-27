@@ -96,8 +96,8 @@ import random
 
 from typing import Any, Tuple, List
 
-from pydcop.algorithms.objects import assignment_cost, filter_assignment_dict, \
-    ComputationDef, AlgoParameterDef
+from pydcop.algorithms import AlgoParameterDef, ComputationDef, assignment_cost, \
+    filter_assignment_dict
 from pydcop.infrastructure.computations import MessagePassingComputation, \
     Message, VariableComputation, DcopComputation, register
 

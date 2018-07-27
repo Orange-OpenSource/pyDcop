@@ -41,7 +41,7 @@ from queue import Queue, Empty
 from types import FunctionType
 from typing import List
 
-from pydcop.algorithms.objects import AlgoDef, prepare_algo_params, \
+from pydcop.algorithms import AlgoDef, prepare_algo_params, \
     load_algorithm_module
 
 logger = logging.getLogger('pydcop')

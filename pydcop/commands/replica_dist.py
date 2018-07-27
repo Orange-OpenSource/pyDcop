@@ -94,8 +94,7 @@ from threading import Timer
 
 import yaml
 
-from pydcop.algorithms.objects import list_available_algorithms, \
-    load_algorithm_module
+from pydcop.algorithms import list_available_algorithms, load_algorithm_module
 from pydcop.commands._utils import build_algo_def
 from pydcop.dcop.yamldcop import load_dcop_from_file
 from pydcop.distribution.yamlformat import load_dist_from_file

@@ -48,7 +48,7 @@ from pulp.constants import LpBinary, LpMinimize, LpStatusOptimal
 from pulp.pulp import LpVariable, LpProblem, lpSum, value, LpAffineExpression
 from pulp.solvers import GLPK_CMD
 
-from pydcop.algorithms.objects import load_algorithm_module
+from pydcop.algorithms import load_algorithm_module
 from pydcop.computations_graph.factor_graph import VariableComputationNode, \
     FactorComputationNode
 from pydcop.computations_graph.objects import ComputationGraph, ComputationNode

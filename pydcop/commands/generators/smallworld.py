@@ -34,7 +34,7 @@ from importlib import import_module
 
 import networkx as nx
 
-from pydcop.algorithms.objects import load_algorithm_module
+from pydcop.algorithms import load_algorithm_module
 from pydcop.dcop.dcop import DCOP
 from pydcop.dcop.objects import Variable, Domain, AgentDef
 from pydcop.dcop.relations import NAryMatrixRelation, assignment_matrix, \

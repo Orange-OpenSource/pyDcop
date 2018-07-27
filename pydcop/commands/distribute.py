@@ -147,8 +147,7 @@ from importlib import import_module
 import sys
 import yaml
 
-from pydcop.algorithms.objects import list_available_algorithms, \
-    load_algorithm_module
+from pydcop.algorithms import list_available_algorithms, load_algorithm_module
 from pydcop.commands._utils import _error
 from pydcop.dcop.yamldcop import load_dcop_from_file
 from pydcop.distribution.objects import ImpossibleDistributionException

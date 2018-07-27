@@ -37,8 +37,7 @@ from pydcop.computations_graph.constraints_hypergraph import \
 from pydcop.dcop.relations import UnaryFunctionRelation, \
     AsNAryFunctionRelation, constraint_from_str
 
-from pydcop.algorithms import mgm2
-from pydcop.algorithms.objects import ComputationDef, AlgoDef
+from pydcop.algorithms import mgm2, AlgoDef, ComputationDef
 from pydcop.algorithms.mgm2 import Mgm2Computation, Mgm2ValueMessage, \
     Mgm2OfferMessage, Mgm2GainMessage, Mgm2ResponseMessage, Mgm2GoMessage
 from pydcop.dcop.objects import Variable

@@ -34,7 +34,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from pydcop.algorithms.objects import AlgoDef, ComputationDef
+from pydcop.algorithms import AlgoDef, ComputationDef
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
 from pydcop.dcop.objects import AgentDef, Variable

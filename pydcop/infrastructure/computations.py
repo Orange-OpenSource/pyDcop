@@ -44,7 +44,7 @@ from typing import List, Tuple, Any, Callable
 
 from numpy import random
 
-from pydcop.algorithms.objects import ComputationDef, load_algorithm_module
+from pydcop.algorithms import ComputationDef, load_algorithm_module
 from pydcop.dcop.objects import Variable
 from pydcop.utils.simple_repr import SimpleRepr, SimpleReprException, \
     simple_repr

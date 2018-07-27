@@ -81,8 +81,8 @@ implementation of DSA.
 import random
 from typing import Tuple, Any, List, Dict
 
-from pydcop.algorithms.objects import AlgoParameterDef, assignment_cost, \
-    filter_assignment_dict, ComputationDef
+from pydcop.algorithms import AlgoParameterDef, ComputationDef, assignment_cost, \
+    filter_assignment_dict
 from pydcop.dcop.relations import find_optimum
 from pydcop.infrastructure.computations import VariableComputation, \
     register, message_type, DcopComputation

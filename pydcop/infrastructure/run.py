@@ -34,7 +34,7 @@ from multiprocessing import Process
 from queue import Queue
 from typing import Union
 
-from pydcop.algorithms.objects import AlgoDef, load_algorithm_module
+from pydcop.algorithms import AlgoDef, load_algorithm_module
 from pydcop.computations_graph.objects import ComputationGraph
 from pydcop.dcop.dcop import DCOP
 from pydcop.dcop.objects import AgentDef

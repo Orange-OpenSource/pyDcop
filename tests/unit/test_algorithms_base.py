@@ -34,12 +34,13 @@ import unittest
 import numpy as np
 import pytest
 
+import pydcop.algorithms
 import pydcop.algorithms.objects
 import pydcop.dcop.relations
 import pydcop.utils
 import pydcop.utils.various
 from pydcop import algorithms
-from pydcop.algorithms.objects import assignment_cost
+from pydcop.algorithms import assignment_cost
 from pydcop.infrastructure.computations import Message
 from pydcop.dcop.objects import VariableDomain, Variable
 from pydcop.dcop.relations import UnaryFunctionRelation, constraint_from_str
@@ -101,7 +102,7 @@ class GenerateAssignementTestCase(unittest.TestCase):
 
         x1 = Variable('x1', ['a', 'b', 'c'])
 
-        ass = list(pydcop.algorithms.objects.generate_assignment([x1]))
+        ass = list(pydcop.algorithms.generate_assignment([x1]))
 
         self.assertEqual(len(ass), len(x1.domain))
         self.assertIn(['a'], ass)
@@ -111,7 +112,7 @@ class GenerateAssignementTestCase(unittest.TestCase):
     def test_generate_1var_generator(self):
         x1 = Variable('x1', ['a', 'b', 'c'])
 
-        ass = pydcop.algorithms.objects.generate_assignment([x1])
+        ass = pydcop.algorithms.generate_assignment([x1])
 
         res = [['a'], ['b'], ['c']]
         for a in ass:
@@ -125,7 +126,7 @@ class GenerateAssignementTestCase(unittest.TestCase):
         x1 = Variable('x1', ['a', 'b', 'c'])
         x2 = Variable('x2', ['a', 'b', 'c'])
 
-        ass = list(pydcop.algorithms.objects.generate_assignment([x1, x2]))
+        ass = list(pydcop.algorithms.generate_assignment([x1, x2]))
         print(ass)
         self.assertEqual(len(ass), len(x1.domain) * len(x2.domain))
         self.assertIn(['a', 'a'], ass)
@@ -137,7 +138,7 @@ class GenerateAssignementTestCase(unittest.TestCase):
         x2 = Variable('x2', ['b1'])
         x3 = Variable('x3', ['c1', 'c2'])
 
-        ass = list(pydcop.algorithms.objects.generate_assignment([x1, x2, x3]))
+        ass = list(pydcop.algorithms.generate_assignment([x1, x2, x3]))
 
         self.assertEqual(len(ass), len(x1.domain) * len(x2.domain) * len(
             x3.domain))
@@ -150,7 +151,7 @@ class GenerateAssignementAsDictTestCase(unittest.TestCase):
     def test_generate_1var(self):
         x1 = Variable('x1', ['a', 'b', 'c'])
 
-        ass = list(pydcop.algorithms.objects.generate_assignment_as_dict([x1]))
+        ass = list(pydcop.algorithms.generate_assignment_as_dict([x1]))
 
         self.assertEqual(len(ass), len(x1.domain))
         self.assertIn({'x1': 'a'}, ass)
@@ -162,7 +163,7 @@ class GenerateAssignementAsDictTestCase(unittest.TestCase):
         x2 = Variable('x2', ['a', 'b', 'c'])
 
         ass = list(
-            pydcop.algorithms.objects.generate_assignment_as_dict([x1, x2]))
+            pydcop.algorithms.generate_assignment_as_dict([x1, x2]))
         print(ass)
         self.assertEqual(len(ass), len(x1.domain) * len(x2.domain))
         self.assertIn({'x1':'a', 'x2':'a'}, ass)
@@ -180,7 +181,7 @@ class FindArgOptimalTestCase(unittest.TestCase):
                                                                      np.int8))
 
         # take the projection of u1 along x1
-        m, c = pydcop.algorithms.objects.find_arg_optimal(x1, u1, mode='max')
+        m, c = pydcop.algorithms.find_arg_optimal(x1, u1, mode='max')
 
         self.assertEqual(len(m), 1)
         self.assertEqual(m[0], 'c')
@@ -194,7 +195,7 @@ class FindArgOptimalTestCase(unittest.TestCase):
                                                                      np.int8))
 
         # take the projection of u1 along x1
-        m, c= pydcop.algorithms.objects.find_arg_optimal(x1, u1, mode='min')
+        m, c= pydcop.algorithms.find_arg_optimal(x1, u1, mode='min')
 
         self.assertEqual(len(m), 1)
         self.assertEqual(m[0], 'a')
@@ -205,7 +206,7 @@ class FindArgOptimalTestCase(unittest.TestCase):
         v1 = Variable('v1', list(range(10)))
         f1 = UnaryFunctionRelation('f1', v1, lambda x: abs(x-5))
 
-        m, c = pydcop.algorithms.objects.find_arg_optimal(v1, f1, mode='min')
+        m, c = pydcop.algorithms.find_arg_optimal(v1, f1, mode='min')
 
         self.assertEqual(len(m), 1)
         self.assertEqual(m[0], 5)
@@ -215,7 +216,7 @@ class FindArgOptimalTestCase(unittest.TestCase):
         v1 = Variable('v1', list(range(10)))
         f1 = UnaryFunctionRelation('f1', v1, lambda x: 2 if 3 < x < 6 else 10)
 
-        values, c = pydcop.algorithms.objects.find_arg_optimal(v1, f1, mode='min')
+        values, c = pydcop.algorithms.find_arg_optimal(v1, f1, mode='min')
 
         self.assertEqual(len(values), 2)
         self.assertIn(4, values)
@@ -227,40 +228,40 @@ class FindArgOptimalTestCase(unittest.TestCase):
 
 
 def test_check_type_by_string():
-    pydcop.algorithms.objects.is_of_type_by_str(2, 'int')
-    pydcop.algorithms.objects.is_of_type_by_str(2.5, 'float')
-    pydcop.algorithms.objects.is_of_type_by_str('foo', 'str')
+    pydcop.algorithms.is_of_type_by_str(2, 'int')
+    pydcop.algorithms.is_of_type_by_str(2.5, 'float')
+    pydcop.algorithms.is_of_type_by_str('foo', 'str')
 
 
 def test_check_type_by_string_invalid_type():
-    assert not pydcop.algorithms.objects.is_of_type_by_str(2, "str")
-    assert not pydcop.algorithms.objects.is_of_type_by_str("2.5", 'float')
-    assert not pydcop.algorithms.objects.is_of_type_by_str(.25, 'int')
+    assert not pydcop.algorithms.is_of_type_by_str(2, "str")
+    assert not pydcop.algorithms.is_of_type_by_str("2.5", 'float')
+    assert not pydcop.algorithms.is_of_type_by_str(.25, 'int')
 
 
 def test_is_valid_param_value():
-    param_def = pydcop.algorithms.objects.AlgoParameterDef('p', 'str', ['a', 'b'], 'b')
+    param_def = pydcop.algorithms.AlgoParameterDef('p', 'str', ['a', 'b'], 'b')
 
-    assert 'b' == pydcop.algorithms.objects.check_param_value('b', param_def)
-    assert 'a' == pydcop.algorithms.objects.check_param_value('a', param_def)
+    assert 'b' == pydcop.algorithms.check_param_value('b', param_def)
+    assert 'a' == pydcop.algorithms.check_param_value('a', param_def)
 
     with pytest.raises(ValueError):
-        pydcop.algorithms.objects.check_param_value('invalid_value', param_def)
+        pydcop.algorithms.check_param_value('invalid_value', param_def)
 
 ################################################################################
 
 @pytest.fixture
 def algo_param_defs():
     yield [
-        pydcop.algorithms.objects.AlgoParameterDef('param1', 'str',
-                                                   ['val1', 'val2'], 'val1'),
-        pydcop.algorithms.objects.AlgoParameterDef('param2', 'int', None, None),
+        pydcop.algorithms.AlgoParameterDef('param1', 'str',
+                                           ['val1', 'val2'], 'val1'),
+        pydcop.algorithms.AlgoParameterDef('param2', 'int', None, None),
 
     ]
 
 
 def test_algo_parameters_all_defaults(algo_param_defs):
-    default_params = pydcop.algorithms.objects.prepare_algo_params({}, algo_param_defs)
+    default_params = pydcop.algorithms.prepare_algo_params({}, algo_param_defs)
     assert 'param1' in default_params
     assert default_params['param1'] == 'val1'
 
@@ -269,21 +270,21 @@ def test_algo_parameters_all_defaults(algo_param_defs):
 
 
 def test_algo_parameters_with_valid_str_param(algo_param_defs):
-    params = pydcop.algorithms.objects.prepare_algo_params({'param1' : 'val2'},
-                                                           algo_param_defs)
+    params = pydcop.algorithms.prepare_algo_params({'param1' : 'val2'},
+                                                   algo_param_defs)
     assert 'param1' in params
     assert params['param1'] == 'val2'
 
 def test_algo_parameters_with_valid_int_param(algo_param_defs):
 
-    params = pydcop.algorithms.objects.prepare_algo_params({'param2' : 5},
-                                                           algo_param_defs)
+    params = pydcop.algorithms.prepare_algo_params({'param2' : 5},
+                                                   algo_param_defs)
     assert 'param2' in params
     assert params['param2'] == 5
 
 
 def test_algo_parameters_with_all_params(algo_param_defs):
-    params = pydcop.algorithms.objects.prepare_algo_params(
+    params = pydcop.algorithms.prepare_algo_params(
         {'param1' : 'val2', 'param2': 10},
         algo_param_defs
     )
@@ -294,21 +295,21 @@ def test_algo_parameters_with_all_params(algo_param_defs):
 
 
 def test_algo_parameters_with_int_conversion(algo_param_defs):
-    params = pydcop.algorithms.objects.prepare_algo_params({'param2': '10'}, algo_param_defs)
+    params = pydcop.algorithms.prepare_algo_params({'param2': '10'}, algo_param_defs)
 
     assert params['param2'] == 10
 
 
 def test_algo_parameters_with_invalid_param(algo_param_defs):
     with pytest.raises(ValueError):
-        pydcop.algorithms.objects.prepare_algo_params({'invalid_param' : 'foo'},
-                                                      algo_param_defs)
+        pydcop.algorithms.prepare_algo_params({'invalid_param' : 'foo'},
+                                              algo_param_defs)
 
 
 def test_algo_parameters_with_invalid_value(algo_param_defs):
     with pytest.raises(ValueError):
-        pydcop.algorithms.objects.prepare_algo_params({'break_mode' : 'invalid'},
-                                                      algo_param_defs)
+        pydcop.algorithms.prepare_algo_params({'break_mode' : 'invalid'},
+                                              algo_param_defs)
 
 
 def test_assignment_cost_empty():

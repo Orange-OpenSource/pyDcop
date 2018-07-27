@@ -33,7 +33,7 @@ import unittest
 from unittest.mock import MagicMock
 
 import numpy
-from pydcop.algorithms.objects import generate_assignment_as_dict
+from pydcop.algorithms import generate_assignment_as_dict
 
 from pydcop.algorithms.gdba import GdbaComputation
 from pydcop.dcop.objects import Variable

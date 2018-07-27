@@ -29,8 +29,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from pydcop.algorithms.objects import AlgoDef, load_algorithm_module, \
-    list_available_algorithms
+from pydcop.algorithms import AlgoDef, list_available_algorithms, \
+    load_algorithm_module
 from pydcop.utils.simple_repr import simple_repr, from_repr
 
 

@@ -211,7 +211,7 @@ from functools import partial
 from queue import Queue, Empty
 from threading import Thread
 
-from pydcop.algorithms.objects import list_available_algorithms
+from pydcop.algorithms import list_available_algorithms
 from pydcop.commands._utils import build_algo_def, _error, _load_modules
 from pydcop.dcop.yamldcop import load_dcop_from_file
 from pydcop.distribution.yamlformat import load_dist_from_file

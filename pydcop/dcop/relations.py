@@ -36,7 +36,7 @@ from copy import deepcopy
 import numpy as np
 from typing import Dict, Iterable, Any, Tuple, Callable, List, Union
 
-from pydcop.algorithms.objects import generate_assignment_as_dict, \
+from pydcop.algorithms import generate_assignment_as_dict, \
     filter_assignment_dict
 from pydcop.dcop.objects import Variable
 from pydcop.utils.simple_repr import SimpleRepr

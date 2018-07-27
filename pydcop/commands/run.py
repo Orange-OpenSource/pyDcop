@@ -174,7 +174,7 @@ from threading import Thread
 
 import sys
 
-from pydcop.algorithms.objects import list_available_algorithms
+from pydcop.algorithms import list_available_algorithms
 from pydcop.commands._utils import _error, prepare_metrics_files, \
     _load_modules, build_algo_def, collect_tread, add_csvline
 from pydcop.dcop.yamldcop import load_dcop_from_file, load_scenario_from_file

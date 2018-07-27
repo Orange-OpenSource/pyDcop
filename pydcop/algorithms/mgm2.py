@@ -47,8 +47,8 @@ import functools as fp
 from collections import defaultdict
 from typing import Iterable, Dict, Any, Tuple, List
 
-from pydcop.algorithms.objects import generate_assignment_as_dict, \
-    filter_assignment_dict, ComputationDef, AlgoParameterDef
+from pydcop.algorithms import AlgoParameterDef, ComputationDef, \
+    generate_assignment_as_dict, filter_assignment_dict
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
 
