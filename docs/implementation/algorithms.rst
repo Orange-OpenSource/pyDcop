@@ -24,7 +24,7 @@ To implement an algorithm you must:
 
 Optionally, you may also
 
-- implement some predefined utility methods and attributes
+- declare the algorithm's parameters
 - implement some other methods used for some
   distribution methods
 
@@ -45,13 +45,23 @@ to :ref:`solve<pydcop_commands_solve>` a DCOP with the following command::
   pydcop solve --algo my_algorithm [...]
 
 
+The module of your algorithm **must** also have an attribute
+named ``GRAPH_TYPE`` which contains the name of the computation graph type used.
+Available computation graph types are ``'factor_graph'``, ``'pseudo_tree'`` and
+``'constraints_hypergraph'``, other could be defined in the future.
+
+For example, in ``dsa.py``::
+
+    GRAPH_TYPE = 'constraints_hypergraph'
+
+
 Messages
 --------
 
 DCOP algorithms are *message passing* algorithms: they work by sending
-messages to each other. You must define the messages used by your algorithm.
+messages to each other. You must define the message(s) used by your algorithm.
 The easiest approach is to use the
-:py:mod:`pydcop.infrastructure.computations.message_type`
+:py:func:`.message_type`
 class factory method to define your message(s).
 
 For example, the following will define a message type ``MyMessage``, with two
@@ -67,7 +77,7 @@ You can then use ``MyMessage`` like any class::
   >>> msg.type
   'MyMessage'
 
-You can also subclass :py:mod:`pydcop.infrastructure.computations.Message`,
+You can also subclass :py:class:`pydcop.infrastructure.computations.Message`,
 which is more verbose but can be convenient if you want to use python's type
 annotations::
 
@@ -85,15 +95,15 @@ annotations::
       def bar(self) -> float:
           return self._bar
 
-In any case, you **must** use the
-:py:mod:`pydcop.utils.simple_repr.SimpleRepr` mixin
-(:py:mod:`pydcop.infrastructure.computations.Message` already extends it)
+In any case, your messages **must** use the
+:py:class:`pydcop.utils.simple_repr.SimpleRepr` mixin
+(:py:mod:`.Message` already extends it)
 for your message to be serializable.
+When subclassing :class:`.Message` or
+using :py:func:`.message_type` this is done automatically.
 This is necessary when running the agents in
 different processes, as messages will be sent over the network.
 
-
-TODO message handler
 
 Computation
 -----------
@@ -101,7 +111,7 @@ Computation
 An algorithms consists in one or several :py:class:`DcopComputation` class.
 Most algorithms have one single type of computation, which is
 responsible for selecting the value for a single variable.
-In this case you should subclass :py:class:`VariableComputation`,
+In this case you must subclass :py:class:`VariableComputation`,
 which provides some convenient methods for value selection.
 
 For more complex algorithm, you can define several computations
@@ -118,14 +128,10 @@ which notifies it when receiving a message.
 The computation then processes the message and,
 if necessary, emits new messages for other computations.
 
-For each message type, you must declare a handler method::
+For each message type, you must declare a handler method using the
+:func:`register` decorator::
 
-  def __init__(self, variable, comp_def)
-      super().__init__(variable, comp_def)
-      self._msg_handlers['my_message'] = self._on_my_message
-
-  ...
-
+  @register("my_message_type")
   def _on_my_message(self, sender_name, msg, t):
       # handle message of type 'my_message'
       # sender_name is the name of the computation that sent the message
@@ -143,14 +149,8 @@ Messages are sent by calling ``self.post_msg``::
 
   self.post_msg(target_computation_name, message_object)
 
-All computations must be subclasses of ``MessagePassingComputation``.
-Each of these classes implements the ``on_message`` method to handle
-received message. Alternatively, you may also extend the
-``AbstractMessagePassingAlgorithm`` class and register one method for
-each of the message in your constructor::
-
-    super().__init__()
-    self._msg_handlers['msg_type'] = self._on_my_msg
+You can also send a message to all neighbors by using
+``self.post_to_all_neighbors``.
 
 Selecting a value
 ^^^^^^^^^^^^^^^^^
@@ -160,35 +160,34 @@ call ``self.value_selection`` with the value and the associated local cost.
 This is allows pyDcop to monitor value selection on each agent and
 extract the final assignment::
 
-    self.value_selection(self._v.initial_value, None)
+    self.value_selection(self._v.initial_value, local_cost)
 
+The ``local_cost`` is the cost as seen from this variable.
 
 Cycles
 ^^^^^^
 
+Each your algorithm has a concept of cycle
+(i.e. it works in sycnhronized steps), you should call
+``self.new_cycle()`` when you start a new cycle.
 
 
+Terminating the algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Various
--------
+TODO
 
-* finishing a computation : using a `finished` signal
-* builder method
-* foot print
-* communication load
-
-
-Parameters
-^^^^^^^^^^
-
+Argument Parameters
+^^^^^^^^^^^^^^^^^^^
 If the algorithm supports parameters, you must give a definition of these
-parameters in your module, by defining a variable named ``algo_params``. See
-for example in mgm implementation::
+parameters in your module, by defining a variable named ``algo_params``
+that contains a list of :class:`AlgoParameterDef`.
+
+See for example in mgm implementation::
 
     algo_params = [
         AlgoParameterDef('break_mode', 'str', ['lexic', 'random'], 'lexic'),
         AlgoParameterDef('stop_cycle', 'int', None, None),
-
     ]
 
 
@@ -196,9 +195,16 @@ These definitions will be automatically used
 (with :py:func:`pydcop.algorithms.prepare_algo_params`) to check parameters
 for validity and add default values.
 
-An ``Algodef`` instance populated with the parsed parameters will be passed to
-your ``build_computation`` method, you can then use it to pass these parameters
+An ``AlgoritmDef`` instance populated with the parsed parameters will be passed to
+your ``__init__`` method, you can then use it to pass these parameters
 to the computation instance.
+
+
+Builder method
+^^^^^^^^^^^^^^
+
+TODO
+
 
 
 Distribution and deployment
@@ -207,13 +213,6 @@ Distribution and deployment
 Your module must also provide a a few predefined utility methods, used to
 build and deploy your algorithm, and may define some optional methods, used for
 deployment and distribution.
-
-The module of your algorithm **must** also have an attribute named ``GRAPH_TYPE`` which
-must contains the name of the computation graph type used. Available
-computation graph types are ``'factor_graph'``, ``'pseudo_tree'`` and
-``'constraints_hypergraph'``, other could be defined in the future::
-
-    GRAPH_TYPE = 'constraints_hypergraph'
 
 Most distribution methods require the following two methods. These methods
 are generally required for a correct distribution of the computations on
@@ -246,3 +245,12 @@ module **must** also provide a factory method to build computation object::
 
 
 
+Computations's footprint
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+TODO
+
+Communication load
+^^^^^^^^^^^^^^^^^^
+
+TODO
