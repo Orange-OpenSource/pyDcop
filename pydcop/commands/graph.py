@@ -65,6 +65,10 @@ Options
   The set of computation to distribute depends on the graph model used to
   represent the DCOP.
 
+``--display``
+  Display a graphical representation of the constraints graph using
+  networkx and matplotlib.
+
 ``<dcop-files>``
   One or several paths to the files containing the dcop. If several paths are
   given, their content is concatenated as used a the yaml definition for the
@@ -97,6 +101,7 @@ import sys
 import yaml
 
 from pydcop.dcop.yamldcop import load_dcop_from_file
+from pydcop.utils.graphs import as_networkx_graph, display_graph
 
 logger = logging.getLogger('pydcop.cli.graph')
 
@@ -114,6 +119,9 @@ def set_parser(subparsers):
 
     parser.add_argument('dcop_file', type=str, nargs='+', help="dcop file(s)")
 
+    parser.add_argument('--display', default=False, action='store_true',
+                        help='Display the constraints graph using networkx and '
+                             'matplotlib')
     parser.add_argument('-g', '--graph',
                         choices=['factor_graph', 'pseudotree',
                                  'constraints_hypergraph'],
@@ -127,9 +135,15 @@ def run_cmd(args):
     logger.info('loading dcop from {}'.format(dcop_yaml_file))
     dcop = load_dcop_from_file(dcop_yaml_file)
 
+    if args.display:
+        display_graph(dcop.variables.values(), dcop.constraints.values())
+
+
     try:
         graph_module = import_module('pydcop.computations_graph.{}'.
                                      format(args.graph))
+        logger.info('Building computation graph for dcop {}'
+                    .format(dcop.name))
         graph_stats(dcop, graph_module)
     except ImportError:
         _error('Could not find computation graph type: {}'.format(
