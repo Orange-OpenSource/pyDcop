@@ -627,7 +627,7 @@ class NAryMatrixRelation(AbstractBaseRelation, SimpleRepr):
     This class represent a n-ary relation other a set of variable xi.
 
     It is a multi dimensional matrix, with one dimension for each variable in
-    the separator of variable teh variable sending this messsage.
+    the separator of variable the variable sending this messsage.
 
     Notes
     -----
