@@ -382,17 +382,28 @@ def _yaml_agents(agents) -> str:
             agt_dict[agt.name] = { 'capacity': agt.capacity}
         else:
             agt_dict[agt.name] = {}
-        hosting_costs[agt.name] = {
-            'default': agt.default_hosting_cost,
-            'computations' : agt.hosting_costs
-        }
-        routes[agt.name] = agt.routes
-        routes['default'] = agt.default_route
+        if agt.default_hosting_cost or agt.hosting_costs:
+            hosting_costs[agt.name] = {
+                'default': agt.default_hosting_cost,
+                'computations' : agt.hosting_costs
+            }
+        if agt.routes:
+            routes[agt.name] = agt.routes
+        if agt.default_route != 1:
+            routes['default'] = agt.default_route
 
-    return yaml.dump({'agents': agt_dict,
-                      'hosting_costs': hosting_costs,
-                      'routes': routes},
-                     default_flow_style=False)
+    res = {}
+    if agt_dict:
+        res["agents"] = agt_dict
+    if routes:
+        res["routes"] = routes
+    if hosting_costs:
+        res["hosting_costs"] = hosting_costs
+
+    if res:
+        return yaml.dump(res, default_flow_style=False)
+    else:
+        return ""
 
 
 def _build_dist_hints(loaded, dcop):
