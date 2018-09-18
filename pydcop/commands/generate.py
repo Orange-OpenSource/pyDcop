@@ -37,36 +37,23 @@ pydcop generate
 
 Problem generator for benchmarks.
 
-Synopsis
---------
 ::
 
     pydcop generate [--output <file>] <problem-type> ...
 
-Description
------------
 
-The ``generate`` command is still a work in progress and and pretty unstable at the moment. 
-It currently generate problems for the following types:
+The ``generate`` command is still a work in progress,
+tt currently generate problems for the following types:
 
-* graph coloring :
+.. toctree::
+   :maxdepth: 1
+
+   generate/graphcoloring
+
+
 * mixed constraints: generate dcops with both hard and soft constraints
 * ising problem
 
-Documentation will be added once the command is more stable
-
-
-Options
--------
-
-TODO
-
-
-
-Examples
---------
-
-    pydcop generate --output dcop.yaml ising_soft --size 10 --range 10
 
 
 
@@ -98,6 +85,7 @@ import networkx as nx
 import os
 
 #from numpy.random import random
+from pydcop.commands.generators import graphcoloring
 from pydcop.commands.generators.iot import generate_iot
 from pydcop.commands.generators.secp import generate_secp, parser_secp
 from pydcop.commands.generators.smallworld import generate_small_world
@@ -133,7 +121,8 @@ def set_parser(main_subparsers):
                                                    'want to generate')
     # parser.set_defaults(func=run_cmd)
 
-    parser_graph_coloring(subparsers)
+    graphcoloring.init_cli_parser(subparsers)
+    # parser_graph_coloring(subparsers)
 
     parser_mixed_problem(subparsers)
 
@@ -249,7 +238,7 @@ def parser_graph_coloring(subparsers):
                              'have several disconnected subgraphs, '
                              'by default we generate problem with a single '
                              'connected graph')
-    # TODO : intensional vs extensive form
+    # TODO : intentionnal vs extensive form
     parser.add_argument('-e', '--extensive', action='store_true',
                         help='generate the problem in extensive form (default '
                              'is intentional form) : NOT IMPLEMENTED YET')

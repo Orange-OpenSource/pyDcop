@@ -19,6 +19,7 @@ pyDCOP v0.1.2 [Unreleased]
 - Clean shutdown mechanism for orchestrator, agents, and messaging   
 - support for periodic action at computation level.
 - new @register decorator to register message handlers in computation classes.
+- generator for graph coloring problem
 
 ### Fixed
 - When stopping an agent, the ws-sever (for ui) was not closed properly.
@@ -40,6 +41,8 @@ pyDCOP v0.1.2 [Unreleased]
 - new mechanism for defining algorithms parameters   
 - several periodic action can now be defined at agent'level 
   (only one action was possible before)
+- agents, costs and routes are not serialized as empty map in yaml when they
+  are not defined
 
 pyDCOP v0.1.0 - 2018-05-04
 --------------------------
