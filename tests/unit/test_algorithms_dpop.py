@@ -342,13 +342,16 @@ class AlgoExampleTwoVarsTestcase(unittest.TestCase):
 
         self.sender0 = DummySender()
         self.sender1 = DummySender()
+        compdef = MagicMock()
+        compdef.algo.algo = 'dpop'
+        compdef.algo.mode = 'max'
         self.a0 = dpop.DpopAlgo(self.x0,
                                 parent=None, children=[self.x1.name],
                                 constraints=[],
-                                msg_sender=self.sender0, comp_def=MagicMock())
+                                msg_sender=self.sender0, comp_def=compdef)
         self.a1 = dpop.DpopAlgo(self.x1, parent=self.x0.name, children=[],
                                 constraints=[self.r0_1],
-                                msg_sender=self.sender1, comp_def=MagicMock())
+                                msg_sender=self.sender1, comp_def=compdef)
 
     def test_onstart_two_vars(self):
 
@@ -415,19 +418,23 @@ class AlgoExampleThreeVarsTestcase(unittest.TestCase):
         self.sender0 = DummySender()
         self.sender1 = DummySender()
         self.sender2 = DummySender()
+        compdef = MagicMock()
+        compdef.algo.algo = 'dpop'
+        compdef.algo.mode = 'max'
+
         self.a0 = dpop.DpopAlgo(self.x0, parent=None,
                                 children=[self.x1.name, self.x2.name],
                                 constraints=[],
                                 msg_sender=self.sender0,
-                                comp_def=MagicMock())
+                                comp_def=compdef)
         self.a1 = dpop.DpopAlgo(self.x1, parent=self.x0.name,
                                 children=[], constraints=[self.r0_1],
                                 msg_sender=self.sender1,
-                                comp_def=MagicMock())
+                                comp_def=compdef)
         self.a2 = dpop.DpopAlgo(self.x2, parent=self.x0.name,
                                 children=[], constraints=[self.r0_2],
                                 msg_sender=self.sender2,
-                                comp_def=MagicMock())
+                                comp_def=compdef)
 
     def test_on_start(self):
         # a0 is the root, must not send any message on start
