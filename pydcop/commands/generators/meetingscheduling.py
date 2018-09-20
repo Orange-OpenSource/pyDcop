@@ -41,18 +41,61 @@ Meetings scheduling benchmark problem generator
 Synopsis
 --------
 
+::
+
+  pydcop generate meetings
+          --slots_count <slots_count>
+          --events_count <events_count>
+          --resources_count <resources_count>
+          --max_resources_event <max_resources_event>
+          [--max_length_event <max_length_event>]
+          [--max_resource_value <max_resource_value>]
+
 
 Description
 -----------
 
+This commands generate a meeting scheduling problem, based on
+:cite:`maheswaran_taking_2004` with the *Private Event As Variable* (PEAV) model.
+
+Note that this command generates both a dcop and a distribution, as the PEAV model
+also specifies the list of agents (one for each resource) and where each variable
+is hosted.
+
+
 Options
 -------
 
-Examples
---------
+``--slots_count <slots_count>``
+  Total number of time slots
+
+``--events_count``
+  Number of events (aka meetings) to schedule
+
+``--resources_count <resources_count>``
+  Number of resources
+
+``--max_resources_event <max_resources_event>``
+  Maximum number of resources for each event: each event has a random
+  number of requested resources in [1, max_resources_event]
+
+``--max_length_event <max_length_event>``
+  Maximum number of time slot for an event: each event has a random
+  length in [1, max_length_event]. Optional, defaults to 1.
+
+``--max_resource_value <max_resource_value>``
+  Each resources has a random value in [1, max_resource_value] for
+  each time slot and a value for being kept free (in [1, max_resource_value])
+  at a given time slot. Optional, defaults to 10.
+
+
+Example
+-------
 
 ::
-    pydcop generate meetings --slots_count 5 --events_count 4 --resources_count 3 --max_resources_event 2
+
+    pydcop generate meetings --slots_count 5 \\
+        --events_count 4 --resources_count 3 --max_resources_event 2
 
 """
 import random
@@ -84,7 +127,7 @@ def init_cli_parser(parent_parser):
         help="Number of events (aka meetings) to schedule",
     )
     parser.add_argument(
-        "--resources_count", required=True, type=int, help="number of resources"
+        "--resources_count", required=True, type=int, help="Number of resources"
     )
     parser.add_argument(
         "--max_resources_event",

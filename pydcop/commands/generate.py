@@ -49,7 +49,11 @@ tt currently generate problems for the following types:
    :maxdepth: 1
 
    generate/graphcoloring
+   generate/meetingscheduling
 
+
+Planned
+-------
 
 * mixed constraints: generate dcops with both hard and soft constraints
 * ising problem
