@@ -39,7 +39,7 @@ TODO
 
 
 """
-
+from random import choice
 from typing import Iterable
 
 from pydcop.infrastructure.computations import Message, VariableComputation, \
@@ -348,12 +348,19 @@ class DpopAlgo(VariableComputation):
         elif self.is_leaf:
             # we are both root and leaf : means we are a isolated variable we
             #  can select our own value alone:
-            for r in self._constraints:
-                self._joined_utils = join_utils(self._joined_utils, r)
+            if self._constraints:
+                for r in self._constraints:
+                    self._joined_utils = join_utils(self._joined_utils, r)
 
-            values, current_cost = find_arg_optimal(
-                self._variable, self._joined_utils, self._mode)
-            self.select_value_and_finish(values[0], float(current_cost))
+                values, current_cost = find_arg_optimal(
+                    self._variable, self._joined_utils, self._mode)
+
+                self.select_value_and_finish(values[0], float(current_cost))
+            else:
+                # If the variable is not constrained, we can simply take a value at
+                # random:
+                value = choice(self._variable.domain)
+                self.select_value_and_finish(value, 0.0)
 
     def stop_condition(self):
         # dpop stop condition is easy at it only selects one single value !
