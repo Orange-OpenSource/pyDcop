@@ -69,7 +69,7 @@ def build_computation(comp_def: ComputationDef):
 
     computation = DpopAlgo(comp_def.node.variable, parent,
                            children, constraints,
-                           mode='min', comp_def=comp_def)
+                           comp_def=comp_def)
     return computation
 
 
@@ -196,7 +196,7 @@ def projection(a_rel, a_var, mode='max'):
 def _add_var_to_assignment(partial_assignt, ass_vars, new_var, new_value):
     """
     Add a value for a variable in an assignment.
-    The given partial assignment is not modified and a new assignement is
+    The given partial assignment is not modified and a new assignment is
     returned, augmented with the value for the new variable, in the right
     position according to `ass_vars`.
 
@@ -247,8 +247,7 @@ class DpopAlgo(VariableComputation):
     def __init__(self, variable: Variable, parent: str,
                  children: Iterable[str],
                  constraints: Iterable[RelationProtocol],
-                 msg_sender=None, mode='max',
-                 comp_def=None):
+                 msg_sender=None, comp_def=None):
         """
 
         In DPOP,
@@ -284,8 +283,10 @@ class DpopAlgo(VariableComputation):
         """
         super().__init__(variable, comp_def)
 
+        assert comp_def.algo.algo == 'dpop'
+
         self._msg_sender = msg_sender
-        self._mode = mode
+        self._mode = comp_def.algo.mode
         self._parent = parent
         self._children = children
         self._constraints = constraints
@@ -335,10 +336,10 @@ class DpopAlgo(VariableComputation):
             # our util and send it to our parent.
             # Note: as a leaf, our separator is the union of our parents and
             # pseudo-parents
-            self.logger.info('Leaf %s prepares init message %s -> %s  ',
-                             self._variable.name, self._variable.name,
-                             self._parent)
             util = self._compute_utils_msg()
+            self.logger.info('Leaf %s init message %s -> %s  : %s',
+                             self._variable.name, self._variable.name,
+                             self._parent, util)
             msg = DpopMessage('UTIL', util)
             self.post_msg(self._parent, msg)
             msg_count += 1
