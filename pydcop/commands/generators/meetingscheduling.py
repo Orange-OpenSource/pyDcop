@@ -398,6 +398,7 @@ def peav_intra_extensive_constraints(
         for t in variable.domain:
             value = resource_value_for_event(resource, event, t)
             constraint = constraint.set_value_for_assignment({variable.name: t}, value)
+            constraints[constraint.name] = constraint
 
     return constraints
 
