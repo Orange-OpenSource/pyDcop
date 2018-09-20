@@ -85,7 +85,7 @@ import networkx as nx
 import os
 
 #from numpy.random import random
-from pydcop.commands.generators import graphcoloring
+from pydcop.commands.generators import graphcoloring, meetingscheduling
 from pydcop.commands.generators.iot import generate_iot
 from pydcop.commands.generators.secp import generate_secp, parser_secp
 from pydcop.commands.generators.smallworld import generate_small_world
@@ -123,6 +123,8 @@ def set_parser(main_subparsers):
 
     graphcoloring.init_cli_parser(subparsers)
     # parser_graph_coloring(subparsers)
+
+    meetingscheduling.init_cli_parser(subparsers)
 
     parser_mixed_problem(subparsers)
 
