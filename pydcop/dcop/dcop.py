@@ -59,8 +59,10 @@ class DCOP(object):
 
     def __init__(self, name: str=None,
                  objective: str='min', description: str='',
-                 domains=None, variables=None, constraints=None,
-                 agents=None):
+                 domains: Dict[str, Domain]=None,
+                 variables: Dict[str, Variable]=None,
+                 constraints: Dict[str, Constraint]=None,
+                 agents: Dict[str, AgentDef]=None):
         self.name = name
         self.description = description
         self.objective = objective

@@ -780,6 +780,9 @@ class NAryMatrixRelation(AbstractBaseRelation, SimpleRepr):
         """
         Set the value of the relation for an assignment.
 
+        WARNING: this returns a new relation with the value set for this assignment and
+        DOES NOT modify the current relation !!
+
         :param var_values: either a list or a dict.
         * If var_values is a list, it must be  an array of values
         representing a full assignment of the variables of the relation,
