@@ -21,6 +21,7 @@ pyDCOP v0.1.2 [Unreleased]
 - new @register decorator to register message handlers in computation classes.
 - generator for graph coloring problem
 - generator for meeting scheduling problems (PEAV model)
+- generator for ising problems
 
 ### Fixed
 - When stopping an agent, the ws-sever (for ui) was not closed properly.
