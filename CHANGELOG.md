@@ -20,6 +20,7 @@ pyDCOP v0.1.2 [Unreleased]
 - support for periodic action at computation level.
 - new @register decorator to register message handlers in computation classes.
 - generator for graph coloring problem
+- generator for meeting scheduling problems (PEAV model)
 
 ### Fixed
 - When stopping an agent, the ws-sever (for ui) was not closed properly.
@@ -43,6 +44,7 @@ pyDCOP v0.1.2 [Unreleased]
   (only one action was possible before)
 - agents, costs and routes are not serialized as empty map in yaml when they
   are not defined
+- pydcop now requires python >= 3.6 
 
 pyDCOP v0.1.0 - 2018-05-04
 --------------------------
