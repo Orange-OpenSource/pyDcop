@@ -89,13 +89,20 @@ Options
   at a given time slot. Optional, defaults to 10.
 
 
-Example
--------
+Examples
+--------
 
-::
+Generating a meetings scheduling problem written directly to stdout::
 
     pydcop generate meetings --slots_count 5 \\
         --events_count 4 --resources_count 3 --max_resources_event 2
+
+Generating a meetings scheduling problem written in in ``meetings.yaml``. The
+distribution is written in ``meetings_dist.yaml``::
+
+    pydcop --output meetings.yaml generate meetings \\
+        --slots_count 5 --events_count 6 --resources_count 3 \\
+        --max_resources_event 2 --max_length_event 2
 
 """
 import random
