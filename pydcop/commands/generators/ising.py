@@ -52,12 +52,14 @@ Ising benchmark problem generator
 Description
 -----------
 
-This command generate a DCOP modelling a ising problem :cite:`cerquides_improving_2018`.
+This command generates a DCOP modelling an ising problem :cite:`cerquides_improving_2018`.
 
 The Ising model is a widely used benchmark in statistical physics ; constraint graphs
 are rectangular grids where each binary variable is connected to its four closer neighbors
 (with toroidal links which connect opposite sides of the grid), and is constrained by a unary cost
-:math:`r_i`. The weight of each binary constraint
+:math:`r_i`.
+
+The weight of each binary constraint
 :math:`r_{ij}` is determined by first sampling a value
 :math:`k_{ij}` from a uniform distribution :math:`U[−\\beta,\\beta]`
 and then assigning
@@ -68,6 +70,14 @@ The weight for each unary constraint
 :math:`r_i` is determined by sampling :math:`k_i`
 from a uniform distribution :math:`U[-\\rho, \\rho]`
 and then assigning :math:`r_i (0) = k_i` and :math:`r_i(1) = −k_i`.
+
+By default, this generator produces one agent for each variable and a distribution
+file that maps each variable to one agent.
+When using a factor-graph based algorithm, you can use the ``--fg_dist`` flag in
+order to generate a distribution that maps one variable and 3 constraints to each agents.
+Each unary constraint is mapped to the agent holding the corresponding variable.
+This agent also takes responsibility for the binary constraints
+on the right and bellow this variable in the grid.
 
 Options
 -------
@@ -97,7 +107,7 @@ Examples
 
 Generate a DCOP representing a 3x4 ising problem, in extensive form::
 
-    pydcop generate ising --row_count 3 --col_count 4 --bin_range 1.6 --un_range 0.05
+    pydcop generate ising --row_count 3 --col_count 4
 
 
 Generate a DCOP representing a 3x4 ising problem, in intentional form and written to disk::
