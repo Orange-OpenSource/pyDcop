@@ -63,6 +63,8 @@ or to solve set of problems with a predefined set of algorithms and parameters.
 """
 import glob
 import logging
+from os import chdir, getcwd, makedirs
+from os.path import abspath, expanduser, dirname, basename, exists
 from subprocess import check_output, STDOUT
 from typing import Dict, Tuple, Union, List
 
@@ -93,8 +95,8 @@ def run_cmd(args):
 
     # TODO : in simulate, emit warning if some path / file overlap
     # TODO: support resuming
-    # TODO run in parallel
-    # TODO: support creating working dir
+    # TODO: output progress
+    # TODO: run in parallel
 
     with open(args.bench_file, mode="r", encoding="utf-8") as f:
         bench_def = yaml.load(f)
@@ -180,10 +182,12 @@ def run_batch(
             run_cli_command(cli_command, command_dir)
 
 
-def run_cli_command(cli_command: str, current_dir: str):
-    # TODO : add timeout  on top of the command's timeout ?
-    output = check_output(cli_command, stderr=STDOUT, shell=True)
-    return yaml.load(output.decode(encoding="utf-8"))
+def run_cli_command(cli_command: str, command_dir: str):
+
+    with cd_and_create(command_dir):
+        # TODO : add timeout  on top of the command's timeout ?
+        output = check_output(cli_command, stderr=STDOUT, shell=True)
+        return yaml.load(output.decode(encoding="utf-8"))
 
 
 def build_final_command(
@@ -329,3 +333,24 @@ def expand_variables(
         return ""
 
     raise ValueError("Invalid input for expand_variables")
+
+
+class cd_and_create:
+    """
+    cd_and_create context manager.
+
+    Creates a directory if needed and switch to it.
+    When exiting the context mlanager, the initial directory is restored.
+    """
+
+    def __init__(self, target_path):
+        self.target_path = expanduser(target_path)
+
+    def __enter__(self):
+        self.previous_path = getcwd()
+        if not exists(self.target_path):
+            makedirs(self.target_path)
+        chdir(self.target_path)
+
+    def __exit__(self, etype, value, traceback):
+        chdir(self.previous_path)
