@@ -1,0 +1,93 @@
+
+
+
+
+sets:
+ set1:
+   # 'path' should be a glob expression that will be is used to find the input files
+   # for the command:
+   # You can use '~' in this path, it will be expanded to the user's home directory.
+   path: /path/set1/*.yaml
+   # 'iterations' defines the number of time the command will be executed for each file
+   # that latch the path glob expression
+   iterations: 3
+ set2:
+   # For command that do not have an input file, like for example generate, you
+   # can simply give a number if iteration, with no path:
+   iterations: 5
+
+parallel: 2
+
+global_options:
+  # These items are used to generate the options passed at the global level and can be
+  # overwritten at the batch level.
+  timeout: 10
+  log: log.conf
+
+batches:
+
+  conf1:
+    command: solve
+    current_dir: ~/tmp/{algo}
+
+    command_options:
+      # These items are used to build the options passed at the command level.
+      #  pydcop <global_options> command <command_options>
+      # The name of the parameter must match the name of the option expected by the command.
+      # For example, "algo: dsa" will be transformed into "--algo dsa".
+      # The values can be string, numbers , list or dictionary
+      #  * strings: string can use variable expansion: for example "out_{algo}.yaml" will
+      #    be expanded to "out_dsa.yaml" if there is a parameter named 'algo'
+      #  * lists : when using a list of values, a command is be run for every possible
+      #    combination of values for all parameters (cartesian product). strings in list
+      #    are also expanded
+      #   * dict: when using a dictionary, parameters are passed to the command with a
+      #     specific syntax :for each (key, value) pair in the dict named "mydict",
+      #     an optionis generated like this: "--mydict key:value".
+      #     This is used mainly for the a "algo_parameter" options of the solve command:
+      #       "--algo_parameter variant:A"
+
+
+      # Names for variables expansion
+      #  * set: the name of the set
+      #  * file_path: the path to the file (from the set) currently processed
+      #  * dir_path: the path to the directory of the file currently processed
+      #  * file_basename: the basename of the file currently processed
+      #  * file_name: the name of the file currently processed, without the extension
+      #  * iteration : the current value of counter for iterations
+      #  * batch: name of batch currently processed
+
+      algo: dsa
+      algo_params:
+        stop_cyle: 100
+        variant: [A, B, C]
+        probability: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+      run_metrics: {set}/{problem}/variant_{algo_params[variant]}/prob_{algo_params[probability]}/run.csv
+
+    global_options:
+      # These items are used to generate the options passed at the global level and will
+      # overwrite global options set an upper level.
+      #  pydcop <global_options> command <command_options>
+      timeout: 10
+      log: log.conf
+      output: {pb_file}
+
+
+    # When you set several values for algorithm's parameters, you generally want to
+    # make sur that the output files and paths include these value to avoid
+    # overwriting output for different solve.
+    # For example here, 'dcop2.yaml'  from "set1" would end up in a directory named:
+    #     /tmp/out/set1/dcop2/dsa/variant_A/prob_0.2/
+
+    out_path: {problems_set}/{problem}/{algo}/variant_{variant}/prob_{probability}/
+
+  conf_generate:
+    command: generate ising
+    current_dir: ~/tmp/ising/row{row_count}_col{col_count}/
+
+    command_options:
+      row_count: [3, 4, 5]
+      col_count: [3, 4, 5]
+
+    global_options:
+      output: /out/ising/ising_{row_count}_{col_count}.yaml
