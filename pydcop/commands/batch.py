@@ -64,7 +64,7 @@ or to solve set of problems with a predefined set of algorithms and parameters.
 import glob
 import logging
 from os import chdir, getcwd, makedirs
-from os.path import abspath, expanduser, dirname, basename, exists
+from os.path import abspath, expanduser, dirname, basename, exists, splitext
 from subprocess import check_output, STDOUT
 from typing import Dict, Tuple, Union, List
 
@@ -131,7 +131,7 @@ def run_batches(batches_definition, simulate: bool):
                 context["file_path"] = file_path
                 context["dir_path"] = dirname(file_path)
                 context["file_basename"] = basename(file_path)
-                context["file_name"] = basename(file_path)
+                context["file_name"] = splitext(basename(file_path))[0]
 
                 logger.debug("handling file %s", file_path)
 
