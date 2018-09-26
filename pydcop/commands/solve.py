@@ -155,12 +155,14 @@ Options
     See :ref:`tutorials_analysing_results` for details.
 
 ``--run_metrics <file>``
-    File to store store metrics.
-    See :ref:`tutorials_analysing_results` for details.
+    Path to a file or file name. Run-time metrics will be written to that file
+    (csv format). If the value is a path, the directory will be created if it does
+    not exist. Otherwise the file will be created in the current directory.
 
 ``--end_metrics <file>``
-    End metrics (i.e. when the solve process stops) will be appended to this
-    file (in csv).
+    Path to a file or file name. Result's metrics will be appended to that file
+    (csv format). If the value is a path, the directory will be created if it does not
+    exist. Otherwise the file will be created in the current directory.
 
 ``--delay <delay>``
   An optional delay between message delivery, in second. This delay
@@ -269,13 +271,19 @@ def set_parser(subparsers):
 
     parser.add_argument('--run_metrics', type=str,
                         default=None,
-                        help="Use this option to regularly store the data "
-                             "in a csv file.")
+                        help="Path to a file or file name. Run-time metrics will "
+                             "be written to that file (csv format). If the value is a "
+                             "path, the directory will be created if it does not exist. "
+                             "Otherwise the file will be created in the current directory."
+                             )
 
     parser.add_argument('--end_metrics', type=str,
                         default=None,
-                        help="Use this option to append the metrics of the "
-                             "end of the run to a csv file.")
+                        help="Path to a file or file name. Result's metrics will "
+                             "be appended to that file (csv format). If the value is a "
+                             "path, the directory will be created if it does not exist. "
+                             "Otherwise the file will be created in the current directory."
+                             )
 
     parser.add_argument('--infinity', '-i', default=float('inf'),
                         type=float,
