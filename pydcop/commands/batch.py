@@ -366,6 +366,8 @@ class cd_and_create:
 
     def __enter__(self):
         self.previous_path = getcwd()
+        if not self.target_path:
+            return
         if not exists(self.target_path):
             makedirs(self.target_path)
         chdir(self.target_path)
