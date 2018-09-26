@@ -71,13 +71,15 @@ The weight for each unary constraint
 from a uniform distribution :math:`U[-\\rho, \\rho]`
 and then assigning :math:`r_i (0) = k_i` and :math:`r_i(1) = −k_i`.
 
-By default, this generator produces one agent for each variable and a distribution
-file that maps each variable to one agent.
+When using ``--var_dist``, this generator produces one agent for each variable and a
+distribution file that maps each variable to one agent.
 When using a factor-graph based algorithm, you can use the ``--fg_dist`` flag in
 order to generate a distribution that maps one variable and 3 constraints to each agents.
 Each unary constraint is mapped to the agent holding the corresponding variable.
 This agent also takes responsibility for the binary constraints
 on the right and bellow this variable in the grid.
+Both options can be used simultaneously, in which case both distributions will be
+generated.
 
 Options
 -------
@@ -101,6 +103,17 @@ Options
 ``--fg_dist``
   When using this flag, the agents and distribution are generated for factor-graph
   based algorithms where computations are needed for variables and constraints.
+  When outputting (with the ``--output`` global option) the dcop in a file
+  ``<dcop_name.yaml>``,  the distribution is automatically written to a file
+  ``<dcop_name>_fgdist.yaml``.
+
+``--var_dist``
+  When using this flag, the agents and distribution are generated for a classic
+  constraint graph where computations are needed for variables and each agent is
+   responsible one variable. When outputting (with the ``--output`` global option)
+   the dcop in a file ``<dcop_name.yaml>``,  the distribution is automatically written
+   to a file ``<dcop_name>_vardist.yaml``.
+
 
 Examples
 --------
@@ -114,7 +127,7 @@ Generate a DCOP representing a 3x4 ising problem, in intentional form and writte
 
 
     pydcop --output ising.yaml  generate ising --row_count 3 --col_count 4 \\
-             --bin_range 1.6 --un_range 0.05 --intentional --fg_dist
+             --bin_range 1.6 --un_range 0.05 --intentional --fg_dist --var_dist
 
 
 """
@@ -167,17 +180,28 @@ def init_cli_parser(parent_parser):
         "factor-graph based algorithms where computations are needed for variables "
         "and constraints.",
     )
+    parser.add_argument(
+        "--var_dist",
+        default=False,
+        required=False,
+        action="store_true",
+        help="When using this flag, the agents and distribution are generated for "
+        "a classic constraint graph where computations are needed for variables and "
+        "each agent is responsible one variable.factor-graph based algorithms where "
+        "computations are needed for variables and constraints.",
+    )
 
 
 def generate(args):
 
-    dcop, mapping = generate_ising(
+    dcop, var_mapping, fg_mapping = generate_ising(
         args.row_count,
         args.col_count,
         args.bin_range,
         args.un_range,
         not args.intentional,
         args.fg_dist,
+        args.var_dist
     )
 
     graph = "factor_graph" if args.fg_dist else "constraints_graph"
@@ -189,7 +213,6 @@ def generate(args):
             "graph": graph,
             "algo": "NA",
         },
-        "distribution": mapping,
         "cost": None,
     }
 
@@ -198,13 +221,25 @@ def generate(args):
         with open(output_file, encoding="utf-8", mode="w") as fo:
             fo.write(dcop_yaml(dcop))
         path, ext = splitext(output_file)
-        dist_output_file = f"{path}_dist{ext}"
-        with open(dist_output_file, encoding="utf-8", mode="w") as fo:
-            fo.write(yaml.dump(dist_result))
+        if args.fg_dist:
+            dist_result['distribution'] = fg_mapping
+            dist_output_file = f"{path}_fgdist{ext}"
+            with open(dist_output_file, encoding="utf-8", mode="w") as fo:
+                fo.write(yaml.dump(dist_result))
+        if args.var_dist:
+            dist_result['distribution'] = fg_mapping
+            dist_output_file = f"{path}_vardist{ext}"
+            with open(dist_output_file, encoding="utf-8", mode="w") as fo:
+                fo.write(yaml.dump(dist_result))
 
     else:
         print(dcop_yaml(dcop))
-        print(yaml.dump(dist_result))
+        if args.fg_dist:
+            dist_result['distribution'] = fg_mapping
+            print(yaml.dump(dist_result))
+        if args.var_dist:
+            dist_result['distribution'] = fg_mapping
+            print(yaml.dump(dist_result))
 
 
 def generate_ising(
@@ -214,7 +249,8 @@ def generate_ising(
     un_range: float,
     extensive: bool,
     fg_dist: bool,
-) -> Tuple[DCOP, Dict]:
+    var_dist: bool,
+) -> Tuple[DCOP, Dict, Dict]:
 
     grid_graph = nx.grid_2d_graph(row_count, col_count, periodic=True)
     domain = Domain("var_domain", "binary", [0, 1])
@@ -230,23 +266,26 @@ def generate_ising(
     constraints.update(binary_constraints)
 
     agents = {}
-    mapping = defaultdict(lambda: [])
+    fg_mapping = defaultdict(lambda: [])
+    var_mapping = defaultdict(lambda: [])
     for (row, col) in grid_graph.nodes:
         agent = AgentDef(f"a_{row}_{col}")
         agents[agent.name] = agent
         left = (row - 1) % row_count
         down = (col + 1) % col_count
 
-        mapping[agent.name].append(f"v_{row}_{col}")
+        if var_dist:
+            var_mapping[agent.name].append(f"v_{row}_{col}")
+
         if fg_dist:
-            mapping[agent.name].append(f"cu_v_{row}_{col}")
+            fg_mapping[agent.name].append(f"v_{row}_{col}")
+            fg_mapping[agent.name].append(f"cu_v_{row}_{col}")
             # Sort coordinate to make sure we build the name in the same order as when
             # creating the constraints:
             (r1, c1), (r2, c2) = sorted([(row, col), (left, col)])
-            mapping[agent.name].append(f"cb_v_{r1}_{c1}_v_{r2}_{c2}")
+            fg_mapping[agent.name].append(f"cb_v_{r1}_{c1}_v_{r2}_{c2}")
             (r1, c1), (r2, c2) = sorted([(row, col), (row, down)])
-            mapping[agent.name].append(f"cb_v_{r1}_{c1}_v_{r2}_{c2}")
-    mapping = dict(mapping)
+            fg_mapping[agent.name].append(f"cb_v_{r1}_{c1}_v_{r2}_{c2}")
 
     name = f"Ising_{row_count}_{col_count}_{bin_range}_{un_range}"
     dcop = DCOP(
@@ -257,7 +296,7 @@ def generate_ising(
         constraints=constraints,
     )
 
-    return dcop, mapping
+    return dcop, dict(var_mapping), dict(fg_mapping)
 
 
 def generate_binary_variables(grid_graph: nx.Graph, domain: Domain):
