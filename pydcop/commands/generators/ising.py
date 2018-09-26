@@ -227,7 +227,7 @@ def generate(args):
             with open(dist_output_file, encoding="utf-8", mode="w") as fo:
                 fo.write(yaml.dump(dist_result))
         if args.var_dist:
-            dist_result['distribution'] = fg_mapping
+            dist_result['distribution'] = var_mapping
             dist_output_file = f"{path}_vardist{ext}"
             with open(dist_output_file, encoding="utf-8", mode="w") as fo:
                 fo.write(yaml.dump(dist_result))
