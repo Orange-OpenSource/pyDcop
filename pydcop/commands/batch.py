@@ -93,7 +93,7 @@ def set_parser(subparsers):
 
 def run_cmd(args):
 
-    # TODO : in simulate, emit warning if some path / file overlap
+    # TODO: in simulate, emit warning if some path / file overlap
     # TODO: support resuming
     # TODO: output progress
     # TODO: run in parallel
@@ -115,15 +115,16 @@ def run_batches(batches_definition, simulate: bool):
     )
     # initiate global options
 
-    for pb_set_name in problems_sets:
-        pb_set = problems_sets[pb_set_name]
-        context["set"] = pb_set_name
+    for set_name in problems_sets:
+        pb_set = problems_sets[set_name]
+        context["set"] = set_name
+        logger.debug("Starting set %s", set_name)
 
         iterations = 1 if "iterations" not in pb_set else pb_set["iterations"]
         if "path" in pb_set:
 
-            set_path = pb_set["path"]
-            for pb_path in glob.iglob(set_path):
+            set_path_glob = abspath(expanduser(pb_set["path"]))
+
 
                 for iteration in range(iterations):
                     context["iteration"] = str(iteration)
@@ -133,7 +134,7 @@ def run_batches(batches_definition, simulate: bool):
                             batches[batch],
                             context,
                             global_options,
-                            pb_path,
+                            file_path,
                             simulate=simulate,
                         )
         else:
@@ -151,7 +152,7 @@ def run_batch(
     batch_definition: Dict,
     context: Dict[str, str],
     global_options: Dict[str, str],
-    pb_path: str = None,
+    file_path: str = None,
     simulate: bool = True,
 ):
     command = batch_definition["command"]
@@ -172,11 +173,11 @@ def run_batch(
             global_options,
             command_option_combination,
             current_dir=current_dir,
-            files=pb_path,
+            files=file_path,
         )
         if simulate:
-            if current_dir:
-                print(f"cd {current_dir}")
+            if command_dir:
+                print(f"cd {command_dir}")
             print(cli_command)
         else:
             run_cli_command(cli_command, command_dir)
@@ -221,13 +222,6 @@ def build_final_command(
         parts.append(files_option)
 
     full_command = " ".join(parts)
-
-    # pydcop --output ising.yaml  generate ising --row_count 3 --col_count 4 \\
-    #        --bin_range 1.6 --un_range 0.05 --intentional --fg_dist
-
-    # pydcop --log log.conf solve --algo mgm --algo_params stop_cycle:20 \\
-    #                          --algo_params break_mode:random  \\
-    #                          graph_coloring.yaml \\
 
     return full_command, expand_variables(current_dir, context)
 
