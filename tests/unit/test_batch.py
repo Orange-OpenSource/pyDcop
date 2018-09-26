@@ -173,6 +173,7 @@ def test_build_option_for_algo_parameters():
 
 def test_expand_variables_in_str():
     assert "abc" == expand_variables("a{v}c", {"v": "b"})
+    assert "foo" == expand_variables("{bar}", {"bar": "foo"})
 
 
 def test_expand_variables_in_str_with_subdir():
