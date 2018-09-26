@@ -369,8 +369,9 @@ def prepare_metrics_files(run, end, mode):
 
     if end is not None:
         end_metrics = end
-        if not os.path.exists(os.path.dirname(end_metrics)):
-            os.makedirs(os.path.dirname(end_metrics))
+        e_dir = os.path.dirname(end_metrics)
+        if e_dir and not os.path.exists(e_dir):
+            os.makedirs(e_dir)
         # Add column labels in file:
         if not os.path.exists(end_metrics):
             headers = ','.join(columns[mode])
