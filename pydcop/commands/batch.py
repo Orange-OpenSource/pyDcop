@@ -125,6 +125,10 @@ def run_batches(batches_definition, simulate: bool):
 
             set_path_glob = abspath(expanduser(pb_set["path"]))
 
+                context["file_path"] = file_path
+                context["dir_path"] = dirname(file_path)
+                context["file_basename"] = basename(file_path)
+                context["file_name"] = basename(file_path)
 
                 for iteration in range(iterations):
                     context["iteration"] = str(iteration)
