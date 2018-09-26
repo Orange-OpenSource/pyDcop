@@ -125,13 +125,24 @@ def run_batches(batches_definition, simulate: bool):
 
             set_path_glob = abspath(expanduser(pb_set["path"]))
 
+            logger.debug("Looking for files in %s", set_path_glob)
+
+            for file_path in glob.iglob(set_path_glob):
                 context["file_path"] = file_path
                 context["dir_path"] = dirname(file_path)
                 context["file_basename"] = basename(file_path)
                 context["file_name"] = basename(file_path)
 
+                logger.debug("handling file %s", file_path)
+
                 for iteration in range(iterations):
                     context["iteration"] = str(iteration)
+                    logger.debug(
+                        "Iteration %s for file %s of set %s",
+                        iteration,
+                        basename(file_path),
+                        set_name,
+                    )
 
                     for batch in batches:
                         run_batch(
@@ -142,10 +153,19 @@ def run_batches(batches_definition, simulate: bool):
                             simulate=simulate,
                         )
         else:
+            logger.debug(
+                "No files in set %s, running %s iterations ", set_name, iterations
+            )
+
             for iteration in range(iterations):
                 context["iteration"] = str(iteration)
 
+                logger.debug("Iteration %s of set %s", iteration, set_name)
+
                 for batch in batches:
+                    logger.debug(
+                        "Batch %s - iteration %s of set %s", batch, iteration, set_name
+                    )
                     context["batch"] = batch
                     run_batch(
                         batches[batch], context, global_options, simulate=simulate
