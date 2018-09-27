@@ -126,7 +126,9 @@ def init_cli_parser(parent_parser):
     )
     parser.set_defaults(func=generate)
 
-    parser.add_argument("--slots_count", type=int, help="Total number of time slots")
+    parser.add_argument(
+        "--slots_count", required=True, type=int, help="Total number of time slots"
+    )
     parser.add_argument(
         "--events_count",
         required=True,
@@ -218,14 +220,14 @@ def generate(args):
             fo.write(dcop_yaml(dcop))
 
         dist_result = {
-            'inputs': {
-                'dist_algo': "peav",
-                'dcop': output_file,
-                'graph': "constraints_graph",
-                'algo': "NA",
+            "inputs": {
+                "dist_algo": "peav",
+                "dcop": output_file,
+                "graph": "constraints_graph",
+                "algo": "NA",
             },
-            'distribution': distribution.mapping() ,
-            'cost': None
+            "distribution": distribution.mapping(),
+            "cost": None,
         }
         path, ext = splitext(output_file)
         dist_output_file = f"{path}_dist{ext}"
@@ -236,14 +238,14 @@ def generate(args):
         print(dcop_yaml(dcop))
 
         dist_result = {
-            'inputs': {
-                'dist_algo': "peav",
-                'dcop': "NA",
-                'graph': "constraints_graph",
-                'algo': "NA",
+            "inputs": {
+                "dist_algo": "peav",
+                "dcop": "NA",
+                "graph": "constraints_graph",
+                "algo": "NA",
             },
-            'distribution': distribution.mapping() ,
-            'cost': None
+            "distribution": distribution.mapping(),
+            "cost": None,
         }
         # FIXME proper serialization of the dsitribution:
         print(yaml.dump(dist_result))
