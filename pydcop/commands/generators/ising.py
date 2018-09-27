@@ -42,7 +42,7 @@ Ising benchmark problem generator
 
   pydcop generate ising
                 --row_count <row_count>
-                --col_count <col_count>
+                [--col_count <col_count>]
                 [--bin_range <bin_range>]
                 {--un_range <un_range>]
                 [-intentional]
@@ -85,10 +85,11 @@ Options
 -------
 
 ``--row_count <row_count>``
-  Number of rows in the grid.
+  Number of rows in the grid, must be >= 2.
 
 ``--col_count <col_count>``
-  Number of columns in the grid.
+  Number of columns in the grid, optional. If ``col_count`` is not given, the generated
+  will be a square of size ``row_count``. If given, ``col_count`` must be >= 2.
 
 ``--bin_range <bin_range>``
   :math:`\\beta` value used for binary constraints. Defaults to 1.6.
@@ -154,10 +155,13 @@ def init_cli_parser(parent_parser):
     )
     parser.set_defaults(func=generate)
 
-    parser.add_argument("--row_count", required=True, type=int, help="Number of rows")
     parser.add_argument(
-        "--col_count", required=True, type=int, help="Number of columns"
+        "--row_count", required=True, type=int, help="Number of rows in the grid"
     )
+    parser.add_argument(
+        "--col_count", required=False, type=int, help="Number of columns in the grid"
+    )
+
     parser.add_argument(
         "--bin_range", type=float, default=1.6, help="Range of binary constraints"
     )
@@ -194,14 +198,24 @@ def init_cli_parser(parent_parser):
 
 def generate(args):
 
+    # Some extra checks on cli parameters!
+    if args.row_count <= 2:
+        raise ValueError("--row_count: The size must be > 2")
+    if args.col_count:
+        if args.col_count <= 2:
+            raise ValueError("--col_count: The size must be > 2")
+        col_count = args.col_count
+    else:
+        col_count = args.row_count
+
     dcop, var_mapping, fg_mapping = generate_ising(
         args.row_count,
-        args.col_count,
+        col_count,
         args.bin_range,
         args.un_range,
         not args.intentional,
         args.fg_dist,
-        args.var_dist
+        args.var_dist,
     )
 
     graph = "factor_graph" if args.fg_dist else "constraints_graph"
@@ -222,12 +236,12 @@ def generate(args):
             fo.write(dcop_yaml(dcop))
         path, ext = splitext(output_file)
         if args.fg_dist:
-            dist_result['distribution'] = fg_mapping
+            dist_result["distribution"] = fg_mapping
             dist_output_file = f"{path}_fgdist{ext}"
             with open(dist_output_file, encoding="utf-8", mode="w") as fo:
                 fo.write(yaml.dump(dist_result))
         if args.var_dist:
-            dist_result['distribution'] = var_mapping
+            dist_result["distribution"] = var_mapping
             dist_output_file = f"{path}_vardist{ext}"
             with open(dist_output_file, encoding="utf-8", mode="w") as fo:
                 fo.write(yaml.dump(dist_result))
@@ -235,10 +249,10 @@ def generate(args):
     else:
         print(dcop_yaml(dcop))
         if args.fg_dist:
-            dist_result['distribution'] = fg_mapping
+            dist_result["distribution"] = fg_mapping
             print(yaml.dump(dist_result))
         if args.var_dist:
-            dist_result['distribution'] = fg_mapping
+            dist_result["distribution"] = fg_mapping
             print(yaml.dump(dist_result))
 
 
