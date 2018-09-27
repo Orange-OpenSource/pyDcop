@@ -329,7 +329,8 @@ batches:
                 "pydcop --output ising_4.yaml generate ising --row_count 3 --col_count 3",
                 "",
             ),
-        ]
+        ],
+        any_order=True,
     )
 
 
@@ -365,7 +366,8 @@ batches:
                 "pydcop --output ising_0_4_3.yaml generate ising --row_count 4 --col_count 3",
                 "",
             ),
-        ]
+        ],
+        any_order=True,
     )
 
 
@@ -401,7 +403,8 @@ batches:
                 "pydcop --output ising.yaml generate ising --row_count 4 --col_count 3",
                 "~/tmp/ising/row4_col3/",
             ),
-        ]
+        ],
+        any_order=True,
     )
 
 
@@ -440,5 +443,6 @@ batches:
             call(
                 "pydcop solve --algo dsa " + dir_path + "/pb2.yaml", "~/tmp/ising/dsa/"
             ),
-        ]
+        ],
+        any_order=True,
     )
