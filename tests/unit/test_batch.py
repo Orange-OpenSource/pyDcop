@@ -91,6 +91,26 @@ def test_params_configuration_list_with_single_element():
     assert confs[0]["p2"] == "2"
 
 
+def test_params_configuration_order():
+    conf1 = parameters_configuration({"b": ["1", "2"], "a": ["3", "4"]})
+    conf2 = parameters_configuration({"b": ["2", "1"], "a": ["3", "4"]})
+    conf3 = parameters_configuration({"a": ["3", "4"], "b": ["1", "2"]})
+    conf4 = parameters_configuration({"a": ["4", "3"], "b": ["1", "2"]})
+
+    assert conf1 == conf2
+    assert conf1 == conf3
+    assert conf1 == conf4
+
+
+def test_params_configuration_order_with_dict():
+    conf1 = parameters_configuration({"b": {"A": ["1", "2"]}, "a": ["3", "4"]})
+    conf2 = parameters_configuration({"a": ["3", "4"], "b": {"A": ["1", "2"]}})
+    conf3 = parameters_configuration({"a": ["4", "3"], "b": {"A": ["2", "1"]}})
+
+    assert conf1 == conf2
+    assert conf1 == conf3
+
+
 def test_regularize_parameters():
 
     params_yaml = """
@@ -310,23 +330,23 @@ batches:
     run_mock.assert_has_calls(
         [
             call(
-                "pydcop --output ising_0.yaml generate ising --row_count 3 --col_count 3",
+                "pydcop --output ising_0.yaml generate ising --col_count 3 --row_count 3",
                 "",
             ),
             call(
-                "pydcop --output ising_1.yaml generate ising --row_count 3 --col_count 3",
+                "pydcop --output ising_1.yaml generate ising --col_count 3 --row_count 3",
                 "",
             ),
             call(
-                "pydcop --output ising_2.yaml generate ising --row_count 3 --col_count 3",
+                "pydcop --output ising_2.yaml generate ising --col_count 3 --row_count 3",
                 "",
             ),
             call(
-                "pydcop --output ising_3.yaml generate ising --row_count 3 --col_count 3",
+                "pydcop --output ising_3.yaml generate ising --col_count 3 --row_count 3",
                 "",
             ),
             call(
-                "pydcop --output ising_4.yaml generate ising --row_count 3 --col_count 3",
+                "pydcop --output ising_4.yaml generate ising --col_count 3 --row_count 3",
                 "",
             ),
         ],
@@ -359,11 +379,11 @@ batches:
     run_mock.assert_has_calls(
         [
             call(
-                "pydcop --output ising_0_3_3.yaml generate ising --row_count 3 --col_count 3",
+                "pydcop --output ising_0_3_3.yaml generate ising --col_count 3 --row_count 3",
                 "",
             ),
             call(
-                "pydcop --output ising_0_4_3.yaml generate ising --row_count 4 --col_count 3",
+                "pydcop --output ising_0_4_3.yaml generate ising --col_count 3 --row_count 4",
                 "",
             ),
         ],
@@ -396,11 +416,11 @@ batches:
     run_mock.assert_has_calls(
         [
             call(
-                "pydcop --output ising.yaml generate ising --row_count 3 --col_count 3",
+                "pydcop --output ising.yaml generate ising --col_count 3 --row_count 3",
                 "~/tmp/ising/row3_col3/",
             ),
             call(
-                "pydcop --output ising.yaml generate ising --row_count 4 --col_count 3",
+                "pydcop --output ising.yaml generate ising --col_count 3 --row_count 4",
                 "~/tmp/ising/row4_col3/",
             ),
         ],

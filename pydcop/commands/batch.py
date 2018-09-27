@@ -53,7 +53,12 @@ The ``batch`` command run several commands in batch.
 It can be used to generate many DCOP of a given kind (using the pydcop generate command)
 or to solve set of problems with a predefined set of algorithms and parameters.
 
+When running a batch, each jon that ran without error is registered in a `progress`
+file. At startup, the ``batch`` command look for such a file, and skip and jobs that
+has been registered. This allow resuming an interrupted batch.
 
+If you really want to re-run a batch from scratch, you must delete the ``progress``
+file.
 
 
 
@@ -101,11 +106,20 @@ def run_cmd(args):
     with open(args.bench_file, mode="r", encoding="utf-8") as f:
         bench_def = yaml.load(f)
 
-    run_batches(bench_def, args.simulate)
+    # Search for already run jobs in a 'progress' file, if any.
+    # Any job listed in this file will not be re-executed.
+    if exists('progress'):
+        with open("progress", encoding="utf-8", mode="r") as f:
+            jobs = [job[:-1] for job in f.readlines()]
+        jobs = set(jobs)
+    else:
+        jobs = set()
+
+    run_batches(bench_def, args.simulate, jobs)
 
 
-def run_batches(batches_definition, simulate: bool):
-    context: Dict[str, str] = {}
+def run_batches(batches_definition, simulate: bool, jobs):
+    context: Dict[str, str] = {"jobs": jobs}
     problems_sets = batches_definition["sets"]
     batches = batches_definition["batches"]
     global_options = (
@@ -204,13 +218,32 @@ def run_batch(
                 print(f"cd {command_dir}")
             print(cli_command)
         else:
-            run_cli_command(cli_command, command_dir)
+            id = job_id(context, command_option_combination)
+            if id not in context["jobs"]:
+                run_cli_command(cli_command, command_dir)
+                register_job(id)
+            else:
+                logger.warning(f"Skipping already registered job {id}")
+
+
+def register_job(id):
+
+    with open("progress", encoding="utf-8", mode="a") as f:
+        f.write(id + '\n')
+
+
+def job_id(context: dict, combination: dict):
+    if "file_name" in context:
+        return f"{context['set']}_{context['file_name']}_c{ontext['iteration']}_{combination}"
+    else:
+        return f"{context['set']}__{context['iteration']}_{combination}"
 
 
 def run_cli_command(cli_command: str, command_dir: str):
 
     with cd_and_create(command_dir):
         # TODO : add timeout  on top of the command's timeout ?
+
         output = check_output(cli_command, stderr=STDOUT, shell=True)
         return yaml.load(output.decode(encoding="utf-8"))
 
@@ -302,8 +335,15 @@ def parameters_configuration(
     >>> parameters_configuration({'1': ['a', 'b'], '2': ['c']})
     [{'1': 'a', '2': 'c'}, {'1': 'b', '2': 'c'}]
     """
-
-    param_names, param_values = zip(*algo_parameters.items())
+    # We sort by parameter's name so that combinations are always produced in the same
+    # order if we run the batch several times.
+    param_names, param_values = zip(
+        *sorted(algo_parameters.items(), key=lambda x: x[0])
+    )
+    param_values = [
+        sorted(values) if isinstance(values, list) else values
+        for values in param_values
+    ]
 
     # expand sub-parameters
     param_values = [
