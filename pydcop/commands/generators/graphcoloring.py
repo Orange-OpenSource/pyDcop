@@ -266,7 +266,7 @@ def generate(args):
     variables = {}
     for i, node in enumerate(graph.nodes):
         logger.debug("node %s - %s", node, i)
-        name = "v" + str(i)
+        name = f"v{i:02d}"
         # Networkx's nodes may be index or tuple, but are guaranteed to be
         # hashable, we can use them as key in our map:
         variables[node] = Variable(name, domain)
@@ -274,7 +274,7 @@ def generate(args):
     agents = {}
     if not args.noagents:
         for i, _ in enumerate(variables):
-            agt = AgentDef(f"a{i}")
+            agt = AgentDef(f"a{i:02d}")
             agents[agt.name] = agt
 
     if args.soft:
