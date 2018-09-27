@@ -74,6 +74,8 @@ from subprocess import check_output, STDOUT
 from typing import Dict, Tuple, Union, List
 
 import itertools
+
+import tqdm
 import yaml
 
 logger = logging.getLogger("pydcop.cli.batch")
@@ -99,8 +101,6 @@ def set_parser(subparsers):
 def run_cmd(args):
 
     # TODO: in simulate, emit warning if some path / file overlap
-    # TODO: support resuming
-    # TODO: output progress
     # TODO: run in parallel
 
     with open(args.bench_file, mode="r", encoding="utf-8") as f:
@@ -108,7 +108,7 @@ def run_cmd(args):
 
     # Search for already run jobs in a 'progress' file, if any.
     # Any job listed in this file will not be re-executed.
-    if exists('progress'):
+    if exists("progress"):
         with open("progress", encoding="utf-8", mode="r") as f:
             jobs = [job[:-1] for job in f.readlines()]
         jobs = set(jobs)
@@ -116,6 +116,9 @@ def run_cmd(args):
         jobs = set()
 
     run_batches(bench_def, args.simulate, jobs)
+
+
+global pbar
 
 
 def run_batches(batches_definition, simulate: bool, jobs):
@@ -127,63 +130,97 @@ def run_batches(batches_definition, simulate: bool, jobs):
         if "global_options" in batches_definition
         else {}
     )
-    # initiate global options
 
+    # Estimates the numbers of jobs:
+    # set * nb_file * iteration * combination
+
+    batch_estimates = [estimate_batch(batches[batch]) for batch in batches]
+    jobs_count = 0
     for set_name in problems_sets:
-        pb_set = problems_sets[set_name]
-        context["set"] = set_name
-        logger.debug("Starting set %s", set_name)
+        set_estimate = estimate_set(problems_sets[set_name])
+        jobs_count += sum(
+            set_estimate * batch_estimage for batch_estimage in batch_estimates
+        )
 
-        iterations = 1 if "iterations" not in pb_set else pb_set["iterations"]
-        if "path" in pb_set:
+    with tqdm.tqdm(total=jobs_count, desc="Progress") as bar:
+        global pbar
+        pbar = bar
+        for set_name in problems_sets:
+            pb_set = problems_sets[set_name]
+            context["set"] = set_name
+            logger.debug("Starting set %s", set_name)
 
-            set_path_glob = abspath(expanduser(pb_set["path"]))
+            iterations = 1 if "iterations" not in pb_set else pb_set["iterations"]
+            if "path" in pb_set:
 
-            logger.debug("Looking for files in %s", set_path_glob)
+                set_path_glob = abspath(expanduser(pb_set["path"]))
+                logger.debug("Looking for files in %s", set_path_glob)
 
-            for file_path in glob.iglob(set_path_glob):
-                context["file_path"] = file_path
-                context["dir_path"] = dirname(file_path)
-                context["file_basename"] = basename(file_path)
-                context["file_name"] = splitext(basename(file_path))[0]
+                for file_path in glob.iglob(set_path_glob):
+                    context["file_path"] = file_path
+                    context["dir_path"] = dirname(file_path)
+                    context["file_basename"] = basename(file_path)
+                    context["file_name"] = splitext(basename(file_path))[0]
 
-                logger.debug("handling file %s", file_path)
+                    logger.debug("handling file %s", file_path)
+
+                    for iteration in range(iterations):
+                        context["iteration"] = str(iteration)
+                        logger.debug(
+                            "Iteration %s for file %s of set %s",
+                            iteration,
+                            basename(file_path),
+                            set_name,
+                        )
+
+                        for batch in batches:
+                            run_batch(
+                                batches[batch],
+                                context,
+                                global_options,
+                                file_path,
+                                simulate=simulate,
+                            )
+            else:
+                logger.debug(
+                    "No files in set %s, running %s iterations ", set_name, iterations
+                )
 
                 for iteration in range(iterations):
                     context["iteration"] = str(iteration)
-                    logger.debug(
-                        "Iteration %s for file %s of set %s",
-                        iteration,
-                        basename(file_path),
-                        set_name,
-                    )
+
+                    logger.debug("Iteration %s of set %s", iteration, set_name)
 
                     for batch in batches:
-                        run_batch(
-                            batches[batch],
-                            context,
-                            global_options,
-                            file_path,
-                            simulate=simulate,
+                        logger.debug(
+                            "Batch %s - iteration %s of set %s",
+                            batch,
+                            iteration,
+                            set_name,
                         )
-        else:
-            logger.debug(
-                "No files in set %s, running %s iterations ", set_name, iterations
-            )
+                        context["batch"] = batch
+                        run_batch(
+                            batches[batch], context, global_options, simulate=simulate
+                        )
 
-            for iteration in range(iterations):
-                context["iteration"] = str(iteration)
 
-                logger.debug("Iteration %s of set %s", iteration, set_name)
+def estimate_set(set_def):
+    iterations = 1 if "iterations" not in set_def else set_def["iterations"]
 
-                for batch in batches:
-                    logger.debug(
-                        "Batch %s - iteration %s of set %s", batch, iteration, set_name
-                    )
-                    context["batch"] = batch
-                    run_batch(
-                        batches[batch], context, global_options, simulate=simulate
-                    )
+    if "path" in set_def:
+        set_path_glob = abspath(expanduser(set_def["path"]))
+        logger.debug("Looking for files in %s", set_path_glob)
+
+        file_count = len(glob.glob(set_path_glob))
+        return file_count * iterations
+    else:
+        return iterations
+
+
+def estimate_batch(batch_def):
+    command_options = batch_def["command_options"]
+    command_options = regularize_parameters(command_options)
+    return len(parameters_configuration(command_options))
 
 
 def run_batch(
@@ -213,6 +250,7 @@ def run_batch(
             current_dir=current_dir,
             files=file_path,
         )
+        pbar.update(1)
         if simulate:
             if command_dir:
                 print(f"cd {command_dir}")
@@ -229,12 +267,12 @@ def run_batch(
 def register_job(id):
 
     with open("progress", encoding="utf-8", mode="a") as f:
-        f.write(id + '\n')
+        f.write(id + "\n")
 
 
 def job_id(context: dict, combination: dict):
     if "file_name" in context:
-        return f"{context['set']}_{context['file_name']}_c{ontext['iteration']}_{combination}"
+        return f"{context['set']}_{context['file_name']}_{context['iteration']}_{combination}"
     else:
         return f"{context['set']}__{context['iteration']}_{combination}"
 
