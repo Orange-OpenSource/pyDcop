@@ -37,7 +37,8 @@ deps = [
         'networkx',
         'pyyaml',
         'requests',
-        'websocket-server'
+        'websocket-server',
+        'tqdm',
     ]
 
 # Extra dependencies, used to run tests
