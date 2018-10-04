@@ -391,8 +391,8 @@ def run_cmd(args, timer=None, timeout=None):
                           args.algo_params)
 
     # When using the (default) 'fork' start method, http servers on agent's
-    # processes do not work (why ?)
-    multiprocessing.set_start_method('spawn')
+    # processes did not work (why ?), but seems to be ok now ?!
+    # multiprocessing.set_start_method('spawn')
 
     # FIXME
     infinity = 10000
