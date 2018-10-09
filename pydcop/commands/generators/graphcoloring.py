@@ -147,6 +147,8 @@ from pydcop.dcop.yamldcop import dcop_yaml
 
 logger = logging.getLogger("pydcop.cli.generate")
 
+COLORS = ['R', 'G', 'B', 'O', 'F', 'Y', 'L', 'C']
+
 
 def init_cli_parser(parent_parser):
     parser = parent_parser.add_parser(
@@ -236,6 +238,9 @@ def generate(args):
     """
     Generate and output a graph coloring problem
     """
+    if args.colors_count > len(COLORS):
+        raise ValueError("Too many colors!")
+
     if args.graph == "random":
         if not args.p_edge:
             raise ValueError(
@@ -261,7 +266,8 @@ def generate(args):
         name = "Grid"
     else:
         raise ValueError("Invalid graph type for graphcoloring: " + args.graph)
-    domain = VariableDomain("colors", "color", range(args.colors_count))
+
+    domain = VariableDomain("colors", "color", COLORS[:args.colors_count])
 
     variables = {}
     for i, node in enumerate(graph.nodes):
