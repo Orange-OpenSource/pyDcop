@@ -495,9 +495,8 @@ class Mgm2Computation(VariableComputation):
                                  self.current_value)
             else:
                 self.value_selection(self.variable.initial_value, None)
-                self.logger.info('%s mgm starts: select initial value %s and '
-                                 'send to neighbors',
-                                 self.variable.name, self.current_value)
+                self.logger.info(f'{self.variable.name} mgm2 starts: select initial value {self.current_value} and '
+                                 f'send to neighbors ( running : {self._running}')
 
             self._send_value()
             self._enter_state('value')
@@ -545,6 +544,8 @@ class Mgm2Computation(VariableComputation):
                                                          self._partner]):
             partial_asgt.update(limited_asgt)
             cost = self._compute_cost(partial_asgt)
+            self.logger.debug(f"looking for offer : {partial_asgt} - cost {cost}"
+                              f" current {self.current_cost} {self._mode}")
 
             if (self.current_cost > cost and self._mode == 'min') or \
                     (self.current_cost < cost and self._mode == 'max'):
@@ -615,6 +616,9 @@ class Mgm2Computation(VariableComputation):
                           [n.name for n in self.neighbors_vars])
         for n in self.neighbors_vars:
             self.post_msg(n.name, msg)
+
+    def on_stop(self):
+        super().on_stop()
 
     def _send_offer(self, real_offer):
         """
