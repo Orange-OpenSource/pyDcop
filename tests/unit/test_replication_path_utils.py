@@ -31,25 +31,30 @@
 
 import pytest
 
-from pydcop.replication.path_utils import Path, path_starting_with, \
-    filter_missing_agents_paths
+from pydcop.replication.path_utils import (
+    Path,
+    path_starting_with,
+    filter_missing_agents_paths,
+    PathsTable,
+)
+from pydcop.utils.simple_repr import simple_repr, from_repr
 
 
 def test_path_creation():
 
-    assert len(Path(['a', 'b'])) == 2
-    assert len(Path(['a1'])) == 1
-    assert len(Path('a1')) == 1
-    assert len(Path('a', 'b', 'c')) == 3
-    assert len(Path('a1', 'a2', 'a3')) == 3
-    assert len(Path(['a1', 'a2'], 'a3')) == 3
+    assert len(Path(["a", "b"])) == 2
+    assert len(Path(["a1"])) == 1
+    assert len(Path("a1")) == 1
+    assert len(Path("a", "b", "c")) == 3
+    assert len(Path("a1", "a2", "a3")) == 3
+    assert len(Path(["a1", "a2"], "a3")) == 3
     assert len(Path()) == 0
 
 
 def test_path_head():
 
-    path = Path('a1', 'a2', 'a3')
-    assert 'a1' == path.head()
+    path = Path("a1", "a2", "a3")
+    assert "a1" == path.head()
 
     path = Path([])
     assert path.head() is None
@@ -57,34 +62,34 @@ def test_path_head():
 
 def test_path_iter():
 
-    path = Path('a1', 'a2', 'a3')
+    path = Path("a1", "a2", "a3")
     it = iter(path)
-    assert 'a1' == next(it)
-    assert 'a2' == next(it)
-    assert 'a3' == next(it)
+    assert "a1" == next(it)
+    assert "a2" == next(it)
+    assert "a3" == next(it)
     with pytest.raises(StopIteration):
         next(it)
 
 
 def test_path_item():
 
-    path = Path('a1', 'a2', 'a3')
-    assert 'a1' == path[0]
-    assert Path('a1', 'a2') == path[:-1]
+    path = Path("a1", "a2", "a3")
+    assert "a1" == path[0]
+    assert Path("a1", "a2") == path[:-1]
 
 
 def test_path_empty():
     path = Path()
     assert path.empty
 
-    path = Path('a1', 'a2', 'a3')
+    path = Path("a1", "a2", "a3")
     assert not path.empty
 
 
 def test_path_last():
 
-    path = Path(['a1', 'a2', 'a3'])
-    assert 'a3' == path.last()
+    path = Path(["a1", "a2", "a3"])
+    assert "a3" == path.last()
 
     path = Path([])
     assert path.last() is None
@@ -92,10 +97,10 @@ def test_path_last():
 
 def test_path_before_last():
 
-    path = Path(['a1', 'a2', 'a3'])
-    assert 'a2' == path.before_last()
+    path = Path(["a1", "a2", "a3"])
+    assert "a2" == path.before_last()
 
-    path = Path(['a1'])
+    path = Path(["a1"])
     with pytest.raises(IndexError):
         path.before_last()
 
@@ -106,15 +111,15 @@ def test_path_before_last():
 
 def test_path_add():
 
-    p1 = Path('a1')
-    p2 = Path('a2', 'a3')
-    assert p1 + p2 == Path('a1', 'a2', 'a3')
-    assert p2 + p1 == Path('a2', 'a3', 'a1')
+    p1 = Path("a1")
+    p2 = Path("a2", "a3")
+    assert p1 + p2 == Path("a1", "a2", "a3")
+    assert p2 + p1 == Path("a2", "a3", "a1")
 
     p1 = Path()
-    p2 = Path('a2', 'a3')
-    assert p1 + p2 == Path('a2', 'a3')
-    assert p2 + p1 == Path('a2', 'a3')
+    p2 = Path("a2", "a3")
+    assert p1 + p2 == Path("a2", "a3")
+    assert p2 + p1 == Path("a2", "a3")
 
     p1 = Path([])
     p2 = Path([])
@@ -123,58 +128,134 @@ def test_path_add():
 
 
 def test_path_tail_if_start_with():
-    path = Path(('A', 'B'))
-    obtained = path.tail_if_start_with(Path('A'))
-    assert obtained == Path(('B',))
+    path = Path(("A", "B"))
+    obtained = path.tail_if_start_with(Path("A"))
+    assert obtained == Path(("B",))
 
-    obtained = path.tail_if_start_with(Path('A', 'B'))
+    obtained = path.tail_if_start_with(Path("A", "B"))
     assert obtained == Path(())
 
-    obtained = Path('A', 'B', 'C', 'D')\
-        .tail_if_start_with(Path('A', 'B'))
-    assert obtained == Path('C', 'D')
+    obtained = Path("A", "B", "C", "D").tail_if_start_with(Path("A", "B"))
+    assert obtained == Path("C", "D")
 
-    obtained = Path('A', 'B', 'C', 'D')\
-        .tail_if_start_with(Path('A', 'D'))
+    obtained = Path("A", "B", "C", "D").tail_if_start_with(Path("A", "D"))
     assert obtained is None
 
-    obtained = Path(()).tail_if_start_with(Path('A', 'B'))
+    obtained = Path(()).tail_if_start_with(Path("A", "B"))
     assert obtained is None
 
-    obtained = Path(('A', 'B', 'C', 'D'))\
-        .tail_if_start_with(Path())
-    assert obtained == Path(('A', 'B', 'C', 'D'))
+    obtained = Path(("A", "B", "C", "D")).tail_if_start_with(Path())
+    assert obtained == Path(("A", "B", "C", "D"))
 
 
 def test_paths_starting_with():
     paths_starting_a2 = path_starting_with(
-        Path('_replication_a2', ),
-        {Path('_replication_a2', '_replication_a3'): 4,
-         Path('_replication_a2', '_replication_a5', '_replication_a6'): 3,
-         Path('_replication_a3', '_replication_a4'): 1,
-         Path('_replication_a4', '_replication_a3'): 3,
-         })
+        Path("_replication_a2"),
+        PathsTable(
+            {
+                Path("_replication_a2", "_replication_a3"): 4,
+                Path("_replication_a2", "_replication_a5", "_replication_a6"): 3,
+                Path("_replication_a3", "_replication_a4"): 1,
+                Path("_replication_a4", "_replication_a3"): 3,
+            }
+        ),
+    )
 
     cost, path = paths_starting_a2[0]
     assert cost == 3
-    assert path == Path('_replication_a5', '_replication_a6')
+    assert path == Path("_replication_a5", "_replication_a6")
     paths = [path for _, path in paths_starting_a2]
-    assert Path('_replication_a3', ) in paths
-    assert Path('_replication_a5', '_replication_a6') in paths
+    assert Path("_replication_a3") in paths
+    assert Path("_replication_a5", "_replication_a6") in paths
 
 
 def test_filter_missing_agents_paths():
 
     paths = {
-        Path('_replication_a2', '_replication_a3', '__hosting__'): 4,
-        Path('_replication_a2', '_replication_a5', '_replication_a6'): 3,
-        Path('_replication_a3', '_replication_a4'): 1,
-        Path('_replication_a5', '_replication_a3'): 3,
-        Path('_replication_a1', '_replication_a4', '_replication_a2'): 3,
+        Path("_replication_a2", "_replication_a3", "__hosting__"): 4,
+        Path("_replication_a2", "_replication_a5", "_replication_a6"): 3,
+        Path("_replication_a3", "_replication_a4"): 1,
+        Path("_replication_a5", "_replication_a3"): 3,
+        Path("_replication_a1", "_replication_a4", "_replication_a2"): 3,
     }
 
-    available = {'_replication_a2', '_replication_a3',
-                 '_replication_a5', '_replication_a6'}
-    filtered = filter_missing_agents_paths(paths, available)
+    available = {
+        "_replication_a2",
+        "_replication_a3",
+        "_replication_a5",
+        "_replication_a6",
+    }
+    filtered = filter_missing_agents_paths(PathsTable(paths), available)
 
     assert len(filtered) == 3
+
+
+def test_path_serialization():
+
+    p = Path("_replication_a2", "_replication_a3", "__hosting__")
+    r = simple_repr(p)
+    print(r)
+
+    assert "__module__" in r
+    assert "__qualname__" in r
+    assert "nodes" in r
+
+
+def test_path_unserialize():
+    given = Path("_replication_a2", "_replication_a3", "__hosting__")
+    r = simple_repr(given)
+
+    obtained = from_repr(r)
+    assert given == obtained
+
+
+def test_pathtable_init():
+    p1 = Path("a2", "a3")
+    p2 = Path("a2", "a4")
+    table = PathsTable({p1: 2, p2: 3})
+
+    assert len(table) == 2
+
+
+def test_pathtable_get():
+    p1 = Path("a2", "a3")
+    table = PathsTable({p1: 2})
+    assert p1 in table
+    assert table[p1] == 2
+
+
+def test_pathtable_iter():
+    p1 = Path("a2", "a3")
+    p2 = Path("a2", "a4")
+    paths = {p1, p2}
+    table = PathsTable({p1: 2, p2: 3})
+
+    for k in table:
+        paths.remove(k)
+
+    assert len(paths) == 0
+
+
+def test_pathtable_serialize():
+    p1 = Path("a2", "a3")
+    p2 = Path("a2", "a4")
+    paths = {p1, p2}
+    table = PathsTable({p1: 2, p2: 3})
+
+    r = simple_repr(table)
+    assert r
+
+    print(r)
+
+def test_pathtable_unserialize():
+    p1 = Path("a2", "a3")
+    p2 = Path("a2", "a4")
+    paths = {p1, p2}
+    table = PathsTable({p1: 2, p2: 3})
+
+    r = simple_repr(table)
+    assert r
+
+    obtained = from_repr(r)
+    assert obtained == table
+

@@ -121,7 +121,8 @@ def run_cmd(args):
 global pbar
 
 
-def run_batches(batches_definition, simulate: bool, jobs):
+def run_batches(batches_definition, simulate: bool, jobs=None):
+    jobs = set() if not jobs else jobs
     context: Dict[str, str] = {"jobs": jobs}
     problems_sets = batches_definition["sets"]
     batches = batches_definition["batches"]
@@ -218,9 +219,14 @@ def estimate_set(set_def):
 
 
 def estimate_batch(batch_def):
-    command_options = batch_def["command_options"]
-    command_options = regularize_parameters(command_options)
-    return len(parameters_configuration(command_options))
+    command_options = (
+        batch_def["command_options"] if "command_options" in batch_def else {}
+    )
+    if command_options:
+        command_options = regularize_parameters(command_options)
+        return len(parameters_configuration(command_options))
+    else:
+        return 1
 
 
 def run_batch(
