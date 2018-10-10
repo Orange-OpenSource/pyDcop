@@ -174,7 +174,7 @@ from time import time
 
 from pydcop.algorithms import list_available_algorithms, load_algorithm_module
 from pydcop.commands._utils import build_algo_def
-from pydcop.dcop.yamldcop import load_dcop_from_file
+from pydcop.dcop.yamldcop import load_dcop_from_file, load_scenario_from_file
 from pydcop.distribution.yamlformat import load_dist_from_file
 from pydcop.infrastructure.communication import HttpCommunicationLayer
 from pydcop.infrastructure.orchestrator import Orchestrator
@@ -247,6 +247,12 @@ def set_parser(subparsers):
                              '. If not given, no ui-server will '
                              'be started for this orchestrator.')
 
+    parser.add_argument('--ktarget', type=int, default=None,
+                        help="The target resiliency level. If not given, computations are "
+                             "not replicated and the system is not resilient.")
+
+    parser.add_argument('-s', '--scenario', required=False, default=None,
+                        help='scenario file. When using a scenario, replication is automatically activated')
 
 orchestrator = None
 start_time = 0
@@ -364,6 +370,13 @@ def run_cmd(args, timer=None, timeout=None):
     logger.info('loading dcop from {}'.format(dcop_yaml_files))
     dcop = load_dcop_from_file(dcop_yaml_files)
 
+    if args.scenario:
+        logger.info('loading scenario from {}'.format(args.scenario))
+        scenario = load_scenario_from_file(args.scenario)
+    else:
+        logger.debug("No scenario")
+        scenario = None
+
     # Build factor-graph computation graph
     logger.info('Building computation graph for dcop {}'
                 .format(dcop_yaml_files))
@@ -404,6 +417,14 @@ def run_cmd(args, timer=None, timeout=None):
                        daemon=True)
     collect_t.start()
 
+    if args.ktarget:
+        ktarget = args.ktarget
+    else:
+        if scenario:
+            logger.debug("Scenario without k target, use 3 as default level")
+            ktarget = 3
+
+
     global orchestrator, start_time
     port = args.port if args.port else 9000
     addr = args.address if args.address else None
@@ -416,9 +437,19 @@ def run_cmd(args, timer=None, timeout=None):
 
     try:
         start_time = time()
+        logger.debug(f"Starting Orchestrator")
         orchestrator.start()
+        logger.debug(f"Deploying computations")
         orchestrator.deploy_computations()
-        orchestrator.run(timeout=timeout)
+        if scenario:
+            logger.debug(f"Starting Replication, targert {ktarget}")
+            orchestrator.start_replication(ktarget)
+            if orchestrator.wait_ready():
+
+                orchestrator.run(scenario=scenario, timeout=timeout)
+        else:
+            logger.debug("No scenario, run the problem directly")
+            orchestrator.run(timeout=timeout)
         if not timeout_stopped:
             if orchestrator.status == "TIMEOUT":
                 _results('TIMEOUT')
