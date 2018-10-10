@@ -930,10 +930,7 @@ class AgentsMgt(MessagePassingComputation):
         """
         self.logger.debug('Scenario event from : %s',  msg)
         # Pause the current dcop before injecting the event
-        for agt in self.discovery.agents():
-            self._send_mgt_msg(
-                agt, PauseMessage(
-                    self.discovery.agent_computations(agt)))
+        self._request_pause()
 
         evt = msg.content
         leaving_agents = []
@@ -1064,11 +1061,7 @@ class AgentsMgt(MessagePassingComputation):
                 self.dist_count += 1
 
                 # Resume all computation now that everything is ok
-                for agent in self.discovery.agents():
-                    self._send_mgt_msg(
-                        agent,
-                        ResumeMessage(self.discovery.agent_computations(agent)))
-                    self._agts_state[agent] = 'running'
+                self._request_resume()
 
                 # Check if all orphaned computations have been re-hosted.
                 lost_orphaned = [c for c, s in self._comps_state.items()
@@ -1077,6 +1070,23 @@ class AgentsMgt(MessagePassingComputation):
                     self.logger.error('Repair process is finished but they '
                                       'are still some orphaned computations !'
                                       ' %s', lost_orphaned)
+
+    def _request_pause(self, agents=None):
+        if agents is None:
+            agents = self.discovery.agents()
+        for agent in agents:
+            self._send_mgt_msg(
+                agent, PauseMessage(
+                    self.discovery.agent_computations(agent)))
+
+    def _request_resume(self, agents= None):
+        if agents is None:
+            agents = self.discovery.agents()
+        for agent in agents:
+            self._send_mgt_msg(
+                agent,
+                ResumeMessage(self.discovery.agent_computations(agent)))
+            self._agts_state[agent] = 'running'
 
     def _orchestrator_stop_agents(self, *_):
         """
