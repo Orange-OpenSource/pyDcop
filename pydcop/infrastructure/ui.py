@@ -246,11 +246,11 @@ class UiServer(MessagePassingComputation):
     def _cb_rem_comp(self, topic: str, comp_evt):
         agent, computation = comp_evt
         if agent == self._agent.name and \
-                self.is_local_computation(computation.name):
+                self.is_local_computation(computation):
             self.logger.debug('send remove computation event %s ', comp_evt)
             self._send_to_all_clients(
                 json.dumps({'evt': 'rem_comp',
-                            'computation': computation.name,
+                            'computation': computation,
                             }))
 
     def is_local_computation(self, computation: str):
