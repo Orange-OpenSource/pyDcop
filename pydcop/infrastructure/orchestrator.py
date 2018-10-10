@@ -956,6 +956,13 @@ class AgentsMgt(MessagePassingComputation):
             leaving_agents, self.discovery)
         orphaned = _removal_orphaned_computations(leaving_agents,
                                                   self.discovery)
+        if not orphaned:
+            # If the departed agent was not hosting any computation, simply resume the
+            # system
+            self.logger.info("No orphaned computation, resuming computations ")
+            self._request_resume()
+            return
+
         orphaned_replicas = {o: self.discovery.replica_agents(o) for o in
                              orphaned}
         self.logger.info('On removal of agents %s, orphaned computations: %s '
