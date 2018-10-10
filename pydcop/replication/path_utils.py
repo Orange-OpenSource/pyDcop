@@ -310,4 +310,4 @@ def filter_missing_agents_paths(
         if missing:
             continue
         filtered[path] = cost
-    return filtered
+    return PathsTable(filtered)
