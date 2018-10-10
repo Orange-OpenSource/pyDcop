@@ -896,13 +896,14 @@ class UCSReplication(MessagePassingComputation):
             self._replicate_on_agent_lost(agent)
 
         elif event == "agent_added":
-            self._replication_computations_cache.add(agent)
-            self.discovery.register_computation(agt_rep, agent, publish=False)
-            self.logger.info(
-                "Agent added %s , register replication " "computation %s",
-                agent,
-                agt_rep,
-            )
+            if agent != self.agt_name :
+                self._replication_computations_cache.add(agent)
+                self.discovery.register_computation(agt_rep, agent, publish=False)
+                self.logger.info(
+                    "Agent added %s , register replication " "computation %s",
+                    agent,
+                    agt_rep,
+                )
 
         else:
             self.logger.error("Unexpected agent event %s - %s ", event, agent)
