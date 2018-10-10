@@ -381,6 +381,7 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         overwrite the `on_stop` hook, which is called automatically when the
         computation stops.
         """
+        self.logger.info(f"Stopping computation {self._name}")
         self._running = False
         self.on_stop()
 
@@ -482,6 +483,8 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
             except KeyError:
                 self._msg_handlers[msg.type](sender, msg, t)
         else:
+            self.logger.debug(f"Storing message from {sender} {msg} . "
+                              f"paused {self.is_paused}, running {self._running}")
             self._paused_messages_recv.append((sender, msg, t))
 
     def post_msg(self, target: str, msg, prio: int=None, on_error=None):
