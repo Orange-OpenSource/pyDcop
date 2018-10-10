@@ -466,7 +466,7 @@ class Mgm2Computation(VariableComputation):
         return self._constraints
 
     @property
-    def neighbors(self):
+    def neighbors_vars(self):
         return list(self._neighbors)
 
     def on_start(self):
@@ -475,7 +475,7 @@ class Mgm2Computation(VariableComputation):
         variable and entering value mode.
 
         """
-        if not self.neighbors:
+        if not self.neighbors_vars:
             # If we don't have any neighbor, simply select the best value
             # for us and be done with it !
             vals, cost = self._compute_best_value()
@@ -612,8 +612,8 @@ class Mgm2Computation(VariableComputation):
 
         msg = Mgm2ValueMessage(self.current_value)
         self.logger.debug('%s sends value message %s to %s', self.name, msg,
-                          [n.name for n in self.neighbors])
-        for n in self.neighbors:
+                          [n.name for n in self.neighbors_vars])
+        for n in self.neighbors_vars:
             self.post_msg(n.name, msg)
 
     def _send_offer(self, real_offer):
@@ -638,7 +638,7 @@ class Mgm2Computation(VariableComputation):
             self.post_msg(self._partner.name, msg)
 
         # Inform other neighbors that it doesn't send offers to them
-        for n in self.neighbors:
+        for n in self.neighbors_vars:
             if n != self._partner:
                 self.post_msg(n.name, Mgm2OfferMessage(dict(), False))
             self.logger.debug('%s sends offer message %s to %s', self.name,
@@ -653,7 +653,7 @@ class Mgm2Computation(VariableComputation):
         """
         self.logger.info('%s sends gain message %s to %s', self.name,
                          self._potential_gain,
-                         [n.name for n in self.neighbors])
+                         [n.name for n in self.neighbors_vars])
         for n in self._neighbors:
                 self.post_msg(n.name, Mgm2GainMessage(self._potential_gain))
 
