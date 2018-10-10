@@ -1197,7 +1197,8 @@ class ResilientAgent(Agent):
         algo_def = AlgorithmDef.build_with_default_param(
             repair_algo.algorithm_name,
             {'stop_cycle': 10, 'threshold': 0.2},
-            repair_algo.algo_params)
+            mode='min',
+            parameters_definitions=repair_algo.algo_params)
         for (comp, agt), candidate_var in candidate_binvars.items():
             self.logger.debug('Building computation for binary variable %s ('
                               'variable %s on %s)', candidate_var, comp, agt)
