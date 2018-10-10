@@ -270,9 +270,10 @@ class OrchestrationComputation(MessagePassingComputation):
     def _on_setup_repair(self, sender: str, msg: SetupRepairMessage, t: float):
         self.logger.info('SetupRepair msg from %s : %s at %s', sender, msg, t)
         repair_computation = self.agent.setup_repair(msg.repair_info)
+        computations = [c.name for c in repair_computation.values()]
 
         self.send_to_orchestrator(
-            RepairReadyMessage(self.agent.name, repair_computation))
+            RepairReadyMessage(self.agent.name, computations))
 
     def _on_repair_run(self, sender: str, msg: RepairRunMessage, t: float):
         self.logger.info('RepairRun msg from %s : %s at %s', sender, msg, t)
