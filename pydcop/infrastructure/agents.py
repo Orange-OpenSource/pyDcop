@@ -1250,7 +1250,7 @@ class ResilientAgent(Agent):
         self.logger.info('Agent runs Repair dcop computations')
         comps = list(self._repair_computations.values())
         for c in comps:
-            c.computation.on_start()
+            c.computation.start()
             c.status = 'started'
 
     def _on_replication_done(self, replica_hosts: Dict[str, List[str]]):
