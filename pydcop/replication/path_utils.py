@@ -31,24 +31,26 @@
 
 from typing import Iterable, Optional, Dict, Tuple, List, Sized, Union
 
+from pydcop.utils.simple_repr import SimpleRepr, simple_repr, from_repr
+
 Node = str
 
 
-class Path(Sized, Iterable, object):
+class Path(Sized, Iterable, SimpleRepr, object):
     """
     Object representing an immutable path.
     """
 
-    def __init__(self, nodes: Union[str, Iterable[Node]]=None, *args) -> None:
+    def __init__(self, nodes: Union[str, Iterable[Node]] = None, *args) -> None:
         if nodes is None:
             self._path = tuple()  # type: Tuple[Node, ...]
         elif args:
             if isinstance(nodes, str):
-                self._path = tuple([nodes] + [str(a) for a in args]) \
-                    # type: Tuple[Node, ...]
+                self._path = tuple([nodes] + [str(a) for a in args])
+                # type: Tuple[Node, ...]
             else:
-                self._path = tuple(list(nodes) + [str(a) for a in args]) \
-                    # type: Tuple[Node, ...]
+                self._path = tuple(list(nodes) + [str(a) for a in args])
+                # type: Tuple[Node, ...]
         elif isinstance(nodes, str):
             self._path = (nodes,)  # type: Tuple[Node, ...]
         else:
@@ -90,8 +92,7 @@ class Path(Sized, Iterable, object):
         """
         return self._path[-2]
 
-    def tail_if_start_with(self, prefix: 'Path')  \
-            -> Optional['Path']:
+    def tail_if_start_with(self, prefix: "Path") -> Optional["Path"]:
         """
         Checks if starts with `prefix` and returns its tail in that case.
 
@@ -129,7 +130,7 @@ class Path(Sized, Iterable, object):
     def __iter__(self):
         return iter(self._path)
 
-    def __add__(self, path_extension: 'Path') -> 'Path':
+    def __add__(self, path_extension: "Path") -> "Path":
         """ returns a new path built by concatenating this path with
             path_extension"""
         return Path(self._path + path_extension._path)
@@ -146,49 +147,83 @@ class Path(Sized, Iterable, object):
         return self._path == other._path
 
     def __repr__(self):
-        return 'Path({})'.format(self._path)
+        return "Path({})".format(self._path)
 
     def __hash__(self):
         return hash(self._path)
 
+    def _simple_repr(self):
+        r = {"__module__": self.__module__, "__qualname__": self.__class__.__qualname__}
 
-PathsTable = Dict[Path, float]
+        r["nodes"] = simple_repr(self._path)
 
-# TODO : replace Pathstable with specific class
-#
-# class PathsTable_draft(object):
-#
-#     def __init__(self):
-#         self._paths = {}  # type: Dict[Path, float]
-#
-#     def filter_invalid(self, agents):
-#         self._paths = filter_missing_agents_paths()
-#         pass
-#
-#     def remove(self, path: ReplicationPath_draft) -> Boolean:
-#         try:
-#             self._paths.pop(path)
-#             return True
-#         except KeyError:
-#             return False
-#
-#     def add(self, path: ReplicationPath_draft, cost: float):
-#         pass
-#
-#     def cheapest_path_to(self, target: ReplicationComputationName) \
-#             -> Tuple(float, ReplicationPath_draft):
-#         pass
-#
-
-#
-#     def path_starting_with(self, prefix: ReplicationPath_draft,
-#                        paths: 'PathsTable_draft') -> 'PathsTable_draft':
-#         pass
+        return r
 
 
-def cheapest_path_to(target: Node,
-                     paths: PathsTable)\
-        -> Tuple[float, Path]:
+# PathsTable = Dict[Path, float]
+
+
+class PathsTable(SimpleRepr):
+    def __init__(self, table: Dict[Path, float] = None):
+        if table:
+            self.table = table
+        else:
+            self.table: Dict[Path, float] = {}
+
+    def __getitem__(self, key):
+        return self.table[key]
+
+    def __setitem__(self, key, value):
+        self.table.__setitem__(key, value)
+
+    def __contains__(self, key):
+        return key in self.table
+
+    def __len__(self):
+        return len(self.table)
+
+    def __iter__(self):
+        return iter(self.table)
+
+    def __eq__(self, other):
+        return self.table == other.table
+
+    def items(self):
+        return self.table.items()
+
+    def values(self):
+        return self.table.values()
+
+    def pop(self, key):
+        return self.table.pop(key)
+
+    def copy(self):
+        return self.table.copy()
+
+    def _simple_repr(self):
+
+        # Full name = module + qualifiedname (for inner classes)
+        r = {"__module__": self.__module__, "__qualname__": self.__class__.__qualname__}
+        content = simple_repr(list(self.table.items()))
+        r["paths"] = content
+
+        return r
+
+    @classmethod
+    def _from_repr(cls, r):
+
+        # assert r["__module__"] == self.__module__
+        # assert r['__qualname__'] == self.__class__.__qualname__
+
+        table = {}
+        for p, c in r["paths"]:
+            p = from_repr(p)
+            table[p] = c
+
+        return PathsTable(table)
+
+
+def cheapest_path_to(target: Node, paths: PathsTable) -> Tuple[float, Path]:
     """
     Search the cheapest path and its costs in `paths` that ends at `target`.
 
@@ -208,16 +243,14 @@ def cheapest_path_to(target: Node,
 
     :return:
     """
-    c = float('inf')
+    c = float("inf")
     for p in paths:
         if p.last() == target:
             return paths[p], p
     return c, Path()
 
 
-def path_starting_with(prefix: Path,
-                       paths: PathsTable) \
-        -> List[Tuple[float, Path]]:
+def path_starting_with(prefix: Path, paths: PathsTable) -> List[Tuple[float, Path]]:
     """
     Search in `paths` all of paths starting with the prefix `start_path`,
     and return them as a list (excluding the prefix) in increasing cost order.
@@ -234,24 +267,23 @@ def path_starting_with(prefix: Path,
     List[Tuple[float, Path]]
         a list of tuple (cost, path_without_prefix)
     """
-    found = filter(lambda x: x[1] is not None,
-                   ((cost, path.tail_if_start_with(prefix))
-                    for path, cost in paths.items()))
+    found = filter(
+        lambda x: x[1] is not None,
+        ((cost, path.tail_if_start_with(prefix)) for path, cost in paths.items()),
+    )
     return sorted(found, key=lambda x: x[0])
 
 
-def affordable_path_from(prefix: Path, max_path_cost: float,
-                         paths: PathsTable):
+def affordable_path_from(prefix: Path, max_path_cost: float, paths: PathsTable):
     n_paths = path_starting_with(prefix, paths)
-    return {(cost, p)
-            for cost, p in n_paths
-            if round(cost - max_path_cost, 4) <= 0.0001}
+    return {
+        (cost, p) for cost, p in n_paths if round(cost - max_path_cost, 4) <= 0.0001
+    }
 
 
 def filter_missing_agents_paths(
-        paths: PathsTable,
-        replication_computations: Iterable[Node]) \
-        -> PathsTable:
+    paths: PathsTable, replication_computations: Iterable[Node]
+) -> PathsTable:
     """
     Filters out all paths passing through a replication computation that is not
     available any more.
@@ -271,7 +303,7 @@ def filter_missing_agents_paths(
     # include the local virtual node in the list of available path : it is
     # not the name of a replication computation but be definitively want to
     # keep it as it is the only node that accepts replicas:
-    replication_computations = list(replication_computations) + ['__hosting__']
+    replication_computations = list(replication_computations) + ["__hosting__"]
     filtered = {}
     for path, cost in paths.items():
         missing = [elt for elt in path if elt not in replication_computations]
