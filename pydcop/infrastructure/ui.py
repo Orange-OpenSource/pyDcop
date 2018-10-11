@@ -216,7 +216,7 @@ class UiServer(MessagePassingComputation):
     def _cb_msg_rcv(self, topic: str, msg_event):
         computation, msg_size = msg_event
         if self.is_local_computation(computation):
-            self.logger.debug('send msg_rcv event %s ', msg_event)
+            # self.logger.debug('send msg_rcv event %s ', msg_event)
             self._send_to_all_clients(
                 json.dumps({'evt': 'msg_rcv',
                             'computation': computation,
@@ -226,7 +226,7 @@ class UiServer(MessagePassingComputation):
     def _cb_msg_snd(self, topic, msg_event):
         computation, msg_size= msg_event
         if self.is_local_computation(computation):
-            self.logger.debug('send msg_snd event %s ', msg_event)
+            # self.logger.debug('send msg_snd event %s ', msg_event)
             self._send_to_all_clients(
                 json.dumps({'evt': 'msg_snd',
                             'computation': computation,
@@ -244,6 +244,7 @@ class UiServer(MessagePassingComputation):
                             }))
 
     def _cb_rem_comp(self, topic: str, comp_evt):
+        self.logger.debug(f"remove com evt {comp_evt} on topic {topic} , agent {self._agent.name}")
         agent, computation = comp_evt
         if agent == self._agent.name:
             self.logger.debug('send remove computation event %s ', comp_evt)
