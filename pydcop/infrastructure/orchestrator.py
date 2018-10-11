@@ -333,6 +333,18 @@ class Orchestrator(object):
         return self._own_agt.is_running and not self._stopping.is_set()
 
     def _process_event(self):
+
+        # FIXME: hack too avoid overlapping events
+        states = self.mgt._agts_state.copy()
+        waited = [a for a in states
+                  if states[a] == 'repair_run']
+        if waited:
+            self.logger.warning(f"Event while agents {waited} are still processing"
+                                f" previous event, wait 20 s ")
+            self._event_timer = threading.Timer(20, self._process_event)
+            self._event_timer.start()
+            return
+
         try:
             evt = next(self._events_iterator)
         except StopIteration:
@@ -929,6 +941,7 @@ class AgentsMgt(MessagePassingComputation):
         Handler for internal message `scenario_event` from the orchestrator.
         """
         self.logger.debug('Scenario event from : %s',  msg)
+
         # Pause the current dcop before injecting the event
         self._request_pause()
 
