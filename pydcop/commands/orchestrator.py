@@ -206,8 +206,6 @@ def set_parser(subparsers):
 
     parser.add_argument('-d', '--distribution',
                         default='oneagent',
-                        choices=['oneagent', 'adhoc', 'ilp_fgdp',
-                                 'heur_comhost'],
                         help='A yaml file with the distribution or algorithm '
                              'for distributing the computation graph, if not '
                              'given the `oneagent` will be used (one '
@@ -253,6 +251,9 @@ def set_parser(subparsers):
 
     parser.add_argument('-s', '--scenario', required=False, default=None,
                         help='scenario file. When using a scenario, replication is automatically activated')
+
+
+DISTRIBUTION_METHODS = ['oneagent', 'adhoc', 'ilp_fgdp', 'heur_comhost'],
 
 orchestrator = None
 start_time = 0
@@ -360,7 +361,8 @@ def run_cmd(args, timer=None, timeout=None):
     csv_cb = prepare_metrics_files(args.run_metrics, args.end_metrics,
                                    collect_on)
 
-    if args.distribution in ['oneagent', 'adhoc', 'ilp_fgdp']:
+
+    if args.distribution in DISTRIBUTION_METHODS:
         dist_module, algo_module, graph_module = _load_modules(
             args.distribution, args.algo)
     else:
@@ -499,11 +501,12 @@ def on_timeout():
 
 def _load_modules(dist, algo):
     dist_module, algo_module, graph_module = None, None, None
-    try:
-        dist_module = import_module('pydcop.distribution.{}'.format(dist))
-        # TODO check the imported module has the right methods ?
-    except ImportError:
-        _error('Could not find distribution method {}'.format(dist))
+    if dist :
+        try:
+            dist_module = import_module('pydcop.distribution.{}'.format(dist))
+            # TODO check the imported module has the right methods ?
+        except ImportError:
+            _error('Could not find distribution method {}'.format(dist))
 
     try:
         algo_module = load_algorithm_module(algo)
