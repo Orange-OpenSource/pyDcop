@@ -31,7 +31,7 @@
 
 from collections import defaultdict
 from collections import Iterable as CollectionIterable
-from typing import Dict, Iterable, Union
+from typing import Dict, Iterable, Union, List
 
 import yaml
 
@@ -114,7 +114,7 @@ def dcop_yaml(dcop: DCOP) -> str:
     dcop_str += '\n'
     dcop_str += _yaml_constraints(dcop.constraints.values())
     dcop_str += '\n'
-    dcop_str += _yaml_agents(dcop.agents.values())
+    dcop_str += yaml_agents(dcop.agents.values())
 
     return  dcop_str
 
@@ -372,7 +372,21 @@ def _build_agents(loaded) -> Dict[str, AgentDef]:
     return agents
 
 
-def _yaml_agents(agents) -> str:
+def yaml_agents(agents: List[AgentDef]) -> str:
+    """
+    Serialize a list of agents into a json string.
+
+    Parameters
+    ----------
+    agents: list
+        a list of agents
+
+    Returns
+    -------
+    string:
+        a json string representing the list of agents
+
+    """
     agt_dict = {}
     hosting_costs = {}
     routes = {}
