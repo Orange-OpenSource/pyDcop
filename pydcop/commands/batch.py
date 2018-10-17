@@ -54,12 +54,13 @@ It can be used to generate many DCOP of a given kind (using the pydcop generate 
 or to solve set of problems with a predefined set of algorithms and parameters.
 
 When running a batch, each job that ran without error is registered in a `progress`
-file. At startup, the ``batch`` command look for such a file, and skip and jobs that
+file, named after the the batches description file.
+At startup, the ``batch`` command look for such a file, and skip and jobs that
 has been registered. This allow resuming an interrupted batch.
 
-Once the batch has run completely (not stopped and without error), the file is renamed
-to "done_<date>"  where <date> is the date and time of the end of the batch.
-If you really want to re-run an interrupted batch from scratch, you must delete the ``progress``
+Once all the batches have run completely (not stopped and without error), the file is renamed
+to "done_<batches_description_file>_<date>"  where <date> is the date and time of the end of the batch.
+If you really want to re-run an interrupted batch from scratch, you must delete the `progress`
 file.
 
 
@@ -101,6 +102,7 @@ def set_parser(subparsers):
         help="Simulate the bench by printing the commands instead of running them",
     )
 
+progress_file = None
 
 def run_cmd(args):
 
@@ -112,8 +114,12 @@ def run_cmd(args):
 
     # Search for already run jobs in a 'progress' file, if any.
     # Any job listed in this file will not be re-executed.
-    if exists("progress"):
-        with open("progress", encoding="utf-8", mode="r") as f:
+    global progress_file
+    batch_file = splitext(basename(args.bench_file))[0]
+    progress_file = f"progress_{batch_file}"
+
+    if exists(progress_file):
+        with open(progress_file, encoding="utf-8", mode="r") as f:
             jobs = [job[:-1] for job in f.readlines()]
         jobs = set(jobs)
     else:
@@ -123,7 +129,7 @@ def run_cmd(args):
 
     # As everything went well, we can rename the progress file
     now = datetime.datetime.now()
-    shutil.move("progress", f"done_{now:%Y%m%d_%H%m}")
+    shutil.move(progress_file, f"done_{batch_file}_{now:%Y%m%d_%H%m}")
 
 
 global pbar
@@ -279,8 +285,8 @@ def run_batch(
 
 
 def register_job(id):
-
-    with open("progress", encoding="utf-8", mode="a") as f:
+    global progress_file
+    with open(progress_file, encoding="utf-8", mode="a") as f:
         f.write(id + "\n")
 
 
