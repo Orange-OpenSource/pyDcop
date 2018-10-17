@@ -288,10 +288,11 @@ def run_batch(
                 logger.warning(f"Skipping already registered job {id}")
 
 
-def register_job(id):
+def register_job(jid):
     global progress_file
-    with open(progress_file, encoding="utf-8", mode="a") as f:
-        f.write(id + "\n")
+    if progress_file:
+        with open(progress_file, encoding="utf-8", mode="a") as f:
+            f.write(jid + "\n")
 
 
 def job_id(context: dict, combination: dict):
