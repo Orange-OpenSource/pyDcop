@@ -29,8 +29,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-
 .. _pydcop_commands_generate_ising:
+
 
 pydcop generate ising
 =====================
@@ -98,8 +98,8 @@ Options
   :math:`\\rho` value used for unary constraints. Defaults to 0.05.
 
 ``--intentional``
-    When using this flag, constraints are generated in the intentional form
-    (default is extensive).
+  When using this flag, constraints are generated in the intentional form
+  (default is extensive).
 
 ``--fg_dist``
   When using this flag, the agents and distribution are generated for factor-graph
@@ -111,9 +111,9 @@ Options
 ``--var_dist``
   When using this flag, the agents and distribution are generated for a classic
   constraint graph where computations are needed for variables and each agent is
-   responsible one variable. When outputting (with the ``--output`` global option)
-   the dcop in a file ``<dcop_name.yaml>``,  the distribution is automatically written
-   to a file ``<dcop_name>_vardist.yaml``.
+  responsible one variable. When outputting (with the ``--output`` global option)
+  the dcop in a file ``<dcop_name.yaml>``,  the distribution is automatically written
+  to a file ``<dcop_name>_vardist.yaml``.
 
 
 Examples
