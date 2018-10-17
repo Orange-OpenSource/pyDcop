@@ -81,6 +81,11 @@ on the right and bellow this variable in the grid.
 Both options can be used simultaneously, in which case both distributions will be
 generated.
 
+**Note:** the generated DCOP and distribution(s) are written to the standard output.
+To write them in files, 
+you can use the ``--output <file>`` :ref:`global option<usage_cli_ref_options>`.
+
+
 Options
 -------
 

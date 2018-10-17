@@ -53,7 +53,7 @@ Synopsis
                 [--noagents]
                 [--p_edge <p_edge>]
                 [--m_edge <m_edge>]
-                [dcop_file]
+
 
 Description
 -----------
@@ -77,6 +77,9 @@ Problems:
   extensively.
 
 
+**Note:** the generated DCOP is written to the standard output. To write it in a file,
+you can use the ``--output <file>`` :ref:`global option<usage_cli_ref_options>`.
+
 Options
 -------
 
@@ -98,12 +101,12 @@ Options
 
 ``--soft``
   If this flag is set, a weighted graph coloring problem is generated, otherwise
-  a classical (pseudo-) hard graph coloring problem is generated
+  a classical (pseudo-) hard graph coloring problem is generated.
 
 ``--intentional``
   If this flag is set, constraints are expressed intentionally, otherwise an
   extensive representation is used (by default). Intentional constraints can
-  only be used for standard graph coloring problems
+  only be used for standard graph coloring problems.
 
 ``--noagents``
   If this flag is set, no agent definition is generated in the dcop file,
@@ -114,13 +117,11 @@ Options
   Erdős-Rényi graph creation model.
 
 ``--m_edge <m_edge>`` / ``--m <m_edge>``
-  Only used for scale-free graph, mumber of edges to attach from a new variable
+  Only used for scale-free graph, number of edges to attach from a new variable
   in the preferential attachment Barabási–Albert graph model
 
 
-``<dcop_file>``
-  If given, the generated dcop will be written in this file, otherwise it is
-  written to the standard output.
+
 
 
 Examples

@@ -58,10 +58,14 @@ Description
 This commands generate a meeting scheduling problem, based on
 :cite:`maheswaran_taking_2004` with the *Private Event As Variable* (PEAV) model.
 
-Note that this command generates both a dcop and a distribution, as the PEAV model
+Note that this command generates both a DCOP and a distribution, as the PEAV model
 also specifies the list of agents (one for each resource) and where each variable
 is hosted.
 
+
+**Note:** the generated DCOP and distribution are both written to the standard output.
+To write in files, you can use the ``--output <file>``
+:ref:`global option<usage_cli_ref_options>`.
 
 Options
 -------
@@ -94,7 +98,7 @@ Examples
 
 Generating a meetings scheduling problem written directly to stdout::
 
-    pydcop generate meetings --slots_count 5 \\
+    pydcop generate meetings --slots_count 5 \
         --events_count 4 --resources_count 3 --max_resources_event 2
 
 Generating a meetings scheduling problem written in in ``meetings.yaml``. The
