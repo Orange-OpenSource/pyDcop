@@ -12,7 +12,44 @@ from pydcop.commands.batch import (
     build_option_for_parameters,
     expand_variables,
     build_final_command,
+    input_files_glob,
+    input_files_re,
 )
+
+
+def test_input_files_glob(tmpdir):
+    dir_path = str(tmpdir.realpath())
+
+    tmpdir.join("dcop_ising_1.yaml").write("")
+    tmpdir.join("dcop_ising_2.yaml").write("")
+    tmpdir.join("dcop_coloring_3.yaml").write("")
+
+    files = input_files_glob(f"{dir_path}/dcop_ising*.yaml")
+
+    assert f"{dir_path}/dcop_ising_1.yaml" in files
+    assert f"{dir_path}/dcop_ising_2.yaml" in files
+    assert f"{dir_path}/dcop_coloring_3.yaml" not in files
+
+
+def test_input_files_re(tmpdir):
+    dir_path = str(tmpdir.realpath())
+
+    tmpdir.join("dcop_ising_1.yaml").write("")
+    tmpdir.join("dcop_ising_1_dist.yaml").write("")
+    tmpdir.join("dcop_ising_2.yaml").write("")
+    tmpdir.join("dcop_coloring_3.yaml").write("")
+    tmpdir.join("dcop_coloring_3_dist.yaml").write("")
+
+    files, extras = input_files_re(dir_path,
+        "dcop_(?P<index>.*).yaml", ["dcop_{index}_dist.yaml"]
+    )
+
+    assert "dcop_ising_1.yaml" in files
+    assert "dcop_ising_2.yaml" not in files
+    assert "dcop_coloring_3.yaml" in files
+
+    index = files.index("dcop_ising_1.yaml")
+    assert "dcop_ising_1_dist.yaml" in extras[index]
 
 
 def test_params_configuration_one_parameter():
