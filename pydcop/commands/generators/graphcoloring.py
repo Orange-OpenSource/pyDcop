@@ -148,7 +148,7 @@ from pydcop.dcop.yamldcop import dcop_yaml
 
 logger = logging.getLogger("pydcop.cli.generate")
 
-COLORS = ['R', 'G', 'B', 'O', 'F', 'Y', 'L', 'C']
+COLORS = ["R", "G", "B", "O", "F", "Y", "L", "C"]
 
 
 def init_cli_parser(parent_parser):
@@ -268,7 +268,7 @@ def generate(args):
     else:
         raise ValueError("Invalid graph type for graphcoloring: " + args.graph)
 
-    domain = VariableDomain("colors", "color", COLORS[:args.colors_count])
+    domain = VariableDomain("colors", "color", COLORS[: args.colors_count])
 
     variables = {}
     for i, node in enumerate(graph.nodes):
@@ -308,8 +308,9 @@ def generate(args):
 
 
 def generate_random_graph(variables_count, p_edge, allow_subgraph):
-    is_connected = False
     if not allow_subgraph:
+        graph = nx.gnp_random_graph(variables_count, p_edge)
+        is_connected = nx.is_connected(graph)
         while not is_connected:
             graph = nx.gnp_random_graph(variables_count, p_edge)
             is_connected = nx.is_connected(graph)
@@ -319,8 +320,9 @@ def generate_random_graph(variables_count, p_edge, allow_subgraph):
 
 
 def generate_scalefree_graph(variables_count, m_edge, allow_subgraph):
-    is_connected = False
     if not allow_subgraph:
+        graph = nx.barabasi_albert_graph(variables_count, m_edge)
+        is_connected = nx.is_connected(graph)
         while not is_connected:
             graph = nx.barabasi_albert_graph(variables_count, m_edge)
             is_connected = nx.is_connected(graph)
