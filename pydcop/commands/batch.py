@@ -124,6 +124,9 @@ def run_cmd(args):
             jobs = [job[:-1] for job in f.readlines()]
         jobs = set(jobs)
     else:
+        with open(progress_file, encoding="utf-8", mode="a") as f:
+            now = datetime.datetime.now()
+            f.write(f"{batch_file}_{now:%Y%m%d_%H%m}\n")
         jobs = set()
 
     run_batches(bench_def, args.simulate, jobs)
