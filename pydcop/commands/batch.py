@@ -73,8 +73,9 @@ import datetime
 import glob
 import logging
 import shutil
-from os import chdir, getcwd, makedirs
-from os.path import abspath, expanduser, dirname, basename, exists, splitext
+import re
+import os
+
 from subprocess import check_output, STDOUT
 from typing import Dict, Tuple, Union, List
 
@@ -115,10 +116,10 @@ def run_cmd(args):
     # Search for already run jobs in a 'progress' file, if any.
     # Any job listed in this file will not be re-executed.
     global progress_file
-    batch_file = splitext(basename(args.bench_file))[0]
+    batch_file = os.path.splitext(os.path.basename(args.bench_file))[0]
     progress_file = f"progress_{batch_file}"
 
-    if exists(progress_file):
+    if os.path.exists(progress_file):
         with open(progress_file, encoding="utf-8", mode="r") as f:
             jobs = [job[:-1] for job in f.readlines()]
         jobs = set(jobs)
@@ -460,15 +461,15 @@ class cd_and_create:
     """
 
     def __init__(self, target_path):
-        self.target_path = expanduser(target_path)
+        self.target_path = os.path.expanduser(target_path)
 
     def __enter__(self):
-        self.previous_path = getcwd()
+        self.previous_path = os.getcwd()
         if not self.target_path:
             return
-        if not exists(self.target_path):
-            makedirs(self.target_path)
-        chdir(self.target_path)
+        if not os.path.exists(self.target_path):
+            os.makedirs(self.target_path)
+        os.chdir(self.target_path)
 
     def __exit__(self, etype, value, traceback):
-        chdir(self.previous_path)
+        os.chdir(self.previous_path)
