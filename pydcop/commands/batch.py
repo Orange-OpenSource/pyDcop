@@ -66,7 +66,8 @@ file.
 
 
 
-
+TODO: multiple files as input
+TODO: log error in file instead of just dumping a subprocess.CalledProcessError:
 
 """
 import datetime
@@ -103,7 +104,9 @@ def set_parser(subparsers):
         help="Simulate the bench by printing the commands instead of running them",
     )
 
+
 progress_file = None
+
 
 def run_cmd(args):
 
@@ -170,36 +173,37 @@ def run_batches(batches_definition, simulate: bool, jobs=None):
             logger.debug("Starting set %s", set_name)
 
             iterations = 1 if "iterations" not in pb_set else pb_set["iterations"]
-            if "path" in pb_set:
+            if "path" in pb_set and "file_re" not in pb_set:
 
-                set_path_glob = abspath(expanduser(pb_set["path"]))
-                logger.debug("Looking for files in %s", set_path_glob)
+                for file_path in input_files_glob(pb_set["path"]):
+                    run_batch_for_files(
+                        file_path,
+                        [],
+                        context,
+                        iterations,
+                        batches,
+                        global_options,
+                        simulate,
+                    )
+            elif "path" in pb_set and "file_re" in pb_set:
+                files, extras = input_files_re(
+                    pb_set["path"], pb_set["file_re"], pb_set["extras_files"]
+                )
+                for file_path, extra_files in zip(files, extras):
+                    file_path = os.path.join(pb_set["path"], file_path)
+                    extra_path = [os.path.join(pb_set["path"], e) for e in extra_files]
+                    run_batch_for_files(
+                        file_path,
+                        extra_path,
+                        context,
+                        iterations,
+                        batches,
+                        global_options,
+                        simulate,
+                    )
 
-                for file_path in glob.iglob(set_path_glob):
-                    context["file_path"] = file_path
-                    context["dir_path"] = dirname(file_path)
-                    context["file_basename"] = basename(file_path)
-                    context["file_name"] = splitext(basename(file_path))[0]
+                pass
 
-                    logger.debug("handling file %s", file_path)
-
-                    for iteration in range(iterations):
-                        context["iteration"] = str(iteration)
-                        logger.debug(
-                            "Iteration %s for file %s of set %s",
-                            iteration,
-                            basename(file_path),
-                            set_name,
-                        )
-
-                        for batch in batches:
-                            run_batch(
-                                batches[batch],
-                                context,
-                                global_options,
-                                file_path,
-                                simulate=simulate,
-                            )
             else:
                 logger.debug(
                     "No files in set %s, running %s iterations ", set_name, iterations
@@ -223,14 +227,89 @@ def run_batches(batches_definition, simulate: bool, jobs=None):
                         )
 
 
-def estimate_set(set_def):
+def input_files_glob(path_glob: str) -> List[str]:
+    """
+    Find files matching a glob expression.
+
+    Parameters
+    ----------
+    path_glob: str
+        unix style glob expression (e.g. '/home/user/foo/bar*.json')
+
+    Returns
+    -------
+
+    """
+    path_glob = os.path.abspath(os.path.expanduser(path_glob))
+    logger.debug("Looking for files in %s", path_glob)
+    return list(glob.iglob(path_glob))
+
+
+def input_files_re(
+    path: str, file_re: str, extra_paths: List[str]
+) -> Tuple[List[str], List[List[str]]]:
+    """
+
+    Parameters
+    ----------
+    path: str
+
+    file_re: str
+        regexp to find main input files
+    extra_paths: list of str
+        list of file name templates
+
+    Returns
+    -------
+    files:
+        a list of input files
+    extras:
+        a list containing one list of extra files for each input file
+    """
+    path = os.path.abspath(os.path.expanduser(path))
+
+    file_re = os.path.basename(file_re)
+
+    matches = []
+    all_files = []
+    with os.scandir(path) as it:
+        for entry in it:
+            if entry.is_file():
+                all_files.append(entry.name)
+                m = re.match(file_re, entry.name)
+                if m:
+                    logger.debug(f"found file matching re {file_re} : {entry.name}")
+                    matches.append(m)
+
+    found_files = []
+    found_extras = []
+    for m in matches:
+        groups = m.groupdict()
+        main_file = m.group()
+        extra_files = []
+        for extra in extra_paths:
+            extra = extra.format(**groups)
+            if extra not in all_files:
+                logger.debug(f"Could not find expected stra file {extra}")
+                break
+            else:
+                extra_files.append(extra)
+        else:
+            found_files.append(str(main_file))
+            found_extras.append(extra_files)
+    return found_files, found_extras
+
+
+def estimate_set(set_def: Dict) -> int:
     iterations = 1 if "iterations" not in set_def else set_def["iterations"]
 
-    if "path" in set_def:
-        set_path_glob = abspath(expanduser(set_def["path"]))
-        logger.debug("Looking for files in %s", set_path_glob)
-
-        file_count = len(glob.glob(set_path_glob))
+    if "path" in set_def and "file_re" not in set_def:
+        file_count = len(input_files_glob(set_def["path"]))
+        return file_count * iterations
+    elif "path" in set_def and "file_re" not in set_def:
+        file_count = len(
+            input_files_re(set_def["path"], set_def["file_re"], set_def["extras"])[0]
+        )
         return file_count * iterations
     else:
         return iterations
@@ -247,11 +326,38 @@ def estimate_batch(batch_def):
         return 1
 
 
+def run_batch_for_files(
+    file_path, extra, context, iterations, batches, global_options, simulate
+):
+    context["file_path"] = file_path
+    context["dir_path"] = os.path.dirname(file_path)
+    context["file_basename"] = os.path.basename(file_path)
+    context["file_name"] = os.path.splitext(os.path.basename(file_path))[0]
+
+    logger.debug("handling file %s", file_path)
+
+    files = [file_path] + extra
+
+    for iteration in range(iterations):
+        context["iteration"] = str(iteration)
+        logger.debug(
+            "Iteration %s for file %s of set %s",
+            iteration,
+            os.path.basename(file_path),
+            context["set"],
+        )
+
+        for batch in batches:
+            run_batch(
+                batches[batch], context, global_options, files, simulate=simulate
+            )
+
+
 def run_batch(
     batch_definition: Dict,
     context: Dict[str, str],
     global_options: Dict[str, str],
-    file_path: str = None,
+    files: List[str] = None,
     simulate: bool = True,
 ):
     command = batch_definition["command"]
@@ -272,7 +378,7 @@ def run_batch(
             global_options,
             command_option_combination,
             current_dir=current_dir,
-            files=file_path,
+            files=files,
         )
         pbar.update(1)
         if simulate:
@@ -280,10 +386,10 @@ def run_batch(
                 print(f"cd {command_dir}")
             print(cli_command)
         else:
-            id = job_id(context, command_option_combination)
-            if id not in context["jobs"]:
+            jid = job_id(context, command_option_combination)
+            if jid not in context["jobs"]:
                 run_cli_command(cli_command, command_dir)
-                register_job(id)
+                register_job(jid)
             else:
                 logger.warning(f"Skipping already registered job {id}")
 
@@ -317,7 +423,7 @@ def build_final_command(
     global_options: Dict[str, str],
     command_option_combination: Dict,
     current_dir: str = "",
-    files: str = None,
+    files: List[str] = None,
 ) -> Tuple[str, str]:
     context = context.copy()
     context.update(global_options)
@@ -339,7 +445,7 @@ def build_final_command(
 
     files_option = expand_variables(files, context)
     if files_option:
-        parts.append(files_option)
+        parts.extend(files_option)
 
     full_command = " ".join(parts)
 
