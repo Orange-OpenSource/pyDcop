@@ -53,11 +53,13 @@ The ``batch`` command run several commands in batch.
 It can be used to generate many DCOP of a given kind (using the pydcop generate command)
 or to solve set of problems with a predefined set of algorithms and parameters.
 
-When running a batch, each jon that ran without error is registered in a `progress`
+When running a batch, each job that ran without error is registered in a `progress`
 file. At startup, the ``batch`` command look for such a file, and skip and jobs that
 has been registered. This allow resuming an interrupted batch.
 
-If you really want to re-run a batch from scratch, you must delete the ``progress``
+Once the batch has run completely (not stopped and without error), the file is renamed
+to "done_<date>"  where <date> is the date and time of the end of the batch.
+If you really want to re-run an interrupted batch from scratch, you must delete the ``progress``
 file.
 
 
@@ -66,8 +68,10 @@ file.
 
 
 """
+import datetime
 import glob
 import logging
+import shutil
 from os import chdir, getcwd, makedirs
 from os.path import abspath, expanduser, dirname, basename, exists, splitext
 from subprocess import check_output, STDOUT
@@ -116,6 +120,10 @@ def run_cmd(args):
         jobs = set()
 
     run_batches(bench_def, args.simulate, jobs)
+
+    # As everything went well, we can rename the progress file
+    now = datetime.datetime.now()
+    shutil.move("progress", f"done_{now:%Y%m%d_%H%m}")
 
 
 global pbar
