@@ -103,7 +103,7 @@ import yaml
 from pydcop.dcop.yamldcop import load_dcop_from_file
 from pydcop.utils.graphs import as_networkx_graph, display_graph
 
-logger = logging.getLogger('pydcop.cli.graph')
+logger = logging.getLogger("pydcop.cli.graph")
 
 
 # TODO : ass more graph metrics:
@@ -111,50 +111,54 @@ logger = logging.getLogger('pydcop.cli.graph')
 # * is connected ?
 # * number of sub-graph (if not connected)
 
+
 def set_parser(subparsers):
 
-    parser = subparsers.add_parser('graph',
-                                   help='Graph metrics for dcop graphs')
+    parser = subparsers.add_parser(
+        "graph",
+        help="Graph metrics for dcop graphs. Can also be used to display a graphical "
+             "representation of the graph.",
+    )
     parser.set_defaults(func=run_cmd)
 
-    parser.add_argument('dcop_file', type=str, nargs='+', help="dcop file(s)")
+    parser.add_argument("dcop_file", type=str, nargs="+", help="dcop file(s)")
 
-    parser.add_argument('--display', default=False, action='store_true',
-                        help='Display the constraints graph using networkx and '
-                             'matplotlib')
-    parser.add_argument('-g', '--graph',
-                        choices=['factor_graph', 'pseudotree',
-                                 'constraints_hypergraph'],
-                        help='graphical model for dcop computations')
+    parser.add_argument(
+        "--display",
+        default=False,
+        action="store_true",
+        help="Display the constraints graph using networkx and " "matplotlib",
+    )
+    parser.add_argument(
+        "-g",
+        "--graph",
+        choices=["factor_graph", "pseudotree", "constraints_hypergraph"],
+        help="graphical model for dcop computations",
+    )
 
 
 def run_cmd(args):
     logger.debug('dcop command "graph" with arguments {} '.format(args))
 
     dcop_yaml_file = args.dcop_file
-    logger.info('loading dcop from {}'.format(dcop_yaml_file))
+    logger.info("loading dcop from {}".format(dcop_yaml_file))
     dcop = load_dcop_from_file(dcop_yaml_file)
 
     if args.display:
         display_graph(dcop.variables.values(), dcop.constraints.values())
 
-
     try:
-        graph_module = import_module('pydcop.computations_graph.{}'.
-                                     format(args.graph))
-        logger.info('Building computation graph for dcop {}'
-                    .format(dcop.name))
+        graph_module = import_module("pydcop.computations_graph.{}".format(args.graph))
+        logger.info("Building computation graph for dcop {}".format(dcop.name))
         graph_stats(dcop, graph_module)
     except ImportError:
-        _error('Could not find computation graph type: {}'.format(
-            args.graph))
+        _error("Could not find computation graph type: {}".format(args.graph))
 
 
 def graph_stats(dcop, graph_module):
 
     # Build factor-graph computation graph
-    logger.info('Building computation graph for dcop {}'
-                .format(dcop.name))
+    logger.info("Building computation graph for dcop {}".format(dcop.name))
     cg = graph_module.build_computation_graph(dcop)
 
     edges_count = len(list(cg.links))
@@ -172,16 +176,16 @@ def graph_stats(dcop, graph_module):
     # are not accounted for in the metrics.
 
     result = {
-        'status': 'OK',
-        'variables_count': len(dcop.variables),
-        'constraints_count': len(dcop.constraints),
-        'nodes_count': nodes_count,
-        'edges_count':  edges_count,
-        'density': density
+        "status": "OK",
+        "variables_count": len(dcop.variables),
+        "constraints_count": len(dcop.constraints),
+        "nodes_count": nodes_count,
+        "edges_count": edges_count,
+        "density": density,
     }
     print(yaml.dump(result, default_flow_style=False))
 
 
 def _error(msg):
-    print('Error: {}'.format(msg))
+    print("Error: {}".format(msg))
     sys.exit(2)
