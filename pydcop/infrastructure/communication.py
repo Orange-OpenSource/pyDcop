@@ -490,6 +490,7 @@ class Messaging(object):
         self._comm = comm
         self._comm.messaging = self
         self._delay = delay
+        self.logger = logging.getLogger(f"infrastructure.communication.{agent_name}")
 
         # Keep track of failer messages to retry later
         self._failed = []
@@ -587,7 +588,7 @@ class Messaging(object):
         try:
             dest_agent = self.discovery.computation_agent(dest_computation)
         except UnknownComputation:
-            logger.warning('Cannot send msg from %s to unknown comp %s, '
+            self.logger.warning('Cannot send msg from %s to unknown comp %s, '
                            'will retry  later : %s', src_computation,
                            dest_computation, msg)
             self.discovery.subscribe_computation(
@@ -600,7 +601,7 @@ class Messaging(object):
         full_msg = ComputationMessage(src_computation, dest_computation,
                                       msg, msg_type)
         if dest_agent == self._local_agent:
-            logger.debug('Posting local message {} -> {} : "{!r}"'
+            self.logger.debug('Posting local message {} -> {} : "{!r}"'
                          .format(src_computation, dest_computation, str(msg)))
             if msg_type != MSG_MGT:
                 self.last_msg_time = perf_counter()
@@ -614,7 +615,7 @@ class Messaging(object):
             self._queue.put((msg_type, self.msg_queue_count,
                              perf_counter(), full_msg))
         else:
-            logger.debug('Posting remote message {} -> {} : "{!r}"'
+            self.logger.debug('Posting remote message {} -> {} : "{!r}"'
                          .format(src_computation, dest_computation, str(msg)))
             # If the destination is on another agent, it means that the
             # message source must be one of our local computation and we
@@ -622,7 +623,7 @@ class Messaging(object):
             try:
                 self.discovery.computation_agent(src_computation)
             except:
-                logger.error('Could not find src computation %s when posting '
+                self.logger.error('Could not find src computation %s when posting '
                              'msg %s to %s (dest agt %s, local_agt %s)',
                              src_computation, msg,
                              dest_computation, dest_agent, self._local_agent)
@@ -659,7 +660,7 @@ class Messaging(object):
                 src, dest, msg, msg_type, on_error = failed
                 if dest != computation:
                     continue
-                logger.info('Retrying failed message to %s on %s : %s',
+                self.logger.info('Retrying failed message to %s on %s : %s',
                             dest, agent, msg)
                 self.post_msg(src, dest, msg, msg_type, on_error)
                 self._failed.remove(failed)
