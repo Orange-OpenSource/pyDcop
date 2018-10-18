@@ -180,16 +180,24 @@ def run_batches(batches_definition, simulate: bool, jobs=None):
                         simulate,
                     )
             elif "path" in pb_set and "file_re" in pb_set:
-                files, extras = input_files_re(
-                    pb_set["path"], pb_set["file_re"], pb_set["extras_files"]
+                extras_files = (
+                    pb_set["extras_files"] if "extras_files" is pb_set else []
                 )
-                for file_path, extra_files in zip(files, extras):
+                files, extras, match_contexts = input_files_re(
+                    pb_set["path"], pb_set["file_re"], extras_files
+                )
+                for file_path, extra_files, match_context in zip(
+                    files, extras, match_contexts
+                ):
+
+                    file_context = context.copy()
+                    file_context.update(match_context)
                     file_path = os.path.join(pb_set["path"], file_path)
                     extra_path = [os.path.join(pb_set["path"], e) for e in extra_files]
                     run_batch_for_files(
                         file_path,
                         extra_path,
-                        context,
+                        file_context,
                         iterations,
                         batches,
                         global_options,
@@ -238,7 +246,7 @@ def input_files_glob(path_glob: str) -> List[str]:
 
 def input_files_re(
     path: str, file_re: str, extra_paths: List[str]
-) -> Tuple[List[str], List[List[str]]]:
+) -> Tuple[List[str], List[List[str]], List[Dict]]:
     """
 
     Parameters
@@ -256,6 +264,8 @@ def input_files_re(
         a list of input files
     extras:
         a list containing one list of extra files for each input file
+    match_contexts:
+        dictionary of match groups
     """
     path = os.path.abspath(os.path.expanduser(path))
 
@@ -274,6 +284,7 @@ def input_files_re(
 
     found_files = []
     found_extras = []
+    match_contexts = []
     for m in matches:
         groups = m.groupdict()
         main_file = m.group()
@@ -288,7 +299,8 @@ def input_files_re(
         else:
             found_files.append(str(main_file))
             found_extras.append(extra_files)
-    return found_files, found_extras
+            match_contexts.append(groups)
+    return found_files, found_extras, match_contexts
 
 
 def estimate_set(set_def: Dict) -> int:
@@ -299,10 +311,10 @@ def estimate_set(set_def: Dict) -> int:
         logger.debug(f"Found {file_count} input to handle")
         return file_count * iterations
     elif "path" in set_def and "file_re" in set_def:
+        extras_files = set_def["extras_files"] if "extras_files" is set_def else []
+
         file_count = len(
-            input_files_re(
-                set_def["path"], set_def["file_re"], set_def["extras_files"]
-            )[0]
+            input_files_re(set_def["path"], set_def["file_re"], extras_files)[0]
         )
         logger.debug(f"Found {file_count} input to handle")
         return file_count * iterations
