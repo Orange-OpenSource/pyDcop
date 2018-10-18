@@ -161,9 +161,9 @@ def run_batches(batches_definition, simulate: bool, jobs=None):
     for set_name in problems_sets:
         set_estimate = estimate_set(problems_sets[set_name])
         jobs_count += sum(
-            set_estimate * batch_estimage for batch_estimage in batch_estimates
+            set_estimate * batch_estimate for batch_estimate in batch_estimates
         )
-
+    logger.debug(f"Estimated number of job: {jobs_count}")
     with tqdm.tqdm(total=jobs_count, desc="Progress") as bar:
         global pbar
         pbar = bar
@@ -201,9 +201,6 @@ def run_batches(batches_definition, simulate: bool, jobs=None):
                         global_options,
                         simulate,
                     )
-
-                pass
-
             else:
                 logger.debug(
                     "No files in set %s, running %s iterations ", set_name, iterations
@@ -305,11 +302,15 @@ def estimate_set(set_def: Dict) -> int:
 
     if "path" in set_def and "file_re" not in set_def:
         file_count = len(input_files_glob(set_def["path"]))
+        logger.debug(f"Found {file_count} input to handle")
         return file_count * iterations
-    elif "path" in set_def and "file_re" not in set_def:
+    elif "path" in set_def and "file_re" in set_def:
         file_count = len(
-            input_files_re(set_def["path"], set_def["file_re"], set_def["extras"])[0]
+            input_files_re(
+                set_def["path"], set_def["file_re"], set_def["extras_files"]
+            )[0]
         )
+        logger.debug(f"Found {file_count} input to handle")
         return file_count * iterations
     else:
         return iterations
@@ -348,9 +349,7 @@ def run_batch_for_files(
         )
 
         for batch in batches:
-            run_batch(
-                batches[batch], context, global_options, files, simulate=simulate
-            )
+            run_batch(batches[batch], context, global_options, files, simulate=simulate)
 
 
 def run_batch(
