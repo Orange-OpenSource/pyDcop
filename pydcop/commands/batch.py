@@ -413,7 +413,7 @@ def run_cli_command(cli_command: str, command_dir: str):
         # TODO : add timeout  on top of the command's timeout ?
 
         output = check_output(cli_command, stderr=STDOUT, shell=True)
-        return yaml.load(output.decode(encoding="utf-8"))
+        # return yaml.load(output.decode(encoding="utf-8"))
 
 
 def build_final_command(
