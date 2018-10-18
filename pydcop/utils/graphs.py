@@ -160,7 +160,7 @@ def display_graph(variables, relations):
     # Do not crash if matplotlib is not installed
     try:
         import matplotlib.pyplot as plt
-        nx.draw(graph)
+        nx.draw_networkx(graph, with_labels=True)
         # nx.draw_random(graph)
         # nx.draw_circular(graph)
         # nx.draw_spectral(graph)
