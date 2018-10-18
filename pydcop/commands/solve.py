@@ -201,7 +201,7 @@ Solving with MGM, with two algorithm parameter and a log configuration file::
                               graph_coloring.yaml \\
 
 """
-
+import csv
 import json
 import logging
 import os
@@ -330,11 +330,9 @@ output_file = None
 
 def add_csvline(file, mode, metrics):
     data = [metrics[c] for c in columns[mode]]
-    line = ','.join([str(d) for d in data])
-
-    with open(file, mode='at', encoding='utf-8') as f:
-        f.write(line)
-        f.write('\n')
+    with open(file, mode='at', encoding='utf-8', newline='') as f:
+        csvwriter = csv.writer(f)
+        csvwriter.writerow(data)
 
 
 def collect_tread(collect_queue: Queue, csv_cb):

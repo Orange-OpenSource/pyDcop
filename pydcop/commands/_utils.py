@@ -27,8 +27,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-
+import csv
 import json
 import logging
 import os
@@ -161,11 +160,9 @@ def prepare_metrics_files(run, end, mode):
 
 def add_csvline(file, mode, metrics):
     data = [metrics[c] for c in columns[mode]]
-    line = ', '.join([str(d) for d in data])
-
-    with open(file, mode='at', encoding='utf-8') as f:
-        f.write(line)
-        f.write('\n')
+    with open(file, mode='at', encoding='utf-8', newline='') as f:
+        csvwriter = csv.writer(f)
+        csvwriter.writerow(data)
 
 
 def _error(msg, e=None):
