@@ -63,11 +63,8 @@ to "done_<batches_description_file>_<date>"  where <date> is the date and time o
 If you really want to re-run an interrupted batch from scratch, you must delete the `progress`
 file.
 
-
-
-
-TODO: multiple files as input
-TODO: log error in file instead of just dumping a subprocess.CalledProcessError:
+TODO: in simulate, emit warning if some path / file overlap
+TODO: run in parallel
 
 """
 import datetime
@@ -77,7 +74,7 @@ import shutil
 import re
 import os
 
-from subprocess import check_output, STDOUT
+from subprocess import check_output, STDOUT, CalledProcessError
 from typing import Dict, Tuple, Union, List
 
 import itertools
@@ -109,9 +106,6 @@ progress_file = None
 
 
 def run_cmd(args):
-
-    # TODO: in simulate, emit warning if some path / file overlap
-    # TODO: run in parallel
 
     with open(args.bench_file, mode="r", encoding="utf-8") as f:
         bench_def = yaml.load(f)
@@ -410,10 +404,21 @@ def job_id(context: dict, combination: dict):
 def run_cli_command(cli_command: str, command_dir: str):
 
     with cd_and_create(command_dir):
-        # TODO : add timeout  on top of the command's timeout ?
-
-        output = check_output(cli_command, stderr=STDOUT, shell=True)
-        # return yaml.load(output.decode(encoding="utf-8"))
+        try:
+            check_output(
+                cli_command, stderr=STDOUT, shell=True, universal_newlines=True
+            )
+        except CalledProcessError as cpe:
+            # Dump output for diagnosis
+            with open("cmd_error.log", mode="w", encoding="utf-8") as ef:
+                ef.write(
+                    f"When running:\n"
+                    f" * command: {cli_command}\n"
+                    f" * in dir: '{command_dir}'\n\n"
+                    f"Error:  \n   {cpe} \n\n"
+                )
+                ef.write(f"Command returned: \n\n{cpe.output}")
+            raise
 
 
 def build_final_command(
