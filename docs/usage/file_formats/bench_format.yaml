@@ -3,18 +3,39 @@
 
 
 sets:
- set1:
-   # 'path' should be a glob expression that will be is used to find the input files
-   # for the command:
-   # You can use '~' in this path, it will be expanded to the user's home directory.
-   path: /path/set1/*.yaml
-   # 'iterations' defines the number of time the command will be executed for each file
-   # that latch the path glob expression
-   iterations: 3
- set2:
-   # For command that do not have an input file, like for example generate, you
-   # can simply give a number if iteration, with no path:
-   iterations: 5
+  set1:
+    # 'path' can be a directory or a glob expression that will be is used to find the input files
+    # for the command:
+    # You can use '~' in this path, it will be expanded to the user's home directory.
+    # see set3 for an example with a directory
+    path: /path/set1/*.yaml
+    # 'iterations' (optional) defines the number of time the command will be executed for each file
+    # that match the path glob expression or regexp
+    iterations: 3
+  set2:
+    # For command that do not have an input file, like for example generate, you
+    # can simply give a number if iteration, with no path:
+    iterations: 5
+
+  set3:
+    # No 'iterations'
+    # Here path is simply a directory
+    path: /path/set3/
+
+    # With file_re, you can use a regular expression instead of a glob.
+    # Files in <path> matching this regular expression will e used as input parameters
+    # for the batches.
+    # The python regular expression syntax is used. You can define match subgroup.
+    # You MUSt use named groups to access them from extras_path entries.
+    # Named group can also be used in batch definition
+    file_re: coloring_random_(?P<num>.+)_dcop.yaml
+
+    # Extra_files (optional) allows to find 'companion files' that will be passed to
+    # the commands after a file matched with file_re.
+    # It is a list of file names, which may includes match subgroup from the regexp
+    # in 'file_re'.
+    extras_files:
+      - coloring_random_{num}_dcop_agts.yaml
 
 parallel: 2
 
