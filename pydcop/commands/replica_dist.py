@@ -98,47 +98,59 @@ from pydcop.algorithms import list_available_algorithms, load_algorithm_module
 from pydcop.commands._utils import build_algo_def
 from pydcop.dcop.yamldcop import load_dcop_from_file
 from pydcop.distribution.yamlformat import load_dist_from_file
-from pydcop.infrastructure.run import run_local_thread_dcop, \
-    run_local_process_dcop
+from pydcop.infrastructure.run import run_local_thread_dcop, run_local_process_dcop
 
-logger = logging.getLogger('pydcop.cli.replica_dist')
+logger = logging.getLogger("pydcop.cli.replica_dist")
 
 
 def set_parser(subparsers):
 
     algorithms = list_available_algorithms()
-    logger.debug('Available DCOP algorithms %s', algorithms)
+    logger.debug("Available DCOP algorithms %s", algorithms)
 
-    parser = subparsers.add_parser('replica_dist',
-                                   help='distribution replicas ')
+    parser = subparsers.add_parser("replica_dist", help="distribution replicas ")
     parser.set_defaults(func=run_cmd)
     parser.set_defaults(on_timeout=on_timeout)
     parser.set_defaults(on_force_exit=on_force_exit)
 
-    parser.add_argument('dcop_files', type=str,  nargs='+',
-                        help="dcop file")
+    parser.add_argument("dcop_files", type=str, nargs="+", help="dcop file")
 
-    parser.add_argument('-k', '--ktarget', required=True, type=int,
-                        help='Requested resiliency level')
-    parser.add_argument('-r', '--replication', required=True, type=str,
-                        choices=['dist_ucs', 'dist_ucs_hostingcosts'],
-                        help='Replication distribution algorithm')
+    parser.add_argument(
+        "-k", "--ktarget", required=True, type=int, help="Requested resiliency level"
+    )
+    parser.add_argument(
+        "-r",
+        "--replication",
+        required=True,
+        type=str,
+        choices=["dist_ucs", "dist_ucs_hostingcosts"],
+        help="Replication distribution algorithm",
+    )
 
     # Distribution given as a file
-    parser.add_argument('-d', '--distribution', type=str,
-                        help='File containing the distribution of computations '
-                             'on the agents')
+    parser.add_argument(
+        "-d",
+        "--distribution",
+        type=str,
+        help="File containing the distribution of computations " "on the agents",
+    )
     # algo used when running the dcop
-    parser.add_argument('-a', '--algo',
-                        choices=algorithms,
-                        help='Algorithm for solving the dcop, necessary to '
-                             'know the footprint of computation when '
-                             'distributing replicas on agents')
+    parser.add_argument(
+        "-a",
+        "--algo",
+        choices=algorithms,
+        help="Algorithm for solving the dcop, necessary to "
+        "know the footprint of computation when "
+        "distributing replicas on agents",
+    )
 
-    parser.add_argument('-m', '--mode',
-                        default='thread',
-                        choices=['thread', 'process'],
-                        help='run agents as threads or processes')
+    parser.add_argument(
+        "-m",
+        "--mode",
+        default="thread",
+        choices=["thread", "process"],
+        help="run agents as threads or processes",
+    )
 
 
 orchestrator = None
@@ -146,50 +158,54 @@ orchestrator = None
 
 def run_cmd(args, timer: Timer):
 
-    logger.debug('Distribution replicas : %s', args)
+    logger.debug("Distribution replicas : %s", args)
     global orchestrator
 
     # global dcop
-    logger.info('loading dcop from {}'.format(args.dcop_files))
+    logger.info("loading dcop from {}".format(args.dcop_files))
     dcop = load_dcop_from_file(args.dcop_files)
 
     try:
         algo_module = load_algorithm_module(args.algo)
-        algo = build_algo_def(algo_module, args.algo, dcop.objective,
-                              [])  # FIXME : algo params needed?
+        algo = build_algo_def(
+            algo_module, args.algo, dcop.objective, []
+        )  # FIXME : algo params needed?
 
-        graph_module = import_module('pydcop.computations_graph.{}'.
-                                     format(algo_module.GRAPH_TYPE))
-        logger.info('Building computation graph ')
+        graph_module = import_module(
+            "pydcop.computations_graph.{}".format(algo_module.GRAPH_TYPE)
+        )
+        logger.info("Building computation graph ")
         cg = graph_module.build_computation_graph(dcop)
-        logger.info('Computation graph : %s', cg)
+        logger.info("Computation graph : %s", cg)
 
     except ImportError:
-        _error('Could not find module for algorithm {} or graph model '
-               'for this algorithm'.format(args.algo))
+        _error(
+            "Could not find module for algorithm {} or graph model "
+            "for this algorithm".format(args.algo)
+        )
 
-    logger.info('loading distribution from {}'.format(args.distribution))
+    logger.info("loading distribution from {}".format(args.distribution))
     distribution = load_dist_from_file(args.distribution)
 
     INFINITY = 10000  # FIXME should not be mandatory
 
     global orchestrator
-    if args.mode == 'thread':
-        orchestrator = run_local_thread_dcop(algo, cg, distribution, dcop,
-                                             INFINITY,
-                                             replication=args.replication)
-    elif args.mode == 'process':
+    if args.mode == "thread":
+        orchestrator = run_local_thread_dcop(
+            algo, cg, distribution, dcop, INFINITY, replication=args.replication
+        )
+    elif args.mode == "process":
 
         # Disable logs from agents, they are in other processes anyway
-        agt_logs = logging.getLogger('pydcop.agent')
+        agt_logs = logging.getLogger("pydcop.agent")
         agt_logs.disabled = True
 
         # When using the (default) 'fork' start method, http servers on agent's
         # processes do not work (why ?)
-        multiprocessing.set_start_method('spawn')
-        orchestrator = run_local_process_dcop(algo, cg, distribution, dcop,
-                                              INFINITY,
-                                              replication=args.replication)
+        multiprocessing.set_start_method("spawn")
+        orchestrator = run_local_process_dcop(
+            algo, cg, distribution, dcop, INFINITY, replication=args.replication
+        )
 
     try:
         orchestrator.deploy_computations()
@@ -198,20 +214,21 @@ def run_cmd(args, timer: Timer):
         orchestrator.stop_agents(5)
         orchestrator.stop()
         timer.cancel()
-        rep_dist = {c: list(hosts) for c, hosts
-                    in orchestrator.mgt.replica_hosts.items()}
-        result = {
-            'inputs': {
-                'dcop': args.dcop_files,
-                'algo': args.algo,
-                'replication': args.replication,
-                'k': args.ktarget
-            },
-            'replica_dist': rep_dist
+        rep_dist = {
+            c: list(hosts) for c, hosts in orchestrator.mgt.replica_hosts.items()
         }
-        result['inputs']['distribution'] = args.distribution
+        result = {
+            "inputs": {
+                "dcop": args.dcop_files,
+                "algo": args.algo,
+                "replication": args.replication,
+                "k": args.ktarget,
+            },
+            "replica_dist": rep_dist,
+        }
+        result["inputs"]["distribution"] = args.distribution
         if args.output is not None:
-            with open(args.output, encoding='utf-8', mode='w') as fo:
+            with open(args.output, encoding="utf-8", mode="w") as fo:
                 fo.write(yaml.dump(result))
 
         print(yaml.dump(result))
@@ -223,11 +240,11 @@ def run_cmd(args, timer: Timer):
     except Exception as e:
         orchestrator.stop_agents(5)
         orchestrator.stop()
-        _error('ERROR', e)
+        _error("ERROR", e)
 
 
 def on_timeout():
-    _error('TIMEOUT')
+    _error("TIMEOUT")
 
 
 def on_force_exit(sig, frame):
@@ -235,10 +252,11 @@ def on_force_exit(sig, frame):
         print(th)
         traceback.print_stack(sys._current_frames()[th.ident])
         print()
-    _error('STOPPED')
+    _error("STOPPED")
+
 
 def _error(msg, e=None):
-    print('Error: {}'.format(msg))
+    print("Error: {}".format(msg))
     if e is not None:
         print(e)
         tb = traceback.format_exc()

@@ -44,26 +44,22 @@ from pydcop.dcop.yamldcop import yaml_agents
 
 logger = logging.getLogger("pydcop.cli.generate")
 
-COLORS = ['R', 'G', 'B', 'O', 'F', 'Y', 'L', 'C']
+COLORS = ["R", "G", "B", "O", "F", "Y", "L", "C"]
 
 
 def init_cli_parser(parent_parser):
-    parser = parent_parser.add_parser(
-        "agents", help="Generate a set of agents"
-    )
+    parser = parent_parser.add_parser("agents", help="Generate a set of agents")
     parser.set_defaults(func=generate)
 
-    parser.add_argument(
-        "--count", type=int, required=True, help="Number of agents"
-    )
+    parser.add_argument("--count", type=int, required=True, help="Number of agents")
     parser.add_argument(
         "--capacity", type=int, required=True, help="Capacity of agents"
     )
 
+
 def generate(args):
     agents = generate_agents(args.count, args.capacity)
     serialized = yaml_agents(agents)
-
 
     if args.output:
         output_file = args.output

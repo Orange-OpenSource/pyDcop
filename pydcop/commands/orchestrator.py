@@ -179,93 +179,143 @@ from pydcop.distribution.yamlformat import load_dist_from_file
 from pydcop.infrastructure.communication import HttpCommunicationLayer
 from pydcop.infrastructure.orchestrator import Orchestrator
 
-logger = logging.getLogger('pydcop.cli.orchestrator')
+logger = logging.getLogger("pydcop.cli.orchestrator")
 
 
 def set_parser(subparsers):
     algorithms = list_available_algorithms()
-    logger.debug('Available DCOP algorithms %s', algorithms)
+    logger.debug("Available DCOP algorithms %s", algorithms)
 
-    parser = subparsers.add_parser('orchestrator',
-                                   help='run a standalone orchestrator')
+    parser = subparsers.add_parser("orchestrator", help="run a standalone orchestrator")
     parser.set_defaults(func=run_cmd)
     parser.set_defaults(on_timeout=on_timeout)
     parser.set_defaults(on_force_exit=on_force_exit)
 
-    parser.add_argument('dcop_files', type=str, nargs='+',
-                        help="dcop file(s)")
-    parser.add_argument('-a', '--algo',
-                        choices=algorithms,
-                        help='algorithm for solving the dcop')
+    parser.add_argument("dcop_files", type=str, nargs="+", help="dcop file(s)")
+    parser.add_argument(
+        "-a", "--algo", choices=algorithms, help="algorithm for solving the dcop"
+    )
 
-    parser.add_argument('-p', '--algo_params',
-                        type=str,  action='append',
-                        help='Optional parameters for the algorithm, given as '
-                             'name:value. Use this option several times '
-                             'to set several parameters.')
+    parser.add_argument(
+        "-p",
+        "--algo_params",
+        type=str,
+        action="append",
+        help="Optional parameters for the algorithm, given as "
+        "name:value. Use this option several times "
+        "to set several parameters.",
+    )
 
-    parser.add_argument('-d', '--distribution',
-                        default='oneagent',
-                        help='A yaml file with the distribution or algorithm '
-                             'for distributing the computation graph, if not '
-                             'given the `oneagent` will be used (one '
-                             'computation for each agent)')
+    parser.add_argument(
+        "-d",
+        "--distribution",
+        default="oneagent",
+        help="A yaml file with the distribution or algorithm "
+        "for distributing the computation graph, if not "
+        "given the `oneagent` will be used (one "
+        "computation for each agent)",
+    )
 
-    parser.add_argument('-c', '--collect_on',
-                        choices=['value_change', 'cycle_change', 'period'],
-                        default='value_change',
-                        help='When should a "new" assignment be observed')
+    parser.add_argument(
+        "-c",
+        "--collect_on",
+        choices=["value_change", "cycle_change", "period"],
+        default="value_change",
+        help='When should a "new" assignment be observed',
+    )
 
-    parser.add_argument('--period', type=float,
-                        default=None,
-                        help='Period for collecting metrics. only available '
-                             'when using --collect_on period. Defaults to 1 '
-                             'second if not specified')
+    parser.add_argument(
+        "--period",
+        type=float,
+        default=None,
+        help="Period for collecting metrics. only available "
+        "when using --collect_on period. Defaults to 1 "
+        "second if not specified",
+    )
 
-    parser.add_argument('--run_metrics', type=str,
-                        default=None,
-                        help="Use this option to regularly store the data "
-                             "in a csv file.")
+    parser.add_argument(
+        "--run_metrics",
+        type=str,
+        default=None,
+        help="Use this option to regularly store the data " "in a csv file.",
+    )
 
-    parser.add_argument('--end_metrics', type=str,
-                        default=None,
-                        help="Use this option to append the metrics of the "
-                             "end of the run to a csv file.")
+    parser.add_argument(
+        "--end_metrics",
+        type=str,
+        default=None,
+        help="Use this option to append the metrics of the "
+        "end of the run to a csv file.",
+    )
 
-    parser.add_argument('--address', type=str, default=None,
-                        help="IP address the orchestrator will listen on. If "
-                             "not given we try to use the primary IP address.")
+    parser.add_argument(
+        "--address",
+        type=str,
+        default=None,
+        help="IP address the orchestrator will listen on. If "
+        "not given we try to use the primary IP address.",
+    )
 
-    parser.add_argument('--port', type=int, default=None,
-                        help="Port the orchestrator will listen on. If "
-                             "not given we try to use port 9000.")
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help="Port the orchestrator will listen on. If "
+        "not given we try to use port 9000.",
+    )
 
-    parser.add_argument('--uiport', type=int, default=None,
-                        help='The port on which the ui-server will be listening'
-                             '. If not given, no ui-server will '
-                             'be started for this orchestrator.')
+    parser.add_argument(
+        "--uiport",
+        type=int,
+        default=None,
+        help="The port on which the ui-server will be listening"
+        ". If not given, no ui-server will "
+        "be started for this orchestrator.",
+    )
 
-    parser.add_argument('--ktarget', type=int, default=None,
-                        help="The target resiliency level. If not given, computations are "
-                             "not replicated and the system is not resilient.")
+    parser.add_argument(
+        "--ktarget",
+        type=int,
+        default=None,
+        help="The target resiliency level. If not given, computations are "
+        "not replicated and the system is not resilient.",
+    )
 
-    parser.add_argument('-s', '--scenario', required=False, default=None,
-                        help='scenario file. When using a scenario, replication is automatically activated')
+    parser.add_argument(
+        "-s",
+        "--scenario",
+        required=False,
+        default=None,
+        help="scenario file. When using a scenario, replication is automatically activated",
+    )
 
 
-DISTRIBUTION_METHODS = ['oneagent', 'adhoc', 'ilp_fgdp', 'heur_comhost'],
+DISTRIBUTION_METHODS = (["oneagent", "adhoc", "ilp_fgdp", "heur_comhost"],)
 
 orchestrator = None
 start_time = 0
 
 # Files for logging metrics
 columns = {
-    'cycle_change': ['cycle', 'time', 'cost', 'violation', 'msg_count',
-                     'msg_size', 'status'],
-    'value_change': ['time', 'cycle', 'cost', 'violation', 'msg_count',
-                     'msg_size', 'status'],
-    'period': ['time', 'cycle', 'cost', 'violation', 'msg_count', 'msg_size',
-               'status']
+    "cycle_change": [
+        "cycle",
+        "time",
+        "cost",
+        "violation",
+        "msg_count",
+        "msg_size",
+        "status",
+    ],
+    "value_change": [
+        "time",
+        "cycle",
+        "cost",
+        "violation",
+        "msg_count",
+        "msg_size",
+        "status",
+    ],
+    "period": ["time", "cycle", "cost", "violation", "msg_count", "msg_size", "status"],
 }
 
 collect_on = None
@@ -278,11 +328,11 @@ output_file = None
 
 def add_csvline(file, mode, metrics):
     data = [metrics[c] for c in columns[mode]]
-    line = ','.join([str(d) for d in data])
+    line = ",".join([str(d) for d in data])
 
-    with open(file, mode='at', encoding='utf-8') as f:
+    with open(file, mode="at", encoding="utf-8") as f:
         f.write(line)
-        f.write('\n')
+        f.write("\n")
 
 
 def collect_tread(collect_queue: Queue, csv_cb):
@@ -316,10 +366,10 @@ def prepare_metrics_files(run, end, mode):
             if f_dir and not os.path.exists(f_dir):
                 os.makedirs(f_dir)
         # Add column labels in file:
-        headers = ','.join(columns[mode])
-        with open(run_metrics, 'w', encoding='utf-8') as f:
+        headers = ",".join(columns[mode])
+        with open(run_metrics, "w", encoding="utf-8") as f:
             f.write(headers)
-            f.write('\n')
+            f.write("\n")
         csv_cb = partial(add_csvline, run_metrics, mode)
     else:
         csv_cb = None
@@ -330,10 +380,10 @@ def prepare_metrics_files(run, end, mode):
             os.makedirs(os.path.dirname(end_metrics))
         # Add column labels in file:
         if not os.path.exists(end_metrics):
-            headers = ','.join(columns[mode])
-            with open(end_metrics, 'w', encoding='utf-8') as f:
+            headers = ",".join(columns[mode])
+            with open(end_metrics, "w", encoding="utf-8") as f:
                 f.write(headers)
-                f.write('\n')
+                f.write("\n")
 
     return csv_cb
 
@@ -351,59 +401,56 @@ def run_cmd(args, timer=None, timeout=None):
     collect_on = args.collect_on
 
     period = None
-    if args.collect_on == 'period':
+    if args.collect_on == "period":
         period = 1 if args.period is None else args.period
     else:
         if args.period is not None:
-            _error('Cannot use "period" argument when collect_on is not '
-                   '"period"')
+            _error('Cannot use "period" argument when collect_on is not ' '"period"')
 
-    csv_cb = prepare_metrics_files(args.run_metrics, args.end_metrics,
-                                   collect_on)
+    csv_cb = prepare_metrics_files(args.run_metrics, args.end_metrics, collect_on)
 
-
-    if args.distribution in DISTRIBUTION_METHODS:
+    if args.distribution in ["oneagent", "adhoc", "ilp_fgdp", "heur_comhost"]:
         dist_module, algo_module, graph_module = _load_modules(
-            args.distribution, args.algo)
+            args.distribution, args.algo
+        )
     else:
-        dist_module, algo_module, graph_module = _load_modules(None,
-                                                               args.algo)
+        dist_module, algo_module, graph_module = _load_modules(None, args.algo)
 
-    logger.info('loading dcop from {}'.format(dcop_yaml_files))
+    logger.info("loading dcop from {}".format(dcop_yaml_files))
     dcop = load_dcop_from_file(dcop_yaml_files)
 
     if args.scenario:
-        logger.info('loading scenario from {}'.format(args.scenario))
+        logger.info("loading scenario from {}".format(args.scenario))
         scenario = load_scenario_from_file(args.scenario)
     else:
         logger.debug("No scenario")
         scenario = None
 
     # Build factor-graph computation graph
-    logger.info('Building computation graph for dcop {}'
-                .format(dcop_yaml_files))
+    logger.info("Building computation graph for dcop {}".format(dcop_yaml_files))
     cg = graph_module.build_computation_graph(dcop)
 
-    logger.info('Distributing computation graph ')
+    logger.info("Distributing computation graph ")
     if dist_module is not None:
 
-        if not hasattr(algo_module, 'computation_memory'):
+        if not hasattr(algo_module, "computation_memory"):
             algo_module.computation_memory = lambda *v, **k: 0
-        if not hasattr(algo_module, 'communication_load'):
+        if not hasattr(algo_module, "communication_load"):
             algo_module.communication_load = lambda *v, **k: 0
 
         distribution = dist_module.distribute(
-            cg, dcop.agents.values(),
+            cg,
+            dcop.agents.values(),
             hints=dcop.dist_hints,
             computation_memory=algo_module.computation_memory,
-            communication_load=algo_module.communication_load)
+            communication_load=algo_module.communication_load,
+        )
     else:
         distribution = load_dist_from_file(args.distribution)
 
-    logger.info('Dcop distribution : {}'.format(distribution))
+    logger.info("Dcop distribution : {}".format(distribution))
 
-    algo = build_algo_def(algo_module, args.algo, dcop.objective,
-                          args.algo_params)
+    algo = build_algo_def(algo_module, args.algo, dcop.objective, args.algo_params)
 
     # When using the (default) 'fork' start method, http servers on agent's
     # processes did not work (why ?), but seems to be ok now ?!
@@ -414,9 +461,9 @@ def run_cmd(args, timer=None, timeout=None):
 
     # Setup metrics collection
     collector_queue = Queue()
-    collect_t = Thread(target=collect_tread,
-                       args=[collector_queue, csv_cb],
-                       daemon=True)
+    collect_t = Thread(
+        target=collect_tread, args=[collector_queue, csv_cb], daemon=True
+    )
     collect_t.start()
 
     if args.ktarget:
@@ -426,16 +473,22 @@ def run_cmd(args, timer=None, timeout=None):
             logger.debug("Scenario without k target, use 3 as default level")
             ktarget = 3
 
-
     global orchestrator, start_time
     port = args.port if args.port else 9000
     addr = args.address if args.address else None
     comm = HttpCommunicationLayer((addr, port))
-    orchestrator = Orchestrator(algo, cg, distribution, comm, dcop,
-                                infinity, collector=collector_queue,
-                                collect_moment=args.collect_on,
-                                collect_period=period,
-                                ui_port=args.uiport)
+    orchestrator = Orchestrator(
+        algo,
+        cg,
+        distribution,
+        comm,
+        dcop,
+        infinity,
+        collector=collector_queue,
+        collect_moment=args.collect_on,
+        collect_period=period,
+        ui_port=args.uiport,
+    )
 
     try:
         start_time = time()
@@ -454,32 +507,32 @@ def run_cmd(args, timer=None, timeout=None):
             orchestrator.run(timeout=timeout)
         if not timeout_stopped:
             if orchestrator.status == "TIMEOUT":
-                _results('TIMEOUT')
+                _results("TIMEOUT")
                 sys.exit(0)
             else:
-                _results('FINISHED')
+                _results("FINISHED")
                 sys.exit(0)
 
     except Exception as e:
         logger.error(e, exc_info=1)
         orchestrator.stop_agents(5)
         orchestrator.stop()
-        _results('ERROR')
+        _results("ERROR")
 
 
 def on_force_exit(sig, frame):
-    print('FORCE EXIT')
+    print("FORCE EXIT")
     # Avoid blocking if stopping when all agents have not registered yet
     if not orchestrator.mgt.all_registered.is_set():
         orchestrator.mgt.all_registered.set()
     orchestrator.stop_agents(10)
     orchestrator.stop()
-    _results('STOPPED')
+    _results("STOPPED")
     sys.exit(0)
 
 
 def on_timeout():
-    logger.debug('cli timeout ')
+    logger.debug("cli timeout ")
     # Timeout should have been handled by the orchestrator, if the cli timeout
     # has been reached, something is probably wrong : dump threads.
     for th in threading.enumerate():
@@ -495,34 +548,36 @@ def on_timeout():
 
     orchestrator.stop_agents(20)
     orchestrator.stop()
-    _results('TIMEOUT')
+    _results("TIMEOUT")
     sys.exit(0)
 
 
 def _load_modules(dist, algo):
     dist_module, algo_module, graph_module = None, None, None
-    if dist :
+    if dist:
         try:
-            dist_module = import_module('pydcop.distribution.{}'.format(dist))
+            dist_module = import_module("pydcop.distribution.{}".format(dist))
             # TODO check the imported module has the right methods ?
         except ImportError:
-            _error('Could not find distribution method {}'.format(dist))
+            _error("Could not find distribution method {}".format(dist))
 
     try:
         algo_module = load_algorithm_module(algo)
         # TODO check the imported module has the right methods ?
 
-        graph_module = import_module('pydcop.computations_graph.{}'.
-                                     format(algo_module.GRAPH_TYPE))
+        graph_module = import_module(
+            "pydcop.computations_graph.{}".format(algo_module.GRAPH_TYPE)
+        )
     except ImportError:
-        _error('Could not find computation graph type: {}'.format(
-            algo_module.GRAPH_TYPE))
+        _error(
+            "Could not find computation graph type: {}".format(algo_module.GRAPH_TYPE)
+        )
 
     return dist_module, algo_module, graph_module
 
 
 def _error(msg):
-    print('Error: {}'.format(msg))
+    print("Error: {}".format(msg))
     sys.exit(2)
 
 
@@ -548,7 +603,7 @@ def _results(status):
     """
 
     metrics = orchestrator.end_metrics()
-    metrics['status'] = status
+    metrics["status"] = status
 
     global end_metrics, run_metrics
     if end_metrics is not None:
@@ -557,9 +612,7 @@ def _results(status):
         add_csvline(run_metrics, collect_on, metrics)
 
     if output_file:
-        with open(output_file, encoding='utf-8', mode='w') as fo:
-                fo.write(json.dumps(metrics, sort_keys=True, indent='  ',
-                                    cls=NumpyEncoder))
+        with open(output_file, encoding="utf-8", mode="w") as fo:
+            fo.write(json.dumps(metrics, sort_keys=True, indent="  ", cls=NumpyEncoder))
 
-    print(json.dumps(metrics, sort_keys=True, indent='  ',
-                     cls=NumpyEncoder))
+    print(json.dumps(metrics, sort_keys=True, indent="  ", cls=NumpyEncoder))

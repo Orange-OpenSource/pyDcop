@@ -40,14 +40,12 @@ from queue import Queue, Empty
 from types import FunctionType
 from typing import List
 
-from pydcop.algorithms import AlgorithmDef, prepare_algo_params, \
-    load_algorithm_module
+from pydcop.algorithms import AlgorithmDef, prepare_algo_params, load_algorithm_module
 
-logger = logging.getLogger('pydcop')
+logger = logging.getLogger("pydcop")
 
 
-def build_algo_def(algo_module, algo_name: str, objective,
-                   cli_params: List[str]):
+def build_algo_def(algo_module, algo_name: str, objective, cli_params: List[str]):
     """
     Build the AlgorithmDef, which contains the full algorithm specification (
     name, objective and parameters)
@@ -69,53 +67,71 @@ def build_algo_def(algo_module, algo_name: str, objective,
     """
 
     # Parameters for the algorithm:
-    if hasattr(algo_module, 'algo_params'):
+    if hasattr(algo_module, "algo_params"):
         params = {}
         if cli_params is not None:
-            logger.info('Using cli params for %s : %s', algo_name, cli_params)
+            logger.info("Using cli params for %s : %s", algo_name, cli_params)
             for p in cli_params:
-                p, v = p.split(':')
+                p, v = p.split(":")
                 params[p] = v
         else:
-            logger.info('Using default parameters for %s', algo_name)
+            logger.info("Using default parameters for %s", algo_name)
 
         try:
             params = prepare_algo_params(params, algo_module.algo_params)
-            logger.info('parameters for %s : %s', algo_name, params)
+            logger.info("parameters for %s : %s", algo_name, params)
 
             return AlgorithmDef.build_with_default_param(
-                algo=algo_name,
-                params=params,
-                mode=objective)
+                algo=algo_name, params=params, mode=objective
+            )
 
         except Exception as e:
             param_msgs = []
             for param_def in algo_module.algo_params:
-                valid_values = '' if param_def.values is None \
-                    else 'values: {}'.format(param_def.values)
+                valid_values = (
+                    ""
+                    if param_def.values is None
+                    else "values: {}".format(param_def.values)
+                )
                 param_msg = "  * {} ({}) default : {}  {} ".format(
-                    param_def.name, param_def.type,
-                    param_def.default_value, valid_values)
+                    param_def.name,
+                    param_def.type,
+                    param_def.default_value,
+                    valid_values,
+                )
                 param_msgs.append(param_msg)
             msg = str(e)
-            msg += '\nAvailable parameters for {}:\n'.format(algo_name)
-            msg += '\n'.join(param_msgs)
+            msg += "\nAvailable parameters for {}:\n".format(algo_name)
+            msg += "\n".join(param_msgs)
             _error(msg, e)
 
     else:
         if cli_params:
-            _error('Algo {} does not support any parameter'.format(algo_name))
+            _error("Algo {} does not support any parameter".format(algo_name))
         return AlgorithmDef(algo_name, {}, objective=objective)
 
 
 # Files for logging metrics
 columns = {
-    'cycle_change': ['cycle', 'time', 'cost', 'violation', 'msg_count',
-                     'msg_size', 'status'],
-    'value_change': ['time', 'cycle', 'cost', 'violation', 'msg_count',
-                     'msg_size', 'status'],
-    'period': ['time', 'cycle', 'cost', 'violation', 'msg_count', 'msg_size',
-               'status']
+    "cycle_change": [
+        "cycle",
+        "time",
+        "cost",
+        "violation",
+        "msg_count",
+        "msg_size",
+        "status",
+    ],
+    "value_change": [
+        "time",
+        "cycle",
+        "cost",
+        "violation",
+        "msg_count",
+        "msg_size",
+        "status",
+    ],
+    "period": ["time", "cycle", "cost", "violation", "msg_count", "msg_size", "status"],
 }
 
 
@@ -136,7 +152,7 @@ def prepare_metrics_files(run, end, mode):
             if f_dir and not os.path.exists(f_dir):
                 os.makedirs(f_dir)
         # Add column labels in file:
-        with open(run_metrics, 'w', encoding='utf-8', newline='') as f:
+        with open(run_metrics, "w", encoding="utf-8", newline="") as f:
             csvwriter = csv.writer(f)
             csvwriter.writerow(columns[mode])
         csv_cb = partial(add_csvline, run_metrics, mode)
@@ -149,7 +165,7 @@ def prepare_metrics_files(run, end, mode):
             os.makedirs(os.path.dirname(end_metrics))
         # Add column labels in file:
         if not os.path.exists(end_metrics):
-            with open(end_metrics, 'w', encoding='utf-8', newline='') as f:
+            with open(end_metrics, "w", encoding="utf-8", newline="") as f:
                 csvwriter = csv.writer(f)
                 csvwriter.writerow(columns[mode])
 
@@ -158,13 +174,13 @@ def prepare_metrics_files(run, end, mode):
 
 def add_csvline(file, mode, metrics):
     data = [metrics[c] for c in columns[mode]]
-    with open(file, mode='at', encoding='utf-8', newline='') as f:
+    with open(file, mode="at", encoding="utf-8", newline="") as f:
         csvwriter = csv.writer(f)
         csvwriter.writerow(data)
 
 
 def _error(msg, e=None):
-    print('Error: {}'.format(msg))
+    print("Error: {}".format(msg))
     if e is not None:
         print(e)
         tb = traceback.format_exc()
@@ -176,26 +192,28 @@ def _load_modules(dist, algo):
     dist_module, algo_module, graph_module = None, None, None
     if dist is not None:
         try:
-            dist_module = import_module('pydcop.distribution.{}'.format(dist))
+            dist_module = import_module("pydcop.distribution.{}".format(dist))
             # TODO check the imported module has the right methods ?
         except ImportError:
-            _error('Could not find distribution method {}'.format(dist))
+            _error("Could not find distribution method {}".format(dist))
 
     try:
         algo_module = load_algorithm_module(algo)
 
-        graph_module = import_module('pydcop.computations_graph.{}'.
-                                     format(algo_module.GRAPH_TYPE))
+        graph_module = import_module(
+            "pydcop.computations_graph.{}".format(algo_module.GRAPH_TYPE)
+        )
 
     except ImportError as e:
-        _error('Could not find module for algorithm: {}'.format(
-            algo), e)
+        _error("Could not find module for algorithm: {}".format(algo), e)
     except Exception as e:
-        _error('Error loading algorithm module  and associated '
-               'computation graph type for : {}'.format(algo), e)
+        _error(
+            "Error loading algorithm module  and associated "
+            "computation graph type for : {}".format(algo),
+            e,
+        )
 
     return dist_module, algo_module, graph_module
-
 
 
 def collect_tread(collect_queue: Queue, csv_cb):

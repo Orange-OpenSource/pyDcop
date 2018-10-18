@@ -152,59 +152,66 @@ from pydcop.commands._utils import _error
 from pydcop.dcop.yamldcop import load_dcop_from_file
 from pydcop.distribution.objects import ImpossibleDistributionException
 
-logger = logging.getLogger('pydcop.cli.distribute')
+logger = logging.getLogger("pydcop.cli.distribute")
 
 
 def set_parser(subparsers):
 
     algorithms = list_available_algorithms()
 
-    parser = subparsers.add_parser('distribute',
-                                   help='distribute a static dcop')
+    parser = subparsers.add_parser("distribute", help="distribute a static dcop")
     parser.set_defaults(func=run_cmd)
 
-    parser.add_argument('dcop_files', type=str, nargs='+', metavar='FILE',
-                        help="dcop file(s)")
+    parser.add_argument(
+        "dcop_files", type=str, nargs="+", metavar="FILE", help="dcop file(s)"
+    )
 
-    parser.add_argument('-g', '--graph',
-                        required=False,
-                        choices=['factor_graph', 'pseudotree',
-                                 'constraints_hypergraph'],
-                        help='Graphical model for dcop computations.')
+    parser.add_argument(
+        "-g",
+        "--graph",
+        required=False,
+        choices=["factor_graph", "pseudotree", "constraints_hypergraph"],
+        help="Graphical model for dcop computations.",
+    )
 
-    parser.add_argument('-d', '--distribution',
-                        choices=['oneagent', 'adhoc', 'ilp_fgdp',
-                                 'ilp_compref', 'heur_comhost'],
-                        required=True,
-                        help='Algorithm for distributing the computation '
-                             'graph.')
+    parser.add_argument(
+        "-d",
+        "--distribution",
+        choices=["oneagent", "adhoc", "ilp_fgdp", "ilp_compref", "heur_comhost"],
+        required=True,
+        help="Algorithm for distributing the computation " "graph.",
+    )
 
-    parser.add_argument('--cost',
-                        choices=['ilp_compref'],
-                        default=None,
-                        help='algorithm for computing the cost of the '
-                             'distribution.')
+    parser.add_argument(
+        "--cost",
+        choices=["ilp_compref"],
+        default=None,
+        help="algorithm for computing the cost of the " "distribution.",
+    )
 
-    parser.add_argument('-a', '--algo',
-                        choices=algorithms,
-                        required=False,
-                        help='Optional, only needed for '
-                              'distribution methods that require '
-                              'the memory footprint and '
-                              'communication load for computations')
+    parser.add_argument(
+        "-a",
+        "--algo",
+        choices=algorithms,
+        required=False,
+        help="Optional, only needed for "
+        "distribution methods that require "
+        "the memory footprint and "
+        "communication load for computations",
+    )
 
 
 def run_cmd(args):
     logger.debug('dcop command "distribute" with arguments {} '.format(args))
 
     dcop_yaml_files = args.dcop_files
-    logger.info('loading dcop from {}'.format(dcop_yaml_files))
+    logger.info("loading dcop from {}".format(dcop_yaml_files))
     dcop = load_dcop_from_file(dcop_yaml_files)
 
     dist_module = load_distribution_module(args.distribution)
-    if args.cost :
+    if args.cost:
         cost_module = load_distribution_module(args.cost)
-    elif hasattr(dist_module, 'distribution_cost'):
+    elif hasattr(dist_module, "distribution_cost"):
         cost_module = dist_module
     else:
         cost_module = None
@@ -218,20 +225,18 @@ def run_cmd(args):
         graph_module = load_graph_module(args.graph)
         # Check that the graph model and the algorithm are compatible:
         if algo_module is not None and algo_module.GRAPH_TYPE != args.graph:
-            _error('Incompatible graph model and algorithm')
+            _error("Incompatible graph model and algorithm")
     elif algo_module is not None:
         graph_module = load_graph_module(algo_module.GRAPH_TYPE)
         graph_type = algo_module.GRAPH_TYPE
     else:
-        _error('You must pass at leat --graph or --algo option')
+        _error("You must pass at leat --graph or --algo option")
 
     # Build factor-graph computation graph
-    logger.info('Building computation graph for dcop {}'
-                .format(dcop_yaml_files))
+    logger.info("Building computation graph for dcop {}".format(dcop_yaml_files))
     cg = graph_module.build_computation_graph(dcop)
 
-    logger.info('Distributing computation graph for dcop {}'
-                .format(dcop_yaml_files))
+    logger.info("Distributing computation graph for dcop {}".format(dcop_yaml_files))
 
     if algo_module is None:
         computation_memory = None
@@ -241,42 +246,44 @@ def run_cmd(args):
         communication_load = algo_module.communication_load
 
     try:
-        distribution = dist_module\
-            .distribute(cg, dcop.agents.values(),
-                        hints=dcop.dist_hints,
-                        computation_memory=computation_memory,
-                        communication_load=communication_load)
+        distribution = dist_module.distribute(
+            cg,
+            dcop.agents.values(),
+            hints=dcop.dist_hints,
+            computation_memory=computation_memory,
+            communication_load=communication_load,
+        )
         dist = distribution.mapping()
 
         if cost_module:
             cost, _, _ = cost_module.distribution_cost(
-                distribution, cg, dcop.agents.values(),
+                distribution,
+                cg,
+                dcop.agents.values(),
                 computation_memory=computation_memory,
-                communication_load=communication_load)
+                communication_load=communication_load,
+            )
         else:
             cost = None
 
         result = {
-            'inputs': {
-                'dist_algo': args.distribution,
-                'dcop': args.dcop_files,
-                'graph': graph_type,
-                'algo': args.algo,
+            "inputs": {
+                "dist_algo": args.distribution,
+                "dcop": args.dcop_files,
+                "graph": graph_type,
+                "algo": args.algo,
             },
-            'distribution': dist,
-            'cost': cost
+            "distribution": dist,
+            "cost": cost,
         }
         if args.output is not None:
-            with open(args.output, encoding='utf-8', mode='w') as fo:
+            with open(args.output, encoding="utf-8", mode="w") as fo:
                 fo.write(yaml.dump(result))
         print(yaml.dump(result))
         sys.exit(0)
 
     except ImpossibleDistributionException as e:
-        result = {
-            'status': 'FAIL',
-            'error': str(e)
-        }
+        result = {"status": "FAIL", "error": str(e)}
         print(yaml.dump(result))
         sys.exit(2)
 
@@ -284,19 +291,18 @@ def run_cmd(args):
 def load_distribution_module(dist):
     dist_module = None
     try:
-        dist_module = import_module('pydcop.distribution.{}'.format(dist))
+        dist_module = import_module("pydcop.distribution.{}".format(dist))
     except ImportError as e:
-        _error('Could not find distribution method {}'.format(dist), e)
+        _error("Could not find distribution method {}".format(dist), e)
     return dist_module
 
 
 def load_graph_module(graph):
     graph_module = None
     try:
-        graph_module = import_module('pydcop.computations_graph.{}'.
-                                     format(graph))
+        graph_module = import_module("pydcop.computations_graph.{}".format(graph))
     except ImportError as e:
-        _error('Could not find computation graph type: {}'.format(graph), e)
+        _error("Could not find computation graph type: {}".format(graph), e)
     return graph_module
 
 
@@ -305,5 +311,5 @@ def load_algo_module(algo):
     try:
         algo_module = load_algorithm_module(algo)
     except ImportError as e:
-        _error('Could not find dcop algorithm: {}'.format(algo), e)
+        _error("Could not find dcop algorithm: {}".format(algo), e)
     return algo_module
