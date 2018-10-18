@@ -136,10 +136,9 @@ def prepare_metrics_files(run, end, mode):
             if f_dir and not os.path.exists(f_dir):
                 os.makedirs(f_dir)
         # Add column labels in file:
-        headers = ', '.join(columns[mode])
-        with open(run_metrics, 'w', encoding='utf-8') as f:
-            f.write(headers)
-            f.write('\n')
+        with open(run_metrics, 'w', encoding='utf-8', newline='') as f:
+            csvwriter = csv.writer(f)
+            csvwriter.writerow(columns[mode])
         csv_cb = partial(add_csvline, run_metrics, mode)
     else:
         csv_cb = None
@@ -150,10 +149,9 @@ def prepare_metrics_files(run, end, mode):
             os.makedirs(os.path.dirname(end_metrics))
         # Add column labels in file:
         if not os.path.exists(end_metrics):
-            headers = ','.join(columns[mode])
-            with open(end_metrics, 'w', encoding='utf-8') as f:
-                f.write(headers)
-                f.write('\n')
+            with open(end_metrics, 'w', encoding='utf-8', newline='') as f:
+                csvwriter = csv.writer(f)
+                csvwriter.writerow(columns[mode])
 
     return csv_cb
 
