@@ -52,6 +52,7 @@ from pydcop.commands import distribute
 from pydcop.commands import graph
 from pydcop.commands import generate
 from pydcop.commands import run
+from pydcop.commands import consolidate
 
 cli_timer = None
 TIMEOUT_SLACK = 40
@@ -90,6 +91,7 @@ def main():
     replica_dist.set_parser(subparsers)
     run.set_parser(subparsers)
     batch.set_parser(subparsers)
+    consolidate.set_parser(subparsers)
 
     # parse command line options
     args = parser.parse_args()
