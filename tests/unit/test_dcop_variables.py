@@ -463,9 +463,9 @@ class TestMassVariableCreation(unittest.TestCase):
         d = Domain('color', '', ['R', 'G', 'B'])
         vars = create_variables('x_', range(10), d)
 
-        self.assertIn('x_01', vars)
-        self.assertTrue(isinstance(vars['x_02'], Variable))
-        self.assertEqual(vars['x_03'].name, 'x_03')
+        self.assertIn('x_1', vars)
+        self.assertTrue(isinstance(vars['x_2'], Variable))
+        self.assertEqual(vars['x_3'].name, 'x_3')
 
     def test_create_several_variables_from_several_lists(self):
         d = Domain('color', '', ['R', 'G', 'B'])
