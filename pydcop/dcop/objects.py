@@ -251,7 +251,7 @@ class Variable(SimpleRepr):
 
 
 def create_variables(name_prefix: str,
-                     indexes: Union[str, Iterable[str]],
+                     indexes: Union[str, Tuple, Iterable],
                      domain: Domain,
                      separator: str='_') \
         -> Dict[Union[str, Tuple[str, ...]], Variable]:
@@ -263,7 +263,8 @@ def create_variables(name_prefix: str,
         Used as prefix when naming the variables.
     indexes: non-tuple iterable of indexes or tuple of iterables of indexes
         If it not a tuple, a variable is be created for each of
-        the index. If it is a tuple of iterable, a variable is created
+        the index. The index might be a range(see examples).
+         If it is a tuple of iterable, a variable is created
         for every possible combinations of values from `indexes`.
     domain: Domain
         The domain for the variables.
@@ -287,6 +288,12 @@ def create_variables(name_prefix: str,
     >>> assert isinstance(vrs['x_a2'], Variable)
     >>> assert 'B' in vrs['x_a3'].domain
 
+    When passing a range:
+    >>> vrs = create_variables('v', range(10),
+    ...                        Domain('color', '', ['R', 'G', 'B']))
+    >>> assert isinstance(vrs['v2'], Variable)
+    >>> assert 'B' in vrs['v3'].domain
+
 
     When passing a tuple of iterables of indexes:
     >>> vrs = create_variables('m_',
@@ -304,6 +311,11 @@ def create_variables(name_prefix: str,
         for combi in itertools.product(*indexes):
             name = name_prefix + separator.join(combi)
             variables[tuple(combi)] = Variable(name, domain)
+    elif isinstance(indexes, range):
+        digit_count = len(str(indexes.stop-1))
+        for i in indexes:
+            name = f"{name_prefix}{i:0{digit_count}d}"
+            variables[name] = Variable(name, domain)
     elif hasattr(indexes, '__iter__'):
         for i in indexes:
             name = name_prefix + str(i)
