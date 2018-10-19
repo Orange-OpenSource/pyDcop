@@ -273,7 +273,7 @@ def generate(args):
     variables = {}
     for i, node in enumerate(graph.nodes):
         logger.debug("node %s - %s", node, i)
-        name = f"v{i+1:02d}"
+        name = f"v{i:02d}"
         # Networkx's nodes may be index or tuple, but are guaranteed to be
         # hashable, we can use them as key in our map:
         variables[node] = Variable(name, domain)
