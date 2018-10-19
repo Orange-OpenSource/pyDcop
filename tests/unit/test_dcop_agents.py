@@ -36,63 +36,68 @@ from pydcop.dcop.objects import AgentDef
 from pydcop.utils.simple_repr import from_repr, simple_repr
 
 
-class TestAgentDef(unittest.TestCase):
+def test_name_only():
 
-    def test_name_only(self):
+    a = AgentDef("a1")
+    assert a.name == "a1"
 
-        a = AgentDef('a1')
-        self.assertEqual(a.name, 'a1')
 
-    def test_with_capacity(self):
-        a = AgentDef('a1', capacity=10)
+def test_with_capacity():
+    a = AgentDef("a1", capacity=10)
 
-        self.assertEqual(a.name, 'a1')
-        self.assertEqual(a.capacity, 10)
+    assert a.name == "a1"
+    assert a.capacity == 10
 
-    def test_with_arbitrary_attr(self):
 
-        a = AgentDef('a1', foo=15)
+def test_with_arbitrary_attr():
 
-        self.assertEqual(a.name, 'a1')
-        self.assertEqual(a.foo, 15)
+    a = AgentDef("a1", foo=15)
 
-    def test_with_various_attr(self):
+    assert a.name == "a1"
+    assert a.foo == 15
 
-        a = AgentDef('a1', foo=15, bar='bar')
 
-        self.assertEqual(a.name, 'a1')
-        self.assertEqual(a.foo, 15)
-        self.assertEqual(a.bar, 'bar')
+def test_with_various_attr():
 
-    def test_with_default_hosting_cost(self):
+    a = AgentDef("a1", foo=15, bar="bar")
 
-        a = AgentDef('a1', default_hosting_cost=15)
+    assert a.name == "a1"
+    assert a.foo == 15
+    assert a.bar == "bar"
 
-        self.assertEqual(a.name, 'a1')
-        self.assertEqual(a.hosting_cost('foo'), 15)
 
-    def test_with_hosting_cost(self):
+def test_with_default_hosting_cost():
 
-        a = AgentDef('a1', hosting_costs={'foo': 5, 'bar': 7})
+    a = AgentDef("a1", default_hosting_cost=15)
 
-        self.assertEqual(a.name, 'a1')
-        self.assertEqual(a.hosting_cost('foo'), 5)
-        self.assertEqual(a.hosting_cost('bar'), 7)
-        self.assertEqual(a.hosting_cost('pouet'), 0)
+    assert a.name == "a1"
+    assert a.hosting_cost("foo") == 15
 
-    def test_with_default_route(self):
 
-        a = AgentDef('a1', default_route=12)
+def test_with_hosting_cost():
 
-        self.assertEqual(a.name, 'a1')
-        self.assertEqual(a.route('foo'), 12)
-        self.assertEqual(a.route('bar'), 12)
+    a = AgentDef("a1", hosting_costs={"foo": 5, "bar": 7})
 
-    def test_with_routes(self):
+    assert a.name == "a1"
+    assert a.hosting_cost("foo") == 5
+    assert a.hosting_cost("bar") == 7
+    assert a.hosting_cost("pouet") == 0
 
-        a = AgentDef('a1', routes={'psycho': 5, 'killer': 7})
 
-        self.assertEqual(a.name, 'a1')
-        self.assertEqual(a.route('psycho'), 5)
-        self.assertEqual(a.route('killer'), 7)
-        self.assertEqual(a.route('ahahah'), 1)
+def test_with_default_route():
+
+    a = AgentDef("a1", default_route=12)
+
+    assert a.name == "a1"
+    assert a.route("foo") == 12
+    assert a.route("bar") == 12
+
+
+def test_with_routes():
+
+    a = AgentDef("a1", routes={"psycho": 5, "killer": 7})
+
+    assert a.name == "a1"
+    assert a.route("psycho") == 5
+    assert a.route("killer") == 7
+    assert a.route("ahahah") == 1
