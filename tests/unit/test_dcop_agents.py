@@ -29,10 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
-import unittest
-
-from pydcop.dcop.objects import AgentDef
+from pydcop.dcop.objects import AgentDef, create_agents
 from pydcop.utils.simple_repr import from_repr, simple_repr
 
 
@@ -101,3 +98,16 @@ def test_with_routes():
     assert a.route("psycho") == 5
     assert a.route("killer") == 7
     assert a.route("ahahah") == 1
+
+
+def test_create_agents_from_range():
+    agts = create_agents("a", range(20), default_route=2, default_hosting_costs=7)
+    assert isinstance(agts["a08"], AgentDef)
+    assert len(agts) == 20
+
+
+def test_create_agents_with_capacity():
+    agts = create_agents("a", range(20), capacity=100)
+    assert isinstance(agts["a18"], AgentDef)
+    assert agts["a05"].capacity == 100
+    assert len(agts) == 20

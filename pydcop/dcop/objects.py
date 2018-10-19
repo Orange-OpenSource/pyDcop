@@ -835,7 +835,7 @@ def create_agents(name_prefix: str,
     ----------
     name_prefix: str
         Used as prefix when naming the agents.
-    indexes: non-tuple iterable of indexes or tuple of iterables of indexes
+    indexes: non-tuple iterable of indexes or tuple of iterable of indexes
         If it not a tuple, an AgentDef is be created for each of
         the index. If it is a tuple of iterable, an AgentDef is created
         for every possible combinations of values from `indexes`.
@@ -870,6 +870,11 @@ def create_agents(name_prefix: str,
     ...                      default_route=2, default_hosting_costs=7)
     >>> assert isinstance(agts['a2'], AgentDef)
 
+    When passing a range:
+    >>> agts = create_agents('a', range(20),
+    ...                      default_route=2, default_hosting_costs=7)
+    >>> assert isinstance(agts['a08'], AgentDef)
+
     """
     agents = {}  #type: Dict[Union[str, Tuple[str, ...]], AgentDef]
 
@@ -877,6 +882,14 @@ def create_agents(name_prefix: str,
         for combi in itertools.product(*indexes):
             name = name_prefix + separator.join(combi)
             agents[tuple(combi)] = AgentDef(
+                name, default_route=default_route, routes=routes,
+                default_hosting_costs=default_hosting_costs,
+                hosting_costs=hosting_costs, **kwargs)
+    elif isinstance(indexes, range):
+        digit_count = len(str(indexes.stop-1))
+        for i in indexes:
+            name = f"{name_prefix}{i:0{digit_count}d}"
+            agents[name] = AgentDef(
                 name, default_route=default_route, routes=routes,
                 default_hosting_costs=default_hosting_costs,
                 hosting_costs=hosting_costs, **kwargs)
