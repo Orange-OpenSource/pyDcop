@@ -80,11 +80,37 @@ def init_cli_parser(parent_parser):
         default="None",
         help="Hosting cost generation method.",
     )
+    parser.add_argument(
+        "--hosting_default",
+        type=int,
+        required=False,
+        help="Default hosting cost, mandatory when using --hosting",
+    )
 
+    parser.add_argument(
+        "--routes",
+        choices=["None", "uniform"],
+        required=False,
+        default="None",
+        help="Route cost generation method.",
+    )
+    parser.add_argument(
+        "--routes_default",
+        type=int,
+        required=False,
+        help="Default routes cost, mandatory when using --routes",
+    )
+
+    # TODO: non-uniform route costs, derived from graph
+    #
 
 def generate(args):
     agents_name = generate_agents_names(args.count, args.agent_prefix)
 
+    if args.hosting and args.hosting != "None":
+        pass
+
+    hosting_costs = {}
     if args.hosting and args.hosting != "None":
         if not args.dcop_files:
             raise ValueError(
@@ -93,21 +119,28 @@ def generate(args):
         logger.info("loading dcop from {}".format(args.dcop_files))
         dcop = load_dcop_from_file(args.dcop_files)
 
+        if not args.hosting_default:
+            raise ValueError(
+                f"Missing --hosting_default when using {args.hosting} hosting cost generation"
+            )
+
         hosting_costs = generate_hosting_costs(
             args.hosting, agents_name, dcop.variables
         )
-        agents = []
-        for agt_name in agents_name:
-            agt = AgentDef(
-                agt_name,
-                default_hosting_cost=1000,
-                hosting_costs=hosting_costs[agt_name],
-                capacity=args.capacity,
-            )
-            agents.append(agt)
 
-    else:
-        agents = list(create_agents("", agents_name, capacity=args.capacity).values())
+
+    agents = []
+    for agt_name in agents_name:
+        kw = {}
+        if agt_name in hosting_costs:
+            kw["hosting_costs"] = hosting_costs[agt_name]
+        if args.hosting_default:
+            kw["default_hosting_cost"] = args.hosting_default
+        if args.capacity:
+            kw["capacity"] = args.capacity
+        if args.routes_default:
+            kw["default_route"] = args.routes_default
+        agents.append(AgentDef(agt_name, **kw))
 
     serialized = yaml_agents(agents)
 
