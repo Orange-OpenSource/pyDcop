@@ -181,7 +181,7 @@ def run_batches(batches_definition, simulate: bool, jobs=None):
                     )
             elif "path" in pb_set and "file_re" in pb_set:
                 extras_files = (
-                    pb_set["extras_files"] if "extras_files" is pb_set else []
+                    pb_set["extras_files"] if "extras_files" in pb_set else []
                 )
                 files, extras, match_contexts = input_files_re(
                     pb_set["path"], pb_set["file_re"], extras_files
@@ -292,9 +292,10 @@ def input_files_re(
         for extra in extra_paths:
             extra = extra.format(**groups)
             if extra not in all_files:
-                logger.debug(f"Could not find expected stra file {extra}")
+                logger.debug(f"Could not find expected extra file {extra}")
                 break
             else:
+                logger.debug(f"Found expected extra file {extra}")
                 extra_files.append(extra)
         else:
             found_files.append(str(main_file))
@@ -311,7 +312,7 @@ def estimate_set(set_def: Dict) -> int:
         logger.debug(f"Found {file_count} input to handle")
         return file_count * iterations
     elif "path" in set_def and "file_re" in set_def:
-        extras_files = set_def["extras_files"] if "extras_files" is set_def else []
+        extras_files = set_def["extras_files"] if "extras_files" in set_def else []
 
         file_count = len(
             input_files_re(set_def["path"], set_def["file_re"], extras_files)[0]
@@ -348,10 +349,7 @@ def run_batch_for_files(
     for iteration in range(iterations):
         context["iteration"] = str(iteration)
         logger.debug(
-            "Iteration %s for file %s of set %s",
-            iteration,
-            os.path.basename(file_path),
-            context["set"],
+            f"Iteration {iteration} for {file_path} of set {context['set']} with {files}"
         )
 
         for batch in batches:
