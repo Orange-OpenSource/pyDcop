@@ -125,6 +125,7 @@ class ADsaComputation(VariableComputation):
         super().__init__(comp_def.node.variable, comp_def)
 
         assert comp_def.algo.algo == 'adsa'
+        assert (comp_def.algo.mode == 'min') or (comp_def.algo.mode == 'max')
 
         self.mode = comp_def.algo.mode
         self.probability = comp_def.algo.param_value('probability')
@@ -178,6 +179,8 @@ class ADsaComputation(VariableComputation):
             current_cost = assignment_cost(assignment,
                                            self.constraints)
             delta = abs(current_cost - best_cost)
+            self.logger.debug(f"Current cost {current_cost}, best cost {best_cost} "
+                              f"delta {delta}")
 
             if self.variant == 'A':
                 self.variant_a(delta, best_cost, args_best)
@@ -198,33 +201,38 @@ class ADsaComputation(VariableComputation):
         """
         DSA-A value change : only if gain is strictly positive.
         """
-        if (self.mode == 'min' and delta > 0) or \
-                (self.mode == 'max' and delta < 0):
+        if delta > 0:
+            self.logger.debug("Variant A, attempt probabilistic change")
             self.probabilistic_change(best_cost, best_values)
+        else:
+            self.logger.debug("Variant A, no reason to change")
 
     def variant_b(self, delta, best_cost, best_values):
         """
         DSA-B value change : only if gain is positive or == 0 but some
-        constraints are still vialoated (i.e. not at their optimal value).
+        constraints are still violated (i.e. not at their optimal value).
         """
-        if self.mode == 'min' and delta > 0 or\
-                self.mode == 'max' and delta < 0:
+        if delta > 0:
+            self.logger.debug("Variant B, attempt probabilistic change")
             self.probabilistic_change(best_cost, best_values)
 
-        elif delta == 0 and self.exists_violated_constraint() :
+        elif delta == 0 and self.exists_violated_constraint():
+            self.logger.debug("Variant B, attempt probabilistic change")
             if len(best_values) > 1:
                 try:
                     best_values.remove(self.current_value)
                 except ValueError:
                     pass
             self.probabilistic_change(best_cost, best_values)
+        else:
+            self.logger.debug("Variant B, no reason to change")
 
     def variant_c(self, delta, best_cost, best_values):
         """
         DSA-B value change : if gain is <= 0.
         """
-        if self.mode == 'min' and delta > 0 or\
-                self.mode == 'max' and delta < 0:
+        if delta > 0:
+            self.logger.debug("Variant C, attempt probabilistic change")
             self.probabilistic_change(best_cost, best_values)
 
         elif delta == 0:
@@ -234,6 +242,8 @@ class ADsaComputation(VariableComputation):
                 except ValueError:
                     pass
             self.probabilistic_change(best_cost, best_values)
+        else:
+            self.logger.debug("Variant C, no reason to change")
 
     def probabilistic_change(self, best_cost, best_values):
         """
