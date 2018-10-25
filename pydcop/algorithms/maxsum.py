@@ -297,6 +297,7 @@ class FactorAlgo(DcopComputation):
         assert (comp_def.algo.mode == "min") or (comp_def.algo.mode == "max")
 
         self._factor = factor
+        self.mode = comp_def.algo.mode
 
         global INFINITY, STABILITY_COEFF
         INFINITY = infinity
@@ -467,7 +468,9 @@ class FactorAlgo(DcopComputation):
             # cost (a) = f(a) + sum( costvar())
             # where costvar is the cost received from our other variables
 
-            min_val = INFINITY
+            mode_opt = INFINITY if self.mode == "min" else -INFINITY
+            optimal_value = mode_opt
+
             for assignment in self._valid_assignments():
                 if assignment[variable.name] != d:
                     continue
@@ -485,7 +488,7 @@ class FactorAlgo(DcopComputation):
                             # If there is no cost for this value, it means it
                             #  is infinite (as infinite cost are not included
                             # in messages) and we can stop adding costs.
-                            sum_cost = INFINITY
+                            sum_cost = mode_opt
                             break
                         sum_cost += self._costs[another_var][var_value]
                     else:
@@ -493,11 +496,14 @@ class FactorAlgo(DcopComputation):
                         pass
 
                 current_val = f_val + sum_cost
-                if min_val > current_val:
-                    min_val = current_val
+                if (optimal_value > current_val and self.mode == "min") or (
+                    optimal_value < current_val and self.mode == "max"
+                ):
 
-            if min_val != INFINITY:
-                costs[d] = min_val
+                    optimal_value = current_val
+
+            if optimal_value != mode_opt:
+                costs[d] = optimal_value
 
         return costs
 
@@ -553,6 +559,8 @@ class VariableAlgo(VariableComputation):
 
         assert comp_def.algo.algo == "maxsum"
         assert (comp_def.algo.mode == "min") or (comp_def.algo.mode == "max")
+
+        self.mode = comp_def.algo.mode
 
         # self._v = variable.clone()
         # Add noise to the variable, on top of cost if needed
@@ -779,6 +787,7 @@ class VariableAlgo(VariableComputation):
         a Tuple containing the selected value and the corresponding cost for
         this computation.
         """
+
         # If we have received costs from all our factor, we can select a
         # value from our domain.
         if self.var_with_cost:
@@ -792,15 +801,18 @@ class VariableAlgo(VariableComputation):
                     # As infinite costs are not included in messages,
                     # if there is not cost for this value it means the costs
                     # is infinite and we can stop adding other costs.
-                    d_costs[d] = INFINITY
+                    d_costs[d] = INFINITY if self.mode == "min" else -INFINITY
                     break
                 d_costs[d] += f_costs[d]
 
         from operator import itemgetter
 
-        min_d = min(d_costs.items(), key=itemgetter(1))
+        if self.mode == "min":
+            optimal_d = min(d_costs.items(), key=itemgetter(1))
+        else:
+            optimal_d = max(d_costs.items(), key=itemgetter(1))
 
-        return min_d[0], min_d[1]
+        return optimal_d[0], optimal_d[1]
 
     def _match_previous(self, f_name, costs):
         """
