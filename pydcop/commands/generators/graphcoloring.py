@@ -136,8 +136,8 @@ Generating a random soft graph coloring problem with 10 variables::
 
 """
 import logging
-import random
 import math
+import random
 
 import networkx as nx
 
@@ -271,7 +271,7 @@ def generate(args):
     domain = VariableDomain("colors", "color", COLORS[: args.colors_count])
 
     variables = {}
-    for i, node in enumerate(graph.nodes):
+    for i, node in enumerate(sorted(graph.nodes)):
         logger.debug("node %s - %s", node, i)
         name = f"v{i:02d}"
         # Networkx's nodes may be index or tuple, but are guaranteed to be
@@ -328,7 +328,15 @@ def generate_scalefree_graph(variables_count, m_edge, allow_subgraph):
             is_connected = nx.is_connected(graph)
     else:
         graph = nx.barabasi_albert_graph(variables_count, m_edge)
-    return graph
+
+    # In the obtained graph, low rank nodes will have a much higher edge count
+    # than high rank nodes. We shuffle the nodes names to avoid this effect:
+    new_nodes = list(range(variables_count))
+    random.shuffle(new_nodes)
+    node_mapping = {n: nn for n, nn in zip(graph.nodes, new_nodes)}
+
+    new_graph = nx.Graph((node_mapping[e1], node_mapping[e2]) for e1, e2 in graph.edges)
+    return new_graph
 
 
 def generate_grid_graph(variables_count):
@@ -376,8 +384,8 @@ def generate_hard_constraints(graph, variables, intentional):
         a networkx graph representing the constraint network
     variables: dict
         a dict of variable objects
-    extensive!: bool
-        if true, generate extensive constraints
+    intentional: bool
+        if true, generate intentional constraints
 
     Returns
     -------
