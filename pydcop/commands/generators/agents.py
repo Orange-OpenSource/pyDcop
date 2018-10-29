@@ -114,6 +114,7 @@ import logging
 import re
 from typing import List, Dict
 
+from pydcop.computations_graph import constraints_hypergraph
 from pydcop.dcop.objects import AgentDef
 from pydcop.dcop.yamldcop import yaml_agents, load_dcop_from_file
 
@@ -162,7 +163,7 @@ def init_cli_parser(parent_parser):
 
     parser.add_argument(
         "--routes",
-        choices=["None", "uniform"],
+        choices=["None", "uniform", "graph"],
         required=False,
         default="None",
         help="Route cost generation method.",
@@ -173,9 +174,6 @@ def init_cli_parser(parent_parser):
         required=False,
         help="Default routes cost, mandatory when using --routes",
     )
-
-    # TODO: non-uniform route costs, derived from graph
-    #
 
 
 def generate(args):
@@ -193,9 +191,11 @@ def generate(args):
 
     hosting_costs = {}
     if args.hosting != "None":
-        hosting_costs = generate_hosting_costs(
-            args.hosting, agents_name, variables
-        )
+        hosting_costs = generate_hosting_costs(args.hosting, agents_name, variables)
+
+    routes_costs = {}
+    if args.routes != "None":
+        routes_costs = generate_routes_costs(args.routes, agents_name, dcop)
 
     agents = []
     for agt_name in agents_name:
@@ -206,6 +206,8 @@ def generate(args):
             kw["default_hosting_cost"] = args.hosting_default
         if args.capacity:
             kw["capacity"] = args.capacity
+        if agt_name in routes_costs:
+            kw["routes"] = routes_costs[agt_name]
         if args.routes_default:
             kw["default_route"] = args.routes_default
         agents.append(AgentDef(agt_name, **kw))
@@ -280,6 +282,44 @@ def generate_hosting_costs(mode: str, agents: List[str], variables: List[str]):
         return costs
 
 
+def generate_routes_costs(
+    mode: str, agents: List[str], dcop
+) -> Dict[str, Dict[str, float]]:
+    routes = {}
+    if mode == "graph":
+        variables = list(dcop.variables)
+        graph = constraints_hypergraph.build_computation_graph(dcop)
+
+        # route = (1 + abs(degree_n - degree_v)) / (degree_n + degree_v)
+        logger.debug(f"agants {agents}")
+        logger.debug(f"variables {variables}")
+        mappings = find_corresponding_variables(agents, variables)
+        logger.debug(mappings)
+        inverse_mapping = {variable: agent for agent, variable in mappings.items()}
+        logger.debug(inverse_mapping)
+        for agt_name in agents:
+            agt_routes = {}
+            if agt_name in mappings:
+                hosted_variable = mappings[agt_name]
+                neighbor_variables = list(graph.neighbors(hosted_variable))
+                logger.debug(
+                    f"routes for {agt_name} hosting {hosted_variable} with {neighbor_variables}"
+                )
+
+                degree = len(neighbor_variables)
+                for neighbor in neighbor_variables:
+                    if neighbor in inverse_mapping:
+                        neighbor_agent = inverse_mapping[neighbor]
+                        degree_neighbor = len(list(graph.neighbors(neighbor)))
+                        route = (0.2 + abs(degree - degree_neighbor)) / (
+                            degree + degree_neighbor
+                        )
+                        logger.debug(f"Route {agt_name} - {neighbor_agent} : {route}")
+                        agt_routes[neighbor_agent] = route
+            routes[agt_name] = agt_routes
+    return routes
+
+
 def find_corresponding_variables(
     agents: List[str], variables: List[str], agt_prefix=None, var_prefix=None
 ) -> Dict[str, str]:
@@ -338,7 +378,6 @@ def find_prefix(names: List[str]) -> str:
         if all(name[:prefix_lenght] == prefix_test for name in names):
             prefix_lenght += 1
             prefix = prefix_test
-            prefix_test = names[0][:prefix_lenght]
             continue
         break
 
