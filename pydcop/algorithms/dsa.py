@@ -97,19 +97,22 @@ import random
 from typing import Any, Tuple, List
 
 from pydcop.algorithms import AlgoParameterDef, ComputationDef
-from pydcop.infrastructure.computations import MessagePassingComputation, \
-    Message, VariableComputation, DcopComputation, register
+from pydcop.infrastructure.computations import (
+    MessagePassingComputation,
+    Message,
+    VariableComputation,
+    DcopComputation,
+    register,
+)
 
-from pydcop.computations_graph.constraints_hypergraph import \
-    VariableComputationNode
-from pydcop.dcop.relations import find_optimum, assignment_cost, \
-    filter_assignment_dict
+from pydcop.computations_graph.constraints_hypergraph import VariableComputationNode
+from pydcop.dcop.relations import find_optimum, assignment_cost, filter_assignment_dict
 
 HEADER_SIZE = 0
 UNIT_SIZE = 1
 
 # Type of computations graph that must be used with dsa
-GRAPH_TYPE = 'constraints_hypergraph'
+GRAPH_TYPE = "constraints_hypergraph"
 
 # Dsa supports several parameters:
 #
@@ -124,10 +127,11 @@ GRAPH_TYPE = 'constraints_hypergraph'
 
 
 algo_params = [
-    AlgoParameterDef('probability', 'float', None, 0.7),
-    AlgoParameterDef('variant', 'str', ['A', 'B', 'C'], 'B'),
-    AlgoParameterDef('stop_cycle', 'int', None, 0),
+    AlgoParameterDef("probability", "float", None, 0.7),
+    AlgoParameterDef("variant", "str", ["A", "B", "C"], "B"),
+    AlgoParameterDef("stop_cycle", "int", None, 0),
 ]
+
 
 def computation_memory(computation: VariableComputationNode) -> float:
     """Return the memory footprint of a DSA computation.
@@ -148,8 +152,9 @@ def computation_memory(computation: VariableComputationNode) -> float:
         the memory footprint of the computation.
 
     """
-    neighbors = set((n for l in computation.links for n in l.nodes
-                     if n not in computation.name))
+    neighbors = set(
+        (n for l in computation.links for n in l.nodes if n not in computation.name)
+    )
     return len(neighbors) * UNIT_SIZE
 
 
@@ -177,10 +182,9 @@ def communication_load(src: VariableComputationNode, target: str) -> float:
     return UNIT_SIZE + HEADER_SIZE
 
 
-
 class DsaMessage(Message):
     def __init__(self, value):
-        super().__init__('dsa_value', None)
+        super().__init__("dsa_value", None)
         self._value = value
 
     @property
@@ -192,10 +196,10 @@ class DsaMessage(Message):
         return 1
 
     def __str__(self):
-        return 'DsaMessage({})'.format(self.value)
+        return "DsaMessage({})".format(self.value)
 
     def __repr__(self):
-        return 'DsaMessage({})'.format(self.value)
+        return "DsaMessage({})".format(self.value)
 
     def __eq__(self, other):
         if type(other) != DsaMessage:
@@ -235,16 +239,17 @@ class DsaComputation(VariableComputation):
     algo_params for a list of parameter support by this dsa implementation.
 
     """
+
     def __init__(self, comp_def: ComputationDef):
         super().__init__(comp_def.node.variable, comp_def)
 
-        assert comp_def.algo.algo == 'dsa'
-        assert (comp_def.algo.mode == 'min') or (comp_def.algo.mode == 'max')
+        assert comp_def.algo.algo == "dsa"
+        assert (comp_def.algo.mode == "min") or (comp_def.algo.mode == "max")
 
         self.mode = comp_def.algo.mode
-        self.probability = comp_def.algo.param_value('probability')
-        self.variant = comp_def.algo.param_value('variant')
-        self.stop_cycle = comp_def.algo.param_value('stop_cycle')
+        self.probability = comp_def.algo.param_value("probability")
+        self.variant = comp_def.algo.param_value("variant")
+        self.stop_cycle = comp_def.algo.param_value("stop_cycle")
         self.constraints = comp_def.node.constraints
 
         # Maps for the values of our neighbors for the current and next cycle:
@@ -255,52 +260,60 @@ class DsaComputation(VariableComputation):
             # In DSA-B, we need to check if there are still some violated
             # constraints, for this we compute the best achievable cost for each
             # constraint:
-            self.best_constraints_costs = {c.name: find_optimum(c, self.mode)
-                                           for c in self.constraints}
+            self.best_constraints_costs = {
+                c.name: find_optimum(c, self.mode) for c in self.constraints
+            }
 
     def on_start(self):
         # randomly select a value
         self.random_value_selection()
-        self.logger.debug('DSA starts: randomly select value %s',
-                          self.current_value)
+        self.logger.debug("DSA starts: randomly select value %s", self.current_value)
         self.post_to_all_neighbors(DsaMessage(self.current_value))
 
         # As everything is asynchronous, we might have received our
         # neighbors values even before starting this algorithm.
         self.evaluate_cycle()
 
-    @register('dsa_value')
+    @register("dsa_value")
     def _on_value_msg(self, variable_name, recv_msg, t):
         if variable_name not in self.current_cycle:
             self.current_cycle[variable_name] = recv_msg.value
-            self.logger.debug('Receiving value %s from %s',
-                              recv_msg.value, variable_name)
+            self.logger.debug(
+                "Receiving value %s from %s", recv_msg.value, variable_name
+            )
             self.evaluate_cycle()
 
         else:
-            self.logger.debug('Receiving value %s from %s for the next cycle.',
-                              recv_msg.value, variable_name)
+            self.logger.debug(
+                "Receiving value %s from %s for the next cycle.",
+                recv_msg.value,
+                variable_name,
+            )
             self.next_cycle[variable_name] = recv_msg.value
 
     def evaluate_cycle(self):
 
         if len(self.current_cycle) == len(self.neighbors):
 
-            self.logger.debug('Full neighbors assignment for cycle %s : %s ',
-                              self.cycle_count, self.current_cycle)
+            self.logger.debug(
+                "Full neighbors assignment for cycle %s : %s ",
+                self.cycle_count,
+                self.current_cycle,
+            )
 
             self.current_cycle[self.variable.name] = self.current_value
             args_best, best_cost = self.find_best_values()
             current_cost = assignment_cost(self.current_cycle, self.constraints)
             delta = abs(current_cost - best_cost)
-            self.logger.debug(f"Current cost {current_cost}, best cost {best_cost} "
-                              f"delta {delta}")
+            self.logger.debug(
+                f"Current cost {current_cost}, best cost {best_cost} " f"delta {delta}"
+            )
 
-            if self.variant == 'A':
+            if self.variant == "A":
                 self.variant_a(delta, best_cost, args_best)
-            elif self.variant == 'B':
+            elif self.variant == "B":
                 self.variant_b(delta, best_cost, args_best)
-            elif self.variant == 'C':
+            elif self.variant == "C":
                 self.variant_c(delta, best_cost, args_best)
 
             self.new_cycle()
@@ -367,11 +380,11 @@ class DsaComputation(VariableComputation):
         """
         if self.probability > random.random():
             self.value_selection(random.choice(best_values), best_cost)
-            self.logger.info('Selecting new value %s with cost %s ',
-                             self.current_value, self.current_cost)
+            self.logger.info(
+                f"Selecting new value {self.current_value} with cost {self.current_cost}"
+            )
         else:
-            self.logger.info('%s has potential improvement but '
-                             'not value change', self.name)
+            self.logger.info("No probabilistic value change")
 
     def find_best_values(self) -> Tuple[List[Any], float]:
         """
@@ -389,22 +402,25 @@ class DsaComputation(VariableComputation):
             The cost achieved with these values.
         """
         assignment = self.current_cycle.copy()
-        arg_best, best_cost = None, float('inf')
-        if self.mode == 'max':
-            arg_best, best_cost = None, -float('inf')
+        arg_best, best_cost = None, float("inf")
+        if self.mode == "max":
+            arg_best, best_cost = None, -float("inf")
 
         for value in self.variable.domain:
             assignment[self.variable.name] = value
             cost = assignment_cost(assignment, self.constraints)
 
             # Take into account variable cost, if any
-            if hasattr(self.variable, 'cost_for_val'):
+            if hasattr(self.variable, "cost_for_val"):
                 cost += self.variable.cost_for_val(value)
 
             if cost == best_cost:
                 arg_best.append(value)
-            elif (self.mode == 'min' and cost < best_cost) or \
-                    self.mode == 'max' and cost > best_cost:
+            elif (
+                (self.mode == "min" and cost < best_cost)
+                or self.mode == "max"
+                and cost > best_cost
+            ):
                 best_cost, arg_best = cost, [value]
 
         return arg_best, best_cost
