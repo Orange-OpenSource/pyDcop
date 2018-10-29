@@ -2,6 +2,8 @@ from pydcop.commands.generators.agents import (
     find_corresponding_variables,
     generate_agents_names,
     generate_hosting_costs,
+    generate_agents_from_variables,
+    find_prefix,
 )
 from pydcop.dcop.objects import create_variables, Domain
 
@@ -85,3 +87,40 @@ def test_generate_hosting_costs():
 
     mapped_vars = [costs.values()]
     assert "v12" not in mapped_vars
+
+
+def test_find_prefix_len1():
+    obtained = find_prefix(["x1", "x2", "x3"])
+    assert obtained == "x"
+
+
+def test_find_prefix_no_common_prefix():
+    obtained = find_prefix(["x1", "x2", "V3"])
+    assert obtained == ""
+
+
+def test_find_prefix_len2():
+    obtained = find_prefix(["x_1", "x_2", "x_3"])
+    assert obtained == "x_"
+
+
+def test_generate_agent_from_variables():
+
+    variables = ["v1", "v2", "v3", "v4"]
+    obtained = generate_agents_from_variables(variables)
+    assert len(obtained) == 4
+    assert "a1" in obtained
+    assert "a2" in obtained
+    assert "a3" in obtained
+    assert "a4" in obtained
+
+
+def test_generate_agent_from_variables_with_prefix():
+
+    variables = ["v1", "v2", "v3", "v4"]
+    obtained = generate_agents_from_variables(variables, agent_prefix="A_")
+    assert len(obtained) == 4
+    assert "A_1" in obtained
+    assert "A_2" in obtained
+    assert "A_3" in obtained
+    assert "A_4" in obtained

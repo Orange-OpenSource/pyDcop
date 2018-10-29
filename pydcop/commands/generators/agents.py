@@ -62,9 +62,20 @@ def init_cli_parser(parent_parser):
     parser = parent_parser.add_parser("agents", help="Generate a set of agents")
     parser.set_defaults(func=generate)
 
+    parser.add_argument(
+        "--mode",
+        type=str,
+        required=True,
+        choices=["variables", "count"],
+        help="Agents generation mode. When 'variables' is used, one agent "
+        "is generated for each agent and the '--dcop_files' option is required. "
+        "When using 'count', '--count' is required",
+    )
+
     parser.add_argument("--dcop_files", type=str, nargs="+", help="dcop file(s)")
 
-    parser.add_argument("--count", type=int, required=True, help="Number of agents")
+    parser.add_argument("--count", type=int, help="Number of agents")
+
     parser.add_argument(
         "--agent_prefix", type=str, default="a", help="Prefix when creating agent"
     )
@@ -153,9 +164,27 @@ def generate(args):
 
 
 def generate_agents_names(agent_count: int, agent_prefix="a"):
+
+def generate_agents_names(
+    mode: str, count=None, variables=None, agent_prefix="a"
+) -> List[str]:
+    if mode == "count":
+        return generate_agents_from_count(count, agent_prefix=agent_prefix)
+    elif mode == "variables":
+        return generate_agents_from_variables(variables, agent_prefix=agent_prefix)
+    raise ValueError(f"Invalid mode {mode}")
+
+
+def generate_agents_from_count(agent_count: int, agent_prefix="a") -> List[str]:
     digit_count = len(str(agent_count - 1))
     agents = [f"{agent_prefix}{i:0{digit_count}d}" for i in range(agent_count)]
     return agents
+
+
+def generate_agents_from_variables(variables: List[str], agent_prefix="a") -> List[str]:
+    prefix_length = len(find_prefix(variables))
+
+    return [agent_prefix + variable[prefix_length:] for variable in variables]
 
 
 def generate_hosting_costs(mode: str, agents: List[str], variables: List[str]):
@@ -192,3 +221,28 @@ def find_corresponding_variables(
                 mapping[agent] = indexed_vars[index]
 
     return mapping
+
+
+def find_prefix(names: List[str]) -> str:
+    """
+    Find a common prefix in a list of string?
+    Parameters
+    ----------
+    names: list of str
+
+    Returns
+    -------
+    prefix: str
+    """
+    prefix_lenght = 1
+    prefix = ""
+    while True:
+        prefix_test = names[0][:prefix_lenght]
+        if all(name[:prefix_lenght] == prefix_test for name in names):
+            prefix_lenght += 1
+            prefix = prefix_test
+            prefix_test = names[0][:prefix_lenght]
+            continue
+        break
+
+    return prefix
