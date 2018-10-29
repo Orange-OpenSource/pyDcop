@@ -46,7 +46,7 @@ from pydcop.dcop.objects import AgentDef
 from pydcop.distribution import ilp_compref
 from pydcop.distribution.objects import DistributionHints, Distribution
 
-logger = logging.getLogger('distribution.heur_comhost')
+logger = logging.getLogger("distribution.heur_comhost")
 
 
 # Weight factors when aggregating communication costs and hosting costs in the
@@ -55,13 +55,13 @@ logger = logging.getLogger('distribution.heur_comhost')
 RATIO_HOST_COMM = 0.5
 
 
-def distribute(computation_graph: ComputationGraph,
-               agentsdef: Iterable[AgentDef],
-               hints: DistributionHints=None,
-               computation_memory: Callable[[ComputationNode], float]=None,
-               communication_load: Callable[[ComputationNode, str],
-                                            float]=None) \
-        -> Distribution:
+def distribute(
+    computation_graph: ComputationGraph,
+    agentsdef: Iterable[AgentDef],
+    hints: DistributionHints = None,
+    computation_memory: Callable[[ComputationNode], float] = None,
+    communication_load: Callable[[ComputationNode, str], float] = None,
+) -> Distribution:
     """
 
     Parameters
@@ -76,39 +76,50 @@ def distribute(computation_graph: ComputationGraph,
     -------
 
     """
-    computations = sorted([(computation_memory(n), n, None)
-                           for n in computation_graph.nodes],
-                          key=lambda o: (o[0], o[1].name),
-                          reverse=True)
-    logger.info('placing computations %s',
-                [(f, c.name) for f, c, _ in computations])
+
+    computations = sorted(
+        [(computation_memory(n), n, None) for n in computation_graph.nodes],
+        key=lambda o: (o[0], o[1].name),
+        reverse=True,
+    )
+    logger.info("placing computations %s", [(f, c.name) for f, c, _ in computations])
 
     current_mapping = {}  # Type: Dict[str, str]
     i = 0
     while len(current_mapping) != len(computations):
         footprint, computation, candidates = computations[i]
-        logger.debug('Trying to place computation %s with footprint %s',
-                     computation.name, footprint)
+        logger.debug(
+            "Trying to place computation %s with footprint %s",
+            computation.name,
+            footprint,
+        )
         # try
         # look for agent for computation c
         if candidates is None:
-            candidates = candidate_hosts(computation, footprint,
-                                         computations, agentsdef,
-                                         communication_load, current_mapping)
+            candidates = candidate_hosts(
+                computation,
+                footprint,
+                computations,
+                agentsdef,
+                communication_load,
+                current_mapping,
+            )
             computations[i] = footprint, computation, candidates
-        logger.debug('Candidates for computation %s : %s',
-                     computation.name, candidates   )
+        logger.debug("Candidates for computation %s : %s", computation.name, candidates)
 
         if not candidates:
-            if i==0:
-                raise ValueError('Impossible Distribution !')
+            if i == 0:
+                raise ValueError("Impossible Distribution !")
 
             # no candidate : backtrack !
             i -= 1
-            logger.info('No candidate for %s, backtrack placement '
-                        'of computation %s (was on %s',
-                        computation.name, computations[i][1].name,
-                        current_mapping[computations[i][1].name])
+            logger.info(
+                "No candidate for %s, backtrack placement "
+                "of computation %s (was on %s",
+                computation.name,
+                computations[i][1].name,
+                current_mapping[computations[i][1].name],
+            )
             current_mapping.pop(computations[i][1].name)
 
             # FIXME : eliminate selected agent for previous computation
@@ -116,8 +127,9 @@ def distribute(computation_graph: ComputationGraph,
             _, selected = candidates.pop()
             current_mapping[computation.name] = selected.name
             computations[i] = footprint, computation, candidates
-            logger.debug('Place computation %s on agent %s', computation.name,
-                        selected.name)
+            logger.debug(
+                "Place computation %s on agent %s", computation.name, selected.name
+            )
             i += 1
 
     # Build the distribution for the mapping
@@ -129,22 +141,30 @@ def distribute(computation_graph: ComputationGraph,
     return dist
 
 
-def distribution_cost(distribution: Distribution,
-                      computation_graph: ComputationGraph,
-                      agentsdef: Iterable[AgentDef],
-                      computation_memory: Callable[[ComputationNode], float],
-                      communication_load: Callable[[ComputationNode, str],
-                                                   float]) -> float:
+def distribution_cost(
+    distribution: Distribution,
+    computation_graph: ComputationGraph,
+    agentsdef: Iterable[AgentDef],
+    computation_memory: Callable[[ComputationNode], float],
+    communication_load: Callable[[ComputationNode, str], float],
+) -> float:
     return ilp_compref.distribution_cost(
-        distribution, computation_graph, agentsdef,
-        computation_memory, communication_load)
+        distribution,
+        computation_graph,
+        agentsdef,
+        computation_memory,
+        communication_load,
+    )
 
 
-def candidate_hosts(computation: ComputationNode, footprint: float,
-                    computations: List[Tuple],
-                    agents: Iterable[AgentDef],
-                    communication_load: Callable[[ComputationNode, str], float],
-                    mapping: Dict[str, str]):
+def candidate_hosts(
+    computation: ComputationNode,
+    footprint: float,
+    computations: List[Tuple],
+    agents: Iterable[AgentDef],
+    communication_load: Callable[[ComputationNode, str], float],
+    mapping: Dict[str, str],
+):
     candidates = []
     for agt in agents:
         # Compute remaining capacity for agt, to check if it as enough place
@@ -152,8 +172,7 @@ def candidate_hosts(computation: ComputationNode, footprint: float,
         capa = agt.capacity
         for c, a in mapping.items():
             if a == agt.name:
-                c_footprint = next(f for f, comp, _ in computations
-                                 if comp.name == c)
+                c_footprint = next(f for f, comp, _ in computations if comp.name == c)
                 capa -= c_footprint
         if capa < footprint:
             continue
@@ -164,9 +183,10 @@ def candidate_hosts(computation: ComputationNode, footprint: float,
         for l in computation.links:
             for n in l.nodes:
                 if n in mapping:
-                    comm_cost += communication_load(computation, n) \
-                            * agt.route(mapping[n])
-        cost = RATIO_HOST_COMM * comm_cost + (1-RATIO_HOST_COMM) *hosting_cost
+                    comm_cost += communication_load(computation, n) * agt.route(
+                        mapping[n]
+                    )
+        cost = RATIO_HOST_COMM * comm_cost + (1 - RATIO_HOST_COMM) * hosting_cost
         candidates.append((cost, agt))
 
     candidates.sort(key=lambda o: (o[0], o[1].name), reverse=True)
