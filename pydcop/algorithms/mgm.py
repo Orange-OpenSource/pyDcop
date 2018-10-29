@@ -226,6 +226,8 @@ class MgmComputation(VariableComputation):
     def __init__(self, computation_definition: ComputationDef):
 
         assert computation_definition.algo.algo == 'mgm'
+        assert (computation_definition.algo.mode == 'min') or \
+               (computation_definition.algo.mode == 'max')
 
         super().__init__(computation_definition.node.variable,
                          computation_definition)
