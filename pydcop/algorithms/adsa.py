@@ -148,18 +148,18 @@ class ADsaComputation(VariableComputation):
     def on_start(self):
         delay = random.random() * self.period
         self._start_handle = self.add_periodic_action(delay, self.delayed_start)
-        self.logger.debug("Add delayed action %s ", self._start_handle)
+        self.logger.debug("Add start delayed action ")
 
     def on_stop(self):
         self.remove_periodic_action(self._tick_handle)
 
     def delayed_start(self):
         self.remove_periodic_action(self._start_handle)
-        self.logger.debug("Remove delayed action %s ", self._start_handle)
+        self.logger.debug("Remove start delayed action %s ", self._start_handle)
         # self._start_handle = None
         self._tick_handle = self.add_periodic_action(self.period, self.tick)
         self.random_value_selection()
-        self.logger.debug("DSA starts: randomly select value %s", self.current_value)
+        self.logger.debug("ADSA starts: randomly select value %s", self.current_value)
         self.post_to_all_neighbors(ADsaMessage(self.current_value))
 
     @register("adsa_value")
@@ -183,7 +183,9 @@ class ADsaComputation(VariableComputation):
             current_cost = assignment_cost(assignment, self.constraints)
             delta = abs(current_cost - best_cost)
             self.logger.debug(
-                f"Current cost {current_cost}, best cost {best_cost} " f"delta {delta}"
+                f"Current value {self.current_value}, cost {current_cost}, "
+                f"best cost {best_cost} "
+                f"delta {delta}"
             )
 
             if self.variant == "A":
@@ -256,14 +258,10 @@ class ADsaComputation(VariableComputation):
         if self.probability > random.random():
             self.value_selection(random.choice(best_values), best_cost)
             self.logger.info(
-                "Selecting new value %s with cost %s ",
-                self.current_value,
-                self.current_cost,
+                f"Selecting new value {self.current_value} with cost {self.current_cost}"
             )
         else:
-            self.logger.info(
-                "%s has potential improvement but " "not value change", self.name
-            )
+            self.logger.info("No probabilistic value change")
 
     def find_best_values(self, assignment: Dict[Any, float]) -> Tuple[List[Any], float]:
         """
@@ -301,10 +299,8 @@ class ADsaComputation(VariableComputation):
 
             if cost == best_cost:
                 arg_best.append(value)
-            elif (
-                (self.mode == "min" and cost < best_cost)
-                or self.mode == "max"
-                and cost > best_cost
+            elif (self.mode == "min" and cost < best_cost) or (
+                self.mode == "max" and cost > best_cost
             ):
                 best_cost, arg_best = cost, [value]
 
