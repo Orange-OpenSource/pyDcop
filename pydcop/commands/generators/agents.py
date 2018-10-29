@@ -34,17 +34,79 @@
 pydcop generate agents
 ======================
 
-generate a set of agents
+Generate a set of agents, with their capacity and optionaly their hosting and
+communication costs.
+
+
+
+Synopsis
+--------
+::
+
+    pydcop generate agents --mode <generation_mode>
+                      --capacity <capacity>
+                      [--count <agents_count>]
+                      [--dcop_files <dcop files>]
+                      [--agent_prefix <agent_prefix>]
+                      [--hosting <hosting_cost_mode>]
+                      [--hosting_default <hosting_default>]
+                      [--routes_default <routes_default>]
+
+Description
+-----------
+
+The agents can be generated for a given optimization problem or by simply specifying a
+numberfof agents.
+
+
+Options
+-------
+``--mode <generation_mode>``
+  Agents generation mode. When 'variables' is used, one agent is generated for each
+  variable in the problem and and the '--dcop_files' option is required.
+  When using 'count', the '--count' is required is required
+
+``--capacity <capacity>``
+  The capacity of agents. All agents will have the same capacity
+
+``--count <agents_count>``
+  Number of agents to generate. Must be given when using the ``--mode count`` option.
+
+``--dcop_files <dcop files>``
+  the problem agents are created for. It can be given as one or several files, which
+  content will be appended before parsing.
+
+``--agent_prefix <agent_prefix>``
+  The prefix to use when generating agent's name. default to "a".
+
+``--hosting <hosting_cost_mode>``
+  Mode of generation for hosting costs, one of ``None`` or ``name_mapping``. When using
+  ``name_mapping`` a 0 hosting cost will be generated for computations that have the
+  same name as the agent (excluding prefix, which are automatically detected)
+
+``--hosting_default <hosting_default>``
+  Default hosting cost, mandatory when using ``--hosting name_mapping``
+
+``--routes <route_cost_mode>``
+  Mode of generation for route costs, one of ``None``, ``uniform.
+  When using ``uniform``, all routes have the same cost, given with ``-routes_default``
+
+``--routes_default <routes_default>``
+  Default route cost
 
 Examples
 ========
 
-Simply generate 10 agents with a 100 capacity. Note that we do not need to pass a DCOP
+Simply generate 10 agents with a 100 capacity. Note that we do not pass a DCOP
 file in that case::
 
   pydcop generate agents --count 10 --capacity 100
 
-Generate agents and hosting costs
+Generate agents, one for each variable, and hosting costs::
+
+  pydcop generate agents --mode variables --capacity 100 --dcop_files ising_dcop.yaml \
+      --hosting "name_mapping" --hosting_default 200
+
 
 
 """
