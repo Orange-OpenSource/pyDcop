@@ -271,11 +271,7 @@ def generate_agents_from_variables(variables: List[str], agent_prefix="a") -> Li
 def generate_hosting_costs(mode: str, agents: List[str], variables: List[str]):
     if mode == "name_mapping":
         costs = {}
-        variable_prefix = find_prefix(variables)
-        agent_prefix = find_prefix(agents)
-        mappings = find_corresponding_variables(
-            agents, variables, var_prefix=variable_prefix, agt_prefix=agent_prefix
-        )
+        mappings = find_corresponding_variables(agents, variables)
         for agt_name in agents:
             agt_costs = {}
             if agt_name in mappings:
@@ -285,23 +281,24 @@ def generate_hosting_costs(mode: str, agents: List[str], variables: List[str]):
 
 
 def find_corresponding_variables(
-    agents: List[str], variables: List[str], agt_prefix="a", var_prefix="v"
+    agents: List[str], variables: List[str], agt_prefix=None, var_prefix=None
 ) -> Dict[str, str]:
-    mapping = {}
-    agt_regexp = re.compile(f"{agt_prefix}(?P<index_agt>\d+)")
-    var_regexp = re.compile(f"{var_prefix}(?P<index_var>\d+)")
+    var_prefix = var_prefix if var_prefix else find_prefix(variables)
+    var_regexp = re.compile(f"{var_prefix}(?P<index_var>\w+)")
+    agt_prefix = agt_prefix if agt_prefix else find_prefix(agents)
+    agt_regexp = re.compile(f"{agt_prefix}(?P<index_agt>\w+)")
 
-    indexed_vars = {}
+    mapping, indexed_vars = {}, {}
     for variable in variables:
         m = var_regexp.match(variable)
         if m:
-            index = int(m.group("index_var"))
+            index = m.group("index_var")
             indexed_vars[index] = variable
 
     for agent in agents:
         m = agt_regexp.match(agent)
         if m:
-            index = int(m.group("index_agt"))
+            index = m.group("index_agt")
             if index in indexed_vars:
                 mapping[agent] = indexed_vars[index]
 
