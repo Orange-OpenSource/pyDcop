@@ -82,13 +82,16 @@ import random
 from typing import Tuple, Any, List, Dict
 
 from pydcop.algorithms import AlgoParameterDef, ComputationDef
-from pydcop.dcop.relations import find_optimum, assignment_cost, \
-    filter_assignment_dict
-from pydcop.infrastructure.computations import VariableComputation, \
-    register, message_type, DcopComputation
+from pydcop.dcop.relations import find_optimum, assignment_cost, filter_assignment_dict
+from pydcop.infrastructure.computations import (
+    VariableComputation,
+    register,
+    message_type,
+    DcopComputation,
+)
 
 # Type of computations graph that must be used with dsa
-GRAPH_TYPE = 'constraints_hypergraph'
+GRAPH_TYPE = "constraints_hypergraph"
 
 
 def build_computation(comp_def: ComputationDef) -> DcopComputation:
@@ -110,27 +113,26 @@ def build_computation(comp_def: ComputationDef) -> DcopComputation:
 
 
 algo_params = [
-    AlgoParameterDef('period', 'float', None, 0.5),
-    AlgoParameterDef('probability', 'float', None, 0.7),
-    AlgoParameterDef('variant', 'str', ['A', 'B', 'C'], 'B'),
+    AlgoParameterDef("period", "float", None, 0.5),
+    AlgoParameterDef("probability", "float", None, 0.7),
+    AlgoParameterDef("variant", "str", ["A", "B", "C"], "B"),
 ]
 
 
-ADsaMessage = message_type('adsa_value', ['value'])
+ADsaMessage = message_type("adsa_value", ["value"])
 
 
 class ADsaComputation(VariableComputation):
-
     def __init__(self, comp_def):
         super().__init__(comp_def.node.variable, comp_def)
 
-        assert comp_def.algo.algo == 'adsa'
-        assert (comp_def.algo.mode == 'min') or (comp_def.algo.mode == 'max')
+        assert comp_def.algo.algo == "adsa"
+        assert (comp_def.algo.mode == "min") or (comp_def.algo.mode == "max")
 
         self.mode = comp_def.algo.mode
-        self.probability = comp_def.algo.param_value('probability')
-        self.variant = comp_def.algo.param_value('variant')
-        self.period = comp_def.algo.param_value('period')
+        self.probability = comp_def.algo.param_value("probability")
+        self.variant = comp_def.algo.param_value("variant")
+        self.period = comp_def.algo.param_value("period")
         self.constraints = comp_def.node.constraints
 
         self.current_assignment = {}
@@ -139,8 +141,9 @@ class ADsaComputation(VariableComputation):
             # In DSA-B, we need to check if there are still some violated
             # constraints, for this we compute the best achievable cost for each
             # constraint:
-            self.best_constraints_costs = {c.name: find_optimum(c, self.mode)
-                                           for c in self.constraints}
+            self.best_constraints_costs = {
+                c.name: find_optimum(c, self.mode) for c in self.constraints
+            }
 
     def on_start(self):
         delay = random.random() * self.period
@@ -156,11 +159,10 @@ class ADsaComputation(VariableComputation):
         # self._start_handle = None
         self._tick_handle = self.add_periodic_action(self.period, self.tick)
         self.random_value_selection()
-        self.logger.debug('DSA starts: randomly select value %s',
-                          self.current_value)
+        self.logger.debug("DSA starts: randomly select value %s", self.current_value)
         self.post_to_all_neighbors(ADsaMessage(self.current_value))
 
-    @register('adsa_value')
+    @register("adsa_value")
     def _on_value_msg(self, variable_name, msg: ADsaMessage, t):
         self.current_assignment[variable_name] = msg.value
         self.logger.debug("Receiving value %s from %s", msg.value, variable_name)
@@ -170,32 +172,34 @@ class ADsaComputation(VariableComputation):
         if len(self.current_assignment) == len(self.neighbors):
 
             self.logger.debug(
-                'Full neighbors assignment on periodic action %s : %s ',
-                self.cycle_count, self.current_assignment)
+                "Full neighbors assignment on periodic action %s : %s ",
+                self.cycle_count,
+                self.current_assignment,
+            )
 
             assignment = self.current_assignment.copy()
             assignment[self.variable.name] = self.current_value
             args_best, best_cost = self.find_best_values(assignment)
-            current_cost = assignment_cost(assignment,
-                                           self.constraints)
+            current_cost = assignment_cost(assignment, self.constraints)
             delta = abs(current_cost - best_cost)
-            self.logger.debug(f"Current cost {current_cost}, best cost {best_cost} "
-                              f"delta {delta}")
+            self.logger.debug(
+                f"Current cost {current_cost}, best cost {best_cost} " f"delta {delta}"
+            )
 
-            if self.variant == 'A':
+            if self.variant == "A":
                 self.variant_a(delta, best_cost, args_best)
-            elif self.variant == 'B':
+            elif self.variant == "B":
                 self.variant_b(delta, best_cost, args_best)
-            elif self.variant == 'C':
+            elif self.variant == "C":
                 self.variant_c(delta, best_cost, args_best)
         else:
-            self.logger.debug("Still waiting for neighbors values %s ",
-                              set(self.current_assignment))
+            self.logger.debug(
+                "Still waiting for neighbors values %s ", set(self.current_assignment)
+            )
 
         # In order to be more resilient to message loss, we send our value even
         # if it did not change.
         self.post_to_all_neighbors(ADsaMessage(self.current_value))
-
 
     def variant_a(self, delta, best_cost, best_values):
         """
@@ -251,14 +255,17 @@ class ADsaComputation(VariableComputation):
         """
         if self.probability > random.random():
             self.value_selection(random.choice(best_values), best_cost)
-            self.logger.info('Selecting new value %s with cost %s ',
-                             self.current_value, self.current_cost)
+            self.logger.info(
+                "Selecting new value %s with cost %s ",
+                self.current_value,
+                self.current_cost,
+            )
         else:
-            self.logger.info('%s has potential improvement but '
-                             'not value change', self.name)
+            self.logger.info(
+                "%s has potential improvement but " "not value change", self.name
+            )
 
-    def find_best_values(self, assignment: Dict[Any, float]) \
-            -> Tuple[List[Any], float]:
+    def find_best_values(self, assignment: Dict[Any, float]) -> Tuple[List[Any], float]:
         """
         Find the best values for our variable, given the current assignment.
 
@@ -279,22 +286,25 @@ class ADsaComputation(VariableComputation):
             The cost achieved with these values.
         """
 
-        arg_best, best_cost = None, float('inf')
-        if self.mode == 'max':
-            arg_best, best_cost = None, -float('inf')
+        arg_best, best_cost = None, float("inf")
+        if self.mode == "max":
+            arg_best, best_cost = None, -float("inf")
 
         for value in self.variable.domain:
             assignment[self.variable.name] = value
             cost = assignment_cost(assignment, self.constraints)
 
             # Take into account variable cost, if any
-            if hasattr(self.variable, 'cost_for_val'):
+            if hasattr(self.variable, "cost_for_val"):
                 cost += self.variable.cost_for_val(value)
 
             if cost == best_cost:
                 arg_best.append(value)
-            elif (self.mode == 'min' and cost < best_cost) or \
-                    self.mode == 'max' and cost > best_cost:
+            elif (
+                (self.mode == "min" and cost < best_cost)
+                or self.mode == "max"
+                and cost > best_cost
+            ):
                 best_cost, arg_best = cost, [value]
 
         return arg_best, best_cost
@@ -305,7 +315,7 @@ class ADsaComputation(VariableComputation):
         assignment
         :return: a boolean
         """
-        assignment =  self.current_assignment.copy()
+        assignment = self.current_assignment.copy()
         assignment[self.variable.name] = self.current_value
         for c in self.constraints:
             const = c(**filter_assignment_dict(assignment, c.dimensions))
