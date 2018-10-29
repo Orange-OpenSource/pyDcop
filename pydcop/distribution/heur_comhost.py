@@ -37,6 +37,7 @@ We place first the computation with the highest footprint.
 
 """
 import logging
+import random
 from typing import Iterable, Callable, List, Dict, Tuple
 
 from collections import defaultdict
@@ -76,12 +77,13 @@ def distribute(
     -------
 
     """
-
-    computations = sorted(
-        [(computation_memory(n), n, None) for n in computation_graph.nodes],
-        key=lambda o: (o[0], o[1].name),
-        reverse=True,
-    )
+    # Sort computation by footprint, but add a random element to avoid sorting on names
+    computations = [
+        (computation_memory(n), n, None, random.random())
+        for n in computation_graph.nodes
+    ]
+    computations = sorted(computations, key=lambda o: (o[0], o[3]), reverse=True)
+    computations = [t[:-1] for t in computations]
     logger.info("placing computations %s", [(f, c.name) for f, c, _ in computations])
 
     current_mapping = {}  # Type: Dict[str, str]
@@ -189,5 +191,11 @@ def candidate_hosts(
         cost = RATIO_HOST_COMM * comm_cost + (1 - RATIO_HOST_COMM) * hosting_cost
         candidates.append((cost, agt))
 
-    candidates.sort(key=lambda o: (o[0], o[1].name), reverse=True)
+    # Avoid sorting ties by name by adding a random element in the tuple.
+    # Otherwise, when agents have the same capacity, agents with names sorted first
+    # will always get more computations.
+    candidates = [(c, a, random.random()) for c, a in candidates]
+    candidates.sort(key=lambda o: (o[0], o[2]), reverse=True)
+    candidates = [t[:-1] for t in candidates]
+
     return candidates
