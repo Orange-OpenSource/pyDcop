@@ -151,8 +151,14 @@ class ADsaComputation(VariableComputation):
         self.logger.debug("Add start delayed action ")
 
     def on_stop(self):
-        self.remove_periodic_action(self._tick_handle)
-
+        if hasattr(self, "_tick_handle"):
+            self.remove_periodic_action(self._tick_handle)
+        else:
+            self.logger.error(
+                f"Stopping a adsa computation {self.variable} that never really started ! "
+                "no _tick_handle"
+            )
+            
     def delayed_start(self):
         self.remove_periodic_action(self._start_handle)
         self.logger.debug("Remove start delayed action %s ", self._start_handle)
