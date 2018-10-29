@@ -209,7 +209,11 @@ def generate_agents_from_variables(variables: List[str], agent_prefix="a") -> Li
 def generate_hosting_costs(mode: str, agents: List[str], variables: List[str]):
     if mode == "name_mapping":
         costs = {}
-        mappings = find_corresponding_variables(list(agents), list(variables))
+        variable_prefix = find_prefix(variables)
+        agent_prefix = find_prefix(agents)
+        mappings = find_corresponding_variables(
+            agents, variables, var_prefix=variable_prefix, agt_prefix=agent_prefix
+        )
         for agt_name in agents:
             agt_costs = {}
             if agt_name in mappings:
