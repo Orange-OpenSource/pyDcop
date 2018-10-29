@@ -50,9 +50,9 @@ Generate agents and hosting costs
 """
 import logging
 import re
-from typing import List, Tuple, Dict
+from typing import List, Dict
 
-from pydcop.dcop.objects import AgentDef, create_agents, Variable
+from pydcop.dcop.objects import AgentDef
 from pydcop.dcop.yamldcop import yaml_agents, load_dcop_from_file
 
 logger = logging.getLogger("pydcop.cli.generate")
@@ -115,30 +115,25 @@ def init_cli_parser(parent_parser):
     # TODO: non-uniform route costs, derived from graph
     #
 
+
 def generate(args):
-    agents_name = generate_agents_names(args.count, args.agent_prefix)
+    check_args(args)
 
-    if args.hosting and args.hosting != "None":
-        pass
-
-    hosting_costs = {}
-    if args.hosting and args.hosting != "None":
-        if not args.dcop_files:
-            raise ValueError(
-                f"Missing dcop file when using {args.hosting} hosting cost generation"
-            )
+    variables = []
+    if args.dcop_files:
         logger.info("loading dcop from {}".format(args.dcop_files))
         dcop = load_dcop_from_file(args.dcop_files)
+        variables = list(dcop.variables)
 
-        if not args.hosting_default:
-            raise ValueError(
-                f"Missing --hosting_default when using {args.hosting} hosting cost generation"
-            )
+    agents_name = generate_agents_names(
+        args.mode, args.count, variables, args.agent_prefix
+    )
 
+    hosting_costs = {}
+    if args.hosting != "None":
         hosting_costs = generate_hosting_costs(
-            args.hosting, agents_name, dcop.variables
+            args.hosting, agents_name, variables
         )
-
 
     agents = []
     for agt_name in agents_name:
@@ -163,7 +158,31 @@ def generate(args):
         print(serialized)
 
 
-def generate_agents_names(agent_count: int, agent_prefix="a"):
+def check_args(args):
+    if args.mode == "count" and not args.count:
+        raise ValueError(
+            "--count is required when using 'count' agents generation mode"
+        )
+
+    if args.mode == "variables" and not args.dcop_files:
+        raise ValueError(
+            "--dcop_files is required when using 'variables' agents generation mode"
+        )
+    if args.hosting:
+        if args.hosting != "None" and not args.dcop_files:
+            raise ValueError(
+                f"Missing dcop file when using {args.hosting} hosting cost generation"
+            )
+        if args.hosting != "None" and not args.hosting_default:
+            raise ValueError(
+                f"--hosting_default is mandaory when using --hosting cost generation"
+            )
+    if args.routes:
+        if args.routes != "None" and not args.routes_default:
+            raise ValueError(
+                f"--routes_default is mandaory when using --routes cost generation"
+            )
+
 
 def generate_agents_names(
     mode: str, count=None, variables=None, agent_prefix="a"
