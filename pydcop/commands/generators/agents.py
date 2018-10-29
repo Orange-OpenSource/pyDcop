@@ -295,12 +295,27 @@ def find_corresponding_variables(
             index = m.group("index_var")
             indexed_vars[index] = variable
 
+    try:
+        int_indexed_vars = {
+            int(index_var): variable for index_var, variable in indexed_vars.items()
+        }
+    except ValueError:
+        int_indexed_vars = []
+
     for agent in agents:
         m = agt_regexp.match(agent)
         if m:
             index = m.group("index_agt")
             if index in indexed_vars:
                 mapping[agent] = indexed_vars[index]
+            else:
+                # Try with int index with str index could not be found
+                try:
+                    index = int(index)
+                    if index in int_indexed_vars:
+                        mapping[agent] = int_indexed_vars[index]
+                except ValueError:
+                    pass
 
     return mapping
 
