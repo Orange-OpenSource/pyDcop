@@ -285,6 +285,7 @@ class ADsaComputation(VariableComputation):
         float
             The cost achieved with these values.
         """
+        assignment = assignment.copy()
 
         arg_best, best_cost = None, float("inf")
         if self.mode == "max":

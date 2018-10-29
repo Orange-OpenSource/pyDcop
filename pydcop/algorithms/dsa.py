@@ -388,14 +388,14 @@ class DsaComputation(VariableComputation):
         float
             The cost achieved with these values.
         """
-
+        assignment = self.current_cycle.copy()
         arg_best, best_cost = None, float('inf')
         if self.mode == 'max':
             arg_best, best_cost = None, -float('inf')
 
         for value in self.variable.domain:
-            self.current_cycle[self.variable.name] = value
-            cost = assignment_cost(self.current_cycle, self.constraints)
+            assignment[self.variable.name] = value
+            cost = assignment_cost(assignment, self.constraints)
 
             # Take into account variable cost, if any
             if hasattr(self.variable, 'cost_for_val'):
