@@ -43,6 +43,7 @@ from pydcop.dcop.relations import relation_from_str, RelationProtocol, \
     NAryMatrixRelation, assignment_matrix, generate_assignment_as_dict
 from pydcop.utils.expressionfunction import ExpressionFunction
 from pydcop.distribution.objects import DistributionHints
+from pydcop.utils.simple_repr import simple_repr
 
 
 class DcopInvalidFormatError(Exception):
@@ -510,3 +511,23 @@ def load_scenario(scenario_str) -> Scenario:
             evts.append(DcopEvent(id, delay=evt['delay']))
 
     return Scenario(evts)
+
+
+def yaml_scenario(scenario: Scenario) -> str:
+    events = [_dict_event(event) for event in scenario.events]
+    scenario_dict = { "events" : events}
+
+    return yaml.dump(scenario_dict, default_flow_style=False)
+
+def _dict_event(event: DcopEvent) -> Dict:
+    evt_dict = {"id": event.id}
+    if event.is_delay:
+        evt_dict.update({"delay": event.delay})
+    else:
+        evt_dict.update({"actions": [_dict_action(a) for a in event.actions] })
+    return evt_dict
+
+def _dict_action(action: EventAction) -> List:
+    action_dict = { "type": action.type}
+    action_dict.update(action.args)
+    return action_dict

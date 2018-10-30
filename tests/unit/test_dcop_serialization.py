@@ -34,7 +34,13 @@ import unittest
 import pytest
 
 from pydcop.dcop.objects import VariableWithCostDict
-from pydcop.dcop.yamldcop import load_dcop, DcopInvalidFormatError
+from pydcop.dcop.scenario import EventAction, Scenario, DcopEvent
+from pydcop.dcop.yamldcop import (
+    load_dcop,
+    DcopInvalidFormatError,
+    load_scenario,
+    yaml_scenario,
+)
 
 
 def test_load_name_and_description():
@@ -939,3 +945,91 @@ class TestLoadDistributionHintsHostWith(unittest.TestCase):
         self.assertIn("v1", hints.host_with("v2"))
         self.assertIn("v2", hints.host_with("v1"))
         self.assertIn("v2", hints.host_with("c1"))
+
+
+def test_load_scenario():
+    s = """
+inputs:
+  origin: hand-made
+events:
+  - id: w1
+    delay: 30
+  - id: e1
+    actions:
+      - type: remove_agent
+        agent: a005
+      - type: remove_agent
+        agent: a068
+  - id: w2
+    delay: 10
+  - id: e2
+    actions:
+      - type: remove_agent
+        agent: a026
+      - type: remove_agent
+        agent: a056
+    """
+
+    scenario = load_scenario(s)
+
+    assert len(scenario.events) == 4
+    assert scenario.events[0].is_delay
+    assert len(scenario.events[1].actions) == 2
+    assert scenario.events[3].actions[1].type == "remove_agent"
+    assert scenario.events[3].actions[0].args["agent"] == "a026"
+
+
+def test_yaml_scenario_one_event():
+    events = [DcopEvent("1", actions=[EventAction("remove_agent", agent="a01")])]
+    scenario = Scenario(events)
+
+    scenario_str = yaml_scenario(scenario)
+
+    obtained = load_scenario(scenario_str)
+
+    assert len(obtained.events) == 1
+    assert len(obtained.events[0].actions) == 1
+
+
+def test_yaml_scenario_one_event_two_actions():
+    events = [
+        DcopEvent(
+            "1",
+            actions=[
+                EventAction("remove_agent", agent="a01"),
+                EventAction("remove_agent", agent="a05"),
+            ],
+        )
+    ]
+    scenario = Scenario(events)
+
+    scenario_str = yaml_scenario(scenario)
+
+    obtained = load_scenario(scenario_str)
+
+    assert len(obtained.events) == 1
+    assert len(obtained.events[0].actions) == 2
+    assert obtained.events[0].actions[1].type == "remove_agent"
+    assert obtained.events[0].actions[1].args["agent"] == "a05"
+
+
+def test_yaml_scenario_two_events():
+    events = [
+        DcopEvent(
+            "1",
+            actions=[
+                EventAction("remove_agent", agent="a01"),
+                EventAction("remove_agent", agent="a05"),
+            ],
+        ),
+        DcopEvent("2", delay=30),
+    ]
+    scenario = Scenario(events)
+
+    scenario_str = yaml_scenario(scenario)
+
+    obtained = load_scenario(scenario_str)
+
+    assert len(obtained.events) == 2
+    assert obtained.events[1].is_delay
+    assert not obtained.events[0].is_delay
