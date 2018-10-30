@@ -443,7 +443,7 @@ def peav_variables_for_resource(
     variables: Dict[Tuple[RESOURCE, EVT], Variable] = {}
     for event in events.values():
         if resource.id in event.resources:
-            name = f"v_{resource.id}_{event.id}"
+            name = f"v_{resource.id:02d}_{event.id:02d}"
             # The domain represents the start time (as slot) this event could start at.
             # Time slots start at 1, the value 0 represents a combination
             # (event, resource) that is not scheduled.
