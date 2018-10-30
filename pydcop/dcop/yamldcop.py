@@ -535,9 +535,10 @@ def yaml_scenario(scenario: Scenario) -> str:
 def _dict_event(event: DcopEvent) -> Dict:
     evt_dict = {"id": event.id}
     if event.is_delay:
-        evt_dict.update({"delay": event.delay})
+        evt_dict["delay"] = event.delay
     else:
-        evt_dict.update({"actions": [_dict_action(a) for a in event.actions]})
+        print(f" event {event}")
+        evt_dict["actions"] = [_dict_action(a) for a in event.actions]
     return evt_dict
 
 
