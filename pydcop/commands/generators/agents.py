@@ -80,9 +80,11 @@ Options
   The prefix to use when generating agent's name. default to "a".
 
 ``--hosting <hosting_cost_mode>``
-  Mode of generation for hosting costs, one of ``None`` or ``name_mapping``. When using
-  ``name_mapping`` a 0 hosting cost will be generated for computations that have the
-  same name as the agent (excluding prefix, which are automatically detected)
+  Mode of generation for hosting costs, one of ``None``, ``name_mapping`` or
+  ``var_startswith``. When using ``name_mapping`` a 0 hosting cost will be generated
+  for computations that have the same name as the agent (excluding prefix, which are
+  automatically detected). With ``var_startswith`` the mapping of variables to agent
+  will only consider the start of the variable name (still excluding prefix).
 
 ``--hosting_default <hosting_default>``
   Default hosting cost, mandatory when using ``--hosting name_mapping``
@@ -112,6 +114,7 @@ Generate agents, one for each variable, and hosting costs::
 """
 import logging
 import re
+from collections import defaultdict
 from typing import List, Dict
 
 from pydcop.computations_graph import constraints_hypergraph
@@ -149,7 +152,7 @@ def init_cli_parser(parent_parser):
 
     parser.add_argument(
         "--hosting",
-        choices=["None", "name_mapping"],
+        choices=["None", "name_mapping", "var_startswith"],
         required=False,
         default="None",
         help="Hosting cost generation method.",
@@ -189,13 +192,15 @@ def generate(args):
         args.mode, args.count, variables, args.agent_prefix
     )
 
+    mapping = {}
     hosting_costs = {}
     if args.hosting != "None":
-        hosting_costs = generate_hosting_costs(args.hosting, agents_name, variables)
+        mapping = agent_variables_mapping(args.hosting, agents_name, variables)
+        hosting_costs = generate_hosting_costs(args.hosting, mapping)
 
     routes_costs = {}
     if args.routes != "None":
-        routes_costs = generate_routes_costs(args.routes, agents_name, dcop)
+        routes_costs = generate_routes_costs(args.routes, mapping, dcop)
 
     agents = []
     for agt_name in agents_name:
@@ -239,12 +244,12 @@ def check_args(args):
             )
         if args.hosting != "None" and not args.hosting_default:
             raise ValueError(
-                f"--hosting_default is mandaory when using --hosting cost generation"
+                "--hosting_default is mandatory when using --hosting cost generation"
             )
     if args.routes:
         if args.routes != "None" and not args.routes_default:
             raise ValueError(
-                f"--routes_default is mandaory when using --routes cost generation"
+                "--routes_default is mandatory when using --routes cost generation"
             )
 
 
@@ -270,20 +275,28 @@ def generate_agents_from_variables(variables: List[str], agent_prefix="a") -> Li
     return [agent_prefix + variable[prefix_length:] for variable in variables]
 
 
-def generate_hosting_costs(mode: str, agents: List[str], variables: List[str]):
-    if mode == "name_mapping":
-        costs = {}
-        mappings = find_corresponding_variables(agents, variables)
-        for agt_name in agents:
-            agt_costs = {}
-            if agt_name in mappings:
-                agt_costs[mappings[agt_name]] = 0
-            costs[agt_name] = agt_costs
-        return costs
+def agent_variables_mapping(
+    hosting_mode: str, agents: List[str], variables: List[str]
+) -> Dict[str, List[str]]:
+    if hosting_mode == "name_mapping":
+        return find_corresponding_variables(agents, variables)
+    elif hosting_mode == "var_startswith":
+        return find_corresponding_variables_start_with(agents, variables)
+
+
+def generate_hosting_costs(mode: str,  mapping: Dict[str, List[str]]):
+
+    costs = {}
+    for agt_name in mapping:
+        agt_costs = {}
+        for var_name in mapping[agt_name]:
+            agt_costs[var_name] = 0
+        costs[agt_name] = agt_costs
+    return costs
 
 
 def generate_routes_costs(
-    mode: str, agents: List[str], dcop
+    mode: str, mapping, dcop
 ) -> Dict[str, Dict[str, float]]:
     routes = {}
     if mode == "graph":
@@ -291,16 +304,20 @@ def generate_routes_costs(
         graph = constraints_hypergraph.build_computation_graph(dcop)
 
         # route = (1 + abs(degree_n - degree_v)) / (degree_n + degree_v)
-        logger.debug(f"agants {agents}")
-        logger.debug(f"variables {variables}")
-        mappings = find_corresponding_variables(agents, variables)
-        logger.debug(mappings)
-        inverse_mapping = {variable: agent for agent, variable in mappings.items()}
+        # logger.debug(f"agants {agents}")
+        # logger.debug(f"variables {variables}")
+        # mappings = find_corresponding_variables(agents, variables)
+        # logger.debug(mappings)
+        inverse_mapping = {
+            variable: agent
+            for agent, variables in mapping.items()
+            for variable in variables
+        }
         logger.debug(inverse_mapping)
-        for agt_name in agents:
+        for agt_name in mapping:
             agt_routes = {}
-            if agt_name in mappings:
-                hosted_variable = mappings[agt_name]
+            for hosted_variable in mapping[agt_name]:
+                # hosted_variable = mappings[agt_name]
                 neighbor_variables = list(graph.neighbors(hosted_variable))
                 logger.debug(
                     f"routes for {agt_name} hosting {hosted_variable} with {neighbor_variables}"
@@ -314,7 +331,9 @@ def generate_routes_costs(
                         route = (0.2 + abs(degree - degree_neighbor)) / (
                             degree + degree_neighbor
                         )
-                        logger.debug(f"Route {agt_name} - {neighbor_agent} : {route}")
+                        logger.debug(
+                            f"Route {agt_name} - {neighbor_agent} : {route}"
+                        )
                         agt_routes[neighbor_agent] = route
             routes[agt_name] = agt_routes
     return routes
@@ -322,13 +341,55 @@ def generate_routes_costs(
 
 def find_corresponding_variables(
     agents: List[str], variables: List[str], agt_prefix=None, var_prefix=None
-) -> Dict[str, str]:
+) -> Dict[str, List[str]]:
     var_prefix = var_prefix if var_prefix else find_prefix(variables)
     var_regexp = re.compile(f"{var_prefix}(?P<index_var>\w+)")
     agt_prefix = agt_prefix if agt_prefix else find_prefix(agents)
     agt_regexp = re.compile(f"{agt_prefix}(?P<index_agt>\w+)")
 
-    mapping, indexed_vars = {}, {}
+    mapping, indexed_vars = defaultdict(lambda: list()), {}
+    for variable in variables:
+        m = var_regexp.match(variable)
+        if m:
+            index = m.group("index_var")
+            indexed_vars[index] = variable
+
+    try:
+        int_indexed_vars = {
+            int(index_var): variable for index_var, variable in indexed_vars.items()
+        }
+        use_int_index = True
+    except ValueError:
+        int_indexed_vars = []
+
+    for agent in agents:
+        m = agt_regexp.match(agent)
+        if m:
+            index = m.group("index_agt")
+            if index in indexed_vars:
+                mapping[agent].append(indexed_vars[index])
+            elif use_int_index:
+                # Try with int index with str index could not be found
+                try:
+                    index = int(index)
+                    if index in int_indexed_vars:
+                        mapping[agent].append(int_indexed_vars[index])
+                except ValueError:
+                    pass
+
+    return dict(mapping)
+
+
+def find_corresponding_variables_start_with(
+    agents: List[str], variables: List[str], agt_prefix=None, var_prefix=None
+) -> Dict[str, List[str]]:
+
+    var_prefix = var_prefix if var_prefix else find_prefix(variables)
+    var_regexp = re.compile(f"{var_prefix}(?P<index_var>\w+)")
+    agt_prefix = agt_prefix if agt_prefix else find_prefix(agents)
+    agt_regexp = re.compile(f"{agt_prefix}(?P<index_agt>\w+)")
+
+    mapping, indexed_vars = defaultdict(lambda: list()), {}
     for variable in variables:
         m = var_regexp.match(variable)
         if m:
@@ -346,18 +407,14 @@ def find_corresponding_variables(
         m = agt_regexp.match(agent)
         if m:
             index = m.group("index_agt")
-            if index in indexed_vars:
-                mapping[agent] = indexed_vars[index]
-            else:
-                # Try with int index with str index could not be found
-                try:
-                    index = int(index)
-                    if index in int_indexed_vars:
-                        mapping[agent] = int_indexed_vars[index]
-                except ValueError:
-                    pass
+            var_startswith = [
+                indexed_vars[root_var]
+                for root_var in indexed_vars
+                if root_var.startswith(index)
+            ]
+            mapping[agent].extend(var_startswith)
 
-    return mapping
+    return dict(mapping)
 
 
 def find_prefix(names: List[str]) -> str:

@@ -5,6 +5,7 @@ from pydcop.commands.generators.agents import (
     generate_agents_from_variables,
     find_prefix,
     generate_agents_from_count,
+    find_corresponding_variables_start_with,
 )
 from pydcop.dcop.objects import create_variables, Domain
 
@@ -15,9 +16,9 @@ def test_find_vars_agts_mapping():
 
     obtained = find_corresponding_variables(agents, variables)
 
-    assert obtained["a1"] == "v1"
-    assert obtained["a2"] == "v2"
-    assert obtained["a3"] == "v3"
+    assert "v1" in obtained["a1"]
+    assert "v2" in obtained["a2"]
+    assert "v3" in obtained["a3"]
 
 
 def test_find_vars_agts_mapping_different_padding():
@@ -26,19 +27,19 @@ def test_find_vars_agts_mapping_different_padding():
 
     obtained = find_corresponding_variables(agents, variables)
 
-    assert obtained["a1"] == "v01"
-    assert obtained["a2"] == "v02"
-    assert obtained["a3"] == "v03"
+    assert "v01" in obtained["a1"]
+    assert "v02" in obtained["a2"]
+    assert "v03" in obtained["a3"]
 
 
 def test_find_vars_agts_mapping_dual_naming():
     # Test when name is using a scheme with two numbers
-    agents = ['a0_0', 'a0_1', 'a0_2', 'a0_3', 'a0_4', 'a0_5', 'a1_0', 'a1_1', 'a1_2', 'a1_3', 'a1_4', 'a1_5', 'a2_0', 'a2_1', 'a2_2', 'a2_3', 'a2_4', 'a2_5', 'a3_0', 'a3_1', 'a3_2', 'a3_3', 'a3_4', 'a3_5', 'a4_0', 'a4_1', 'a4_2', 'a4_3', 'a4_4', 'a4_5', 'a5_0', 'a5_1', 'a5_2', 'a5_3', 'a5_4', 'a5_5']
-    variables =  ['v_0_0', 'v_0_1', 'v_0_2', 'v_0_3', 'v_0_4', 'v_0_5', 'v_1_0', 'v_1_1', 'v_1_2', 'v_1_3', 'v_1_4', 'v_1_5', 'v_2_0', 'v_2_1', 'v_2_2', 'v_2_3', 'v_2_4', 'v_2_5', 'v_3_0', 'v_3_1', 'v_3_2', 'v_3_3', 'v_3_4', 'v_3_5', 'v_4_0', 'v_4_1', 'v_4_2', 'v_4_3', 'v_4_4', 'v_4_5', 'v_5_0', 'v_5_1', 'v_5_2', 'v_5_3', 'v_5_4', 'v_5_5']
+    agents = ["a0_0", "a0_1", "a0_2", "a0_3", "a0_4", "a0_5", "a1_0"]
+    variables = ["v_0_0", "v_0_1", "v_0_2", "v_0_3", "v_0_4", "v_0_5", "v_1_0", "v_1_1"]
     obtained = find_corresponding_variables(agents, variables)
 
-    assert obtained["a0_0"] == "v_0_0"
-    assert obtained["a0_1"] == "v_0_1"
+    assert "v_0_0" in obtained["a0_0"]
+    assert "v_0_1" in obtained["a0_1"]
 
 
 def test_find_vars_agts_mapping_with_prefix():
@@ -49,9 +50,21 @@ def test_find_vars_agts_mapping_with_prefix():
         agents, variables, agt_prefix="agt_", var_prefix="Var_"
     )
 
-    assert obtained["agt_1"] == "Var_1"
-    assert obtained["agt_2"] == "Var_2"
-    assert obtained["agt_3"] == "Var_3"
+    assert "Var_1" in obtained["agt_1"]
+    assert "Var_2" in obtained["agt_2"]
+    assert "Var_3" in obtained["agt_3"]
+
+
+def test_find_vars_starts_with():
+    agents = ["agt_1", "agt_2", "agt_3"]
+    variables = ["Var_1_0", "Var_2_1", "Var_2_2", "Var_3_3"]
+
+    obtained = find_corresponding_variables_start_with(agents, variables)
+
+    assert "Var_1_0" in obtained["agt_1"]
+    assert "Var_2_1" in obtained["agt_2"]
+    assert "Var_2_2" in obtained["agt_2"]
+    assert "Var_3_3" in obtained["agt_3"]
 
 
 def test_generate_10_agents():
@@ -87,10 +100,10 @@ def test_generate_100_agents():
 
 
 def test_generate_hosting_costs():
-    agents = generate_agents_from_count(10)
-    variables = create_variables("v", range(20), Domain("color", "", [1, 2]))
 
-    costs = generate_hosting_costs("name_mapping", agents, list(variables))
+    mapping = {"a1": ["v01", "v02"], "a2": [], "a9": ["v09"], "a0": ["v00"]}
+
+    costs = generate_hosting_costs("name_mapping", mapping)
 
     assert costs["a1"]["v01"] == 0
     assert costs["a9"]["v09"] == 0
