@@ -29,82 +29,95 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import unittest
 
 import pytest
 
+from pydcop.dcop.objects import VariableWithCostDict
 from pydcop.dcop.yamldcop import load_dcop, DcopInvalidFormatError
 
 
 def test_load_name_and_description():
-    dcop = load_dcop("""
+    dcop = load_dcop(
+        """
     name: dcop name
     description: dcop description
     objective: min
-    """)
+    """
+    )
 
-    assert dcop.name== 'dcop name'
-    assert dcop.description, 'dcop description'
-    assert dcop.objective, 'min'
+    assert dcop.name == "dcop name"
+    assert dcop.description, "dcop description"
+    assert dcop.objective, "min"
 
 
 def test_raises_when_no_name():
 
     with pytest.raises(ValueError):
-        load_dcop("""
+        load_dcop(
+            """
     description: dcop description
     objective: max
-    """)
+    """
+        )
 
 
 def test_load_name_without_desc():
 
-    dcop = load_dcop("""
+    dcop = load_dcop(
+        """
     name: dcop name
     objective: max
-    """)
+    """
+    )
 
-    assert dcop.name == 'dcop name'
-    assert dcop.objective == 'max'
-    assert dcop.description == ''
+    assert dcop.name == "dcop name"
+    assert dcop.objective == "max"
+    assert dcop.description == ""
 
 
 def test_load_name_long_desc():
 
-    dcop = load_dcop("""
+    dcop = load_dcop(
+        """
     name: dcop name
     description: A long dcop description that span on several lines. Lorem 
                  ipsum sed dolores et tutti quanti.
     objective: max
-    """)
-    assert dcop.name == 'dcop name'
-    assert dcop.description == 'A long dcop description that span on several ' \
-                               'lines. Lorem ipsum sed dolores et tutti ' \
-                               'quanti.'
+    """
+    )
+    assert dcop.name == "dcop name"
+    assert (
+        dcop.description == "A long dcop description that span on several "
+        "lines. Lorem ipsum sed dolores et tutti "
+        "quanti."
+    )
 
 
 def test_raises_when_invalid_objective():
 
     with pytest.raises(ValueError):
-        load_dcop("""
+        load_dcop(
+            """
     name: dcop name
     description: dcop description
     objective: foo
-    """)
+    """
+        )
 
 
 def test_raises_when_no_objective():
 
     with pytest.raises(ValueError):
-        load_dcop("""
+        load_dcop(
+            """
     name: dcop name
     description: dcop description
-    """)
+    """
+        )
 
 
 class TestDcopLoadDomains(unittest.TestCase):
-
     def setUp(self):
         self.dcop_str = """
         name: dcop name
@@ -123,9 +136,9 @@ class TestDcopLoadDomains(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.domains), 1)
-        d = dcop.domains['d1']
-        self.assertEqual(d.name, 'd1')
-        self.assertEqual(d.type, 'd1_type')
+        d = dcop.domains["d1"]
+        self.assertEqual(d.name, "d1")
+        self.assertEqual(d.type, "d1_type")
 
     def test_extensive_int_domain(self):
         self.dcop_str += """
@@ -138,9 +151,9 @@ class TestDcopLoadDomains(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.domains), 1)
-        d = dcop.domains['d1']
-        self.assertEqual(d.name, 'd1')
-        self.assertEqual(d.type, 'd1_type')
+        d = dcop.domains["d1"]
+        self.assertEqual(d.name, "d1")
+        self.assertEqual(d.type, "d1_type")
         self.assertEqual(len(d.values), 3)
         self.assertEqual(d.values, (0, 1, 2))
 
@@ -154,9 +167,9 @@ class TestDcopLoadDomains(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.domains), 1)
-        d = dcop.domains['d1']
-        self.assertEqual(d.name, 'd1')
-        self.assertEqual(d.type, 'd1_type')
+        d = dcop.domains["d1"]
+        self.assertEqual(d.name, "d1")
+        self.assertEqual(d.type, "d1_type")
         self.assertEqual(len(d.values), 11)
         self.assertEqual(d.values, tuple(range(11)))
 
@@ -170,11 +183,11 @@ class TestDcopLoadDomains(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.domains), 1)
-        d = dcop.domains['d1']
-        self.assertEqual(d.name, 'd1')
-        self.assertEqual(d.type, 'd1_type')
+        d = dcop.domains["d1"]
+        self.assertEqual(d.name, "d1")
+        self.assertEqual(d.type, "d1_type")
         self.assertEqual(len(d.values), 3)
-        self.assertEqual(d.values, ('A', 'B', 'C'))
+        self.assertEqual(d.values, ("A", "B", "C"))
 
     def test_boolean_domain(self):
         self.dcop_str += """
@@ -185,9 +198,9 @@ class TestDcopLoadDomains(unittest.TestCase):
         """
         dcop = load_dcop(self.dcop_str)
 
-        d = dcop.domains['d1_bool']
-        self.assertEqual(d.name, 'd1_bool')
-        self.assertEqual(d.type, 'd1_type')
+        d = dcop.domains["d1_bool"]
+        self.assertEqual(d.name, "d1_bool")
+        self.assertEqual(d.type, "d1_type")
         self.assertEqual(len(d.values), 2)
         self.assertEqual(d.values, (True, False))
 
@@ -207,16 +220,15 @@ class TestDcopLoadDomains(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.domains), 3)
-        self.assertEqual(dcop.domains['d_str'].name, 'd_str')
-        self.assertEqual(len(dcop.domains['d_str'].values), 3)
-        self.assertEqual(dcop.domains['d_bool'].name, 'd_bool')
-        self.assertEqual(len(dcop.domains['d_bool'].values), 2)
-        self.assertEqual(dcop.domains['d_range'].name, 'd_range')
-        self.assertEqual(len(dcop.domains['d_range'].values), 11)
+        self.assertEqual(dcop.domains["d_str"].name, "d_str")
+        self.assertEqual(len(dcop.domains["d_str"].values), 3)
+        self.assertEqual(dcop.domains["d_bool"].name, "d_bool")
+        self.assertEqual(len(dcop.domains["d_bool"].values), 2)
+        self.assertEqual(dcop.domains["d_range"].name, "d_range")
+        self.assertEqual(len(dcop.domains["d_range"].values), 11)
 
 
 class TestDcopLoadVariables(unittest.TestCase):
-
     def setUp(self):
         self.dcop_str = """
         name: dcop name
@@ -240,10 +252,10 @@ class TestDcopLoadVariables(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.variables), 1)
-        self.assertIn('v1', dcop.variables)
-        v1 = dcop.variable('v1')
-        self.assertEqual(v1.name, 'v1')
-        self.assertEqual(v1.domain.name, 'd1')
+        self.assertIn("v1", dcop.variables)
+        v1 = dcop.variable("v1")
+        self.assertEqual(v1.name, "v1")
+        self.assertEqual(v1.domain.name, "d1")
 
     def test_variable_with_initial_value(self):
         self.dcop_str += """
@@ -255,7 +267,7 @@ class TestDcopLoadVariables(unittest.TestCase):
 
         dcop = load_dcop(self.dcop_str)
 
-        v1 = dcop.variable('v1')
+        v1 = dcop.variable("v1")
         self.assertEqual(v1.initial_value, 1)
 
     def test_raise_when_invalid_initial_value(self):
@@ -281,15 +293,15 @@ class TestDcopLoadVariables(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.variables), 2)
-        self.assertIn('v1', dcop.variables)
-        v1 = dcop.variable('v1')
-        self.assertEqual(v1.name, 'v1')
-        self.assertEqual(v1.domain.name, 'd1')
+        self.assertIn("v1", dcop.variables)
+        v1 = dcop.variable("v1")
+        self.assertEqual(v1.name, "v1")
+        self.assertEqual(v1.domain.name, "d1")
 
-        self.assertIn('v2', dcop.variables)
-        v2 = dcop.variable('v2')
-        self.assertEqual(v2.name, 'v2')
-        self.assertEqual(v2.domain.name, 'd1')
+        self.assertIn("v2", dcop.variables)
+        v2 = dcop.variable("v2")
+        self.assertEqual(v2.name, "v2")
+        self.assertEqual(v2.domain.name, "d1")
 
 
 class TestDcopLoadVariablesWithCost(unittest.TestCase):
@@ -316,8 +328,8 @@ class TestDcopLoadVariablesWithCost(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.variables), 1)
-        self.assertIn('v1', dcop.variables)
-        v1 = dcop.variable('v1')
+        self.assertIn("v1", dcop.variables)
+        v1: VariableWithCostDict = dcop.variable("v1")
         self.assertEqual(v1.cost_for_val(1), 0.2)
 
     def test_variable_with_cost(self):
@@ -335,12 +347,12 @@ class TestDcopLoadVariablesWithCost(unittest.TestCase):
             cost_function: "-0.4 if v2 == 'G' else 0.5"
         """
         dcop = load_dcop(self.dcop_str)
-        v1 = dcop.variable('v1')
-        self.assertEqual(v1.cost_for_val('R'), -0.1)
-        self.assertEqual(v1.cost_for_val('G'), 0.2)
-        v2 = dcop.variable('v2')
-        self.assertEqual(v2.cost_for_val('R'), 0.5)
-        self.assertEqual(v2.cost_for_val('G'), -0.4)
+        v1: VariableWithCostDict = dcop.variable("v1")
+        self.assertEqual(v1.cost_for_val("R"), -0.1)
+        self.assertEqual(v1.cost_for_val("G"), 0.2)
+        v2: VariableWithCostDict = dcop.variable("v2")
+        self.assertEqual(v2.cost_for_val("R"), 0.5)
+        self.assertEqual(v2.cost_for_val("G"), -0.4)
 
     def test_variable_with_noisy_cost_function(self):
         self.dcop_str += """
@@ -354,15 +366,15 @@ class TestDcopLoadVariablesWithCost(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.variables), 1)
-        self.assertIn('v1', dcop.variables)
-        v1 = dcop.variable('v1')
+        self.assertIn("v1", dcop.variables)
+        v1: VariableWithCostDict = dcop.variable("v1")
 
         all_equal = True
-        for v in dcop.domain('d1').values:
+        for v in dcop.domain("d1").values:
             noisy_cost = v1.cost_for_val(v)
-            self.assertGreaterEqual(v*0.2+0.05, noisy_cost)
-            self.assertLessEqual(v*0.2-0.05, v * 0.2)
-            all_equal = all_equal and (noisy_cost == v*0.2)
+            self.assertGreaterEqual(v * 0.2 + 0.05, noisy_cost)
+            self.assertLessEqual(v * 0.2 - 0.05, v * 0.2)
+            all_equal = all_equal and (noisy_cost == v * 0.2)
 
         # if all cost where exactly equal to the cost function, it means we
         # probably did not apply the noise
@@ -394,10 +406,10 @@ class TestDcopLoadExternalVariables(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.external_variables), 1)
-        self.assertIn('ext_var1', dcop.external_variables)
-        e1 = dcop.get_external_variable('ext_var1')
-        self.assertEqual(e1.name, 'ext_var1')
-        self.assertEqual(e1.domain.name, 'd1')
+        self.assertIn("ext_var1", dcop.external_variables)
+        e1 = dcop.get_external_variable("ext_var1")
+        self.assertEqual(e1.name, "ext_var1")
+        self.assertEqual(e1.domain.name, "d1")
 
 
 class TestDcopLoadConstraints(unittest.TestCase):
@@ -437,8 +449,8 @@ class TestDcopLoadConstraints(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.constraints), 1)
-        c = dcop.constraint('cost_v1')
-        self.assertEqual(c.name, 'cost_v1')
+        c = dcop.constraint("cost_v1")
+        self.assertEqual(c.name, "cost_v1")
         self.assertEqual(c(v1=10), 4)
 
     def test_two_var_constraint(self):
@@ -453,8 +465,8 @@ class TestDcopLoadConstraints(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.constraints), 1)
-        c = dcop.constraint('ws')
-        self.assertEqual(c.name, 'ws')
+        c = dcop.constraint("ws")
+        self.assertEqual(c.name, "ws")
         self.assertEqual(c(v1=10, v2=3), 34)
 
     def test_external_var_constraint(self):
@@ -469,8 +481,8 @@ class TestDcopLoadConstraints(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.constraints), 1)
-        c = dcop.constraint('cond')
-        self.assertEqual(c.name, 'cond')
+        c = dcop.constraint("cond")
+        self.assertEqual(c.name, "cond")
         self.assertEqual(c(e1=True), 10)
         self.assertEqual(c(e1=False), 0)
 
@@ -485,8 +497,8 @@ class TestDcopLoadConstraints(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.constraints), 1)
-        c = dcop.constraint('cond')
-        self.assertEqual(c.name, 'cond')
+        c = dcop.constraint("cond")
+        self.assertEqual(c.name, "cond")
         self.assertEqual(c(e1=True, v1=1, v2=1), 10)
         self.assertEqual(c(e1=True, v1=1, v2=2), 0)
         self.assertEqual(c(e1=False, v1=1, v2=1), 0)
@@ -508,10 +520,10 @@ class TestDcopLoadConstraints(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.constraints), 1)
-        c = dcop.constraint('cost_v1')
-        self.assertEqual(c.name, 'cost_v1')
+        c = dcop.constraint("cost_v1")
+        self.assertEqual(c.name, "cost_v1")
         self.assertEqual(len(c.dimensions), 1)
-        self.assertEqual(c.dimensions[0].name, 'v1')
+        self.assertEqual(c.dimensions[0].name, "v1")
         self.assertEqual(c(v1=2), 2)
         self.assertEqual(c(v1=5), 3)
         self.assertEqual(c(v1=0), 4)
@@ -536,10 +548,10 @@ class TestDcopLoadConstraints(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.constraints), 1)
-        c = dcop.constraint('ext_test')
-        self.assertEqual(c.name, 'ext_test')
+        c = dcop.constraint("ext_test")
+        self.assertEqual(c.name, "ext_test")
         self.assertEqual(len(c.dimensions), 2)
-        self.assertEqual([v.name for v in c.dimensions], ['v1', 'v2'])
+        self.assertEqual([v.name for v in c.dimensions], ["v1", "v2"])
         self.assertEqual(c(v1=2, v2=2), 2)
         self.assertEqual(c(v1=5, v2=5), 3)
 
@@ -593,9 +605,9 @@ class TestDcopLoadAgents(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.agents), 1)
-        self.assertIn('a1', dcop.agents)
-        a1 = dcop.agent('a1')
-        self.assertEqual(a1.name, 'a1')
+        self.assertIn("a1", dcop.agents)
+        a1 = dcop.agent("a1")
+        self.assertEqual(a1.name, "a1")
         self.assertEqual(a1.capacity, 100)
 
     def test_one_agent_with_arbitrary_attr(self):
@@ -610,9 +622,9 @@ class TestDcopLoadAgents(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.agents), 1)
-        self.assertIn('a1', dcop.agents)
-        a1 = dcop.agent('a1')
-        self.assertEqual(a1.name, 'a1')
+        self.assertIn("a1", dcop.agents)
+        a1 = dcop.agent("a1")
+        self.assertEqual(a1.name, "a1")
         self.assertEqual(a1.capacity, 100)
         self.assertEqual(a1.foo, 12)
 
@@ -635,19 +647,19 @@ class TestDcopLoadAgents(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.agents), 3)
-        self.assertIn('a1', dcop.agents)
-        self.assertIn('a2', dcop.agents)
+        self.assertIn("a1", dcop.agents)
+        self.assertIn("a2", dcop.agents)
 
-        self.assertEqual(dcop.agent('a2').default_route, 42)
+        self.assertEqual(dcop.agent("a2").default_route, 42)
         # route given in yaml str:
-        self.assertEqual(dcop.agent('a1').route('a2'), 10)
-        self.assertEqual(dcop.agent('a2').route('a1'), 10)
+        self.assertEqual(dcop.agent("a1").route("a2"), 10)
+        self.assertEqual(dcop.agent("a2").route("a1"), 10)
         # internal route : 0
-        self.assertEqual(dcop.agent('a1').route('a1'), 0)
-        self.assertEqual(dcop.agent('a2').route('a2'), 0)
+        self.assertEqual(dcop.agent("a1").route("a1"), 0)
+        self.assertEqual(dcop.agent("a2").route("a2"), 0)
         # route not given in str : defaults to default_route
-        self.assertEqual(dcop.agent('a1').route('a3'), 42)
-        self.assertEqual(dcop.agent('a2').route('a3'), 42)
+        self.assertEqual(dcop.agent("a1").route("a3"), 42)
+        self.assertEqual(dcop.agent("a2").route("a3"), 42)
 
     def test_agents_no_route_def(self):
 
@@ -664,7 +676,7 @@ class TestDcopLoadAgents(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         # no defaul given
-        self.assertEqual(dcop.agent('a1').route('a3'), 1)
+        self.assertEqual(dcop.agent("a1").route("a3"), 1)
 
     def test_agents_no_default_route(self):
 
@@ -684,12 +696,12 @@ class TestDcopLoadAgents(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
 
         self.assertEqual(len(dcop.agents), 3)
-        self.assertIn('a1', dcop.agents)
-        self.assertIn('a2', dcop.agents)
+        self.assertIn("a1", dcop.agents)
+        self.assertIn("a2", dcop.agents)
 
         # no defaul given
         # self.assertEqual(dcop.route('a1', 'a3'), 1)
-        self.assertEqual(dcop.agent('a1').route('a3'), 1)
+        self.assertEqual(dcop.agent("a1").route("a3"), 1)
 
     def test_duplicate_route_raises(self):
         self.dcop_str += """
@@ -706,7 +718,7 @@ class TestDcopLoadAgents(unittest.TestCase):
             a2:
               a1: 5
         """
-        self.assertRaises(DcopInvalidFormatError,load_dcop, self.dcop_str)
+        self.assertRaises(DcopInvalidFormatError, load_dcop, self.dcop_str)
 
     def test_default_global_hosting_costs(self):
         self.dcop_str += """
@@ -722,9 +734,9 @@ class TestDcopLoadAgents(unittest.TestCase):
         """
         dcop = load_dcop(self.dcop_str)
 
-        self.assertEqual(dcop.agent('a1').hosting_cost('foo'), 5)
-        self.assertEqual(dcop.agent('a2').hosting_cost('bar'), 5)
-        self.assertEqual(dcop.agent('a3').hosting_cost('foo'), 5)
+        self.assertEqual(dcop.agent("a1").hosting_cost("foo"), 5)
+        self.assertEqual(dcop.agent("a2").hosting_cost("bar"), 5)
+        self.assertEqual(dcop.agent("a3").hosting_cost("foo"), 5)
 
     def test_default_agt_hosting_costs(self):
         self.dcop_str += """
@@ -742,10 +754,10 @@ class TestDcopLoadAgents(unittest.TestCase):
         """
         dcop = load_dcop(self.dcop_str)
 
-        self.assertEqual(dcop.agent('a1').hosting_cost('foo'), 3)
-        self.assertEqual(dcop.agent('a1').hosting_cost('bar'), 3)
-        self.assertEqual(dcop.agent('a2').hosting_cost('bar'), 5)
-        self.assertEqual(dcop.agent('a3').hosting_cost('foo'), 5)
+        self.assertEqual(dcop.agent("a1").hosting_cost("foo"), 3)
+        self.assertEqual(dcop.agent("a1").hosting_cost("bar"), 3)
+        self.assertEqual(dcop.agent("a2").hosting_cost("bar"), 5)
+        self.assertEqual(dcop.agent("a3").hosting_cost("foo"), 5)
 
     def test_comp_agt_hosting_costs(self):
         self.dcop_str += """
@@ -765,10 +777,10 @@ class TestDcopLoadAgents(unittest.TestCase):
         """
         dcop = load_dcop(self.dcop_str)
 
-        self.assertEqual(dcop.agent('a1').hosting_cost('foo'), 7)
-        self.assertEqual(dcop.agent('a1').hosting_cost('bar'), 3)
-        self.assertEqual(dcop.agent('a2').hosting_cost('bar'), 5)
-        self.assertEqual(dcop.agent('a3').hosting_cost('foo'), 5)
+        self.assertEqual(dcop.agent("a1").hosting_cost("foo"), 7)
+        self.assertEqual(dcop.agent("a1").hosting_cost("bar"), 3)
+        self.assertEqual(dcop.agent("a2").hosting_cost("bar"), 5)
+        self.assertEqual(dcop.agent("a3").hosting_cost("foo"), 5)
 
 
 class TestLoadDistributionHintsMustHost(unittest.TestCase):
@@ -818,7 +830,7 @@ class TestLoadDistributionHintsMustHost(unittest.TestCase):
         hints = dcop.dist_hints
         self.assertIsNotNone(hints)
 
-        self.assertIn('v1', hints.must_host('a1'))
+        self.assertIn("v1", hints.must_host("a1"))
 
     def test_must_host_several(self):
         self.dcop_str += """
@@ -830,8 +842,8 @@ class TestLoadDistributionHintsMustHost(unittest.TestCase):
         hints = dcop.dist_hints
         self.assertIsNotNone(hints)
 
-        self.assertIn('v1', hints.must_host('a1'))
-        self.assertIn('c1', hints.must_host('a1'))
+        self.assertIn("v1", hints.must_host("a1"))
+        self.assertIn("c1", hints.must_host("a1"))
 
     def test_must_host_returns_empty(self):
         self.dcop_str += """
@@ -843,7 +855,7 @@ class TestLoadDistributionHintsMustHost(unittest.TestCase):
         hints = dcop.dist_hints
         self.assertIsNotNone(hints)
 
-        self.assertEqual(len(hints.must_host('a5')), 0)
+        self.assertEqual(len(hints.must_host("a5")), 0)
 
     def test_raises_on_invalid_agent_in_must_host(self):
         self.dcop_str += """
@@ -900,7 +912,6 @@ class TestLoadDistributionHintsHostWith(unittest.TestCase):
 
         self.assertIsNone(hints)
 
-
     def test_host_with(self):
         self.dcop_str += """
         distribution_hints:
@@ -910,8 +921,8 @@ class TestLoadDistributionHintsHostWith(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
         hints = dcop.dist_hints
 
-        self.assertIn('c1', hints.host_with('v1'))
-        self.assertIn('v1', hints.host_with('c1'))
+        self.assertIn("c1", hints.host_with("v1"))
+        self.assertIn("v1", hints.host_with("c1"))
 
     def test_host_with_several(self):
         self.dcop_str += """
@@ -922,9 +933,9 @@ class TestLoadDistributionHintsHostWith(unittest.TestCase):
         dcop = load_dcop(self.dcop_str)
         hints = dcop.dist_hints
 
-        self.assertIn('c1', hints.host_with('v1'))
-        self.assertIn('c1', hints.host_with('v2'))
-        self.assertIn('v1', hints.host_with('c1'))
-        self.assertIn('v1', hints.host_with('v2'))
-        self.assertIn('v2', hints.host_with('v1'))
-        self.assertIn('v2', hints.host_with('c1'))
+        self.assertIn("c1", hints.host_with("v1"))
+        self.assertIn("c1", hints.host_with("v2"))
+        self.assertIn("v1", hints.host_with("c1"))
+        self.assertIn("v1", hints.host_with("v2"))
+        self.assertIn("v2", hints.host_with("v1"))
+        self.assertIn("v2", hints.host_with("c1"))
