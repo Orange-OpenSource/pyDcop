@@ -167,6 +167,14 @@ def init_cli_parser(parent_parser):
         "(in [1, max_resource_value]) at a given time slot",
     )
 
+    parser.add_argument(
+        "--no_agents",
+        default=False,
+        required=False,
+        action="store_true",
+        help="generate the problem without any agents. You can use the 'pydcop generate " \
+             "agents' to generate them with their hosting and route costs"
+    )
 
     parser.add_argument(
         "--routes_default", type=int, required=False, help="Default routes cost"
@@ -177,7 +185,7 @@ def init_cli_parser(parent_parser):
     )
 
     parser.add_argument(
-        "--capacity", type=int, required=True, help="Capacity of agents"
+        "--capacity", type=int, required=False, help="Capacity of agents"
     )
 
     # TODO: add support for 'Time Slot As Variable' and 'Events As Variables'
@@ -217,16 +225,17 @@ def generate(args):
     # agents_defs = {agent.name: agent for agent, _ in agents.values()}
     # Generate agents hosting and route costs
     agents_defs = {}
-    for agent, agt_variables in agents.items():
-        kw = {}
-        kw["hosting_costs"] = {v.name: 0 for v in agt_variables}
-        if args.hosting_default:
-            kw["default_hosting_cost"] = args.hosting_default
-        if args.capacity:
-            kw["capacity"] = args.capacity
-        if args.routes_default:
-            kw["default_route"] = args.routes_default
-        agents_defs[agent] = AgentDef(agent, **kw)
+    if not args.no_agents:
+        for agent, agt_variables in agents.items():
+            kw = {}
+            kw["hosting_costs"] = {v.name: 0 for v in agt_variables}
+            if args.hosting_default:
+                kw["default_hosting_cost"] = args.hosting_default
+            if args.capacity:
+                kw["capacity"] = args.capacity
+            if args.routes_default:
+                kw["default_route"] = args.routes_default
+            agents_defs[agent] = AgentDef(agent, **kw)
 
     dcop = DCOP(
         "MeetingSceduling",
@@ -237,48 +246,51 @@ def generate(args):
         agents=agents_defs,
     )
 
-    distribution = Distribution(
-        {
-            agent.name: [v.name for v in agents[agent.name]]
-            for agent in agents_defs.values()
-        }
-    )
+    if not args.no_agents:
+        distribution = Distribution(
+            {
+                agent.name: [v.name for v in agents[agent.name]]
+                for agent in agents_defs.values()
+            }
+        )
 
     if args.output:
         output_file = args.output
         with open(output_file, encoding="utf-8", mode="w") as fo:
             fo.write(dcop_yaml(dcop))
 
-        dist_result = {
-            "inputs": {
-                "dist_algo": "peav",
-                "dcop": output_file,
-                "graph": "constraints_graph",
-                "algo": "NA",
-            },
-            "distribution": distribution.mapping(),
-            "cost": None,
-        }
-        path, ext = splitext(output_file)
-        dist_output_file = f"{path}_dist{ext}"
-        with open(dist_output_file, encoding="utf-8", mode="w") as fo:
-            fo.write(yaml.dump(dist_result))
+        if not args.no_agents:
+            dist_result = {
+                "inputs": {
+                    "dist_algo": "peav",
+                    "dcop": output_file,
+                    "graph": "constraints_graph",
+                    "algo": "NA",
+                },
+                "distribution": distribution.mapping(),
+                "cost": None,
+            }
+            path, ext = splitext(output_file)
+            dist_output_file = f"{path}_dist{ext}"
+            with open(dist_output_file, encoding="utf-8", mode="w") as fo:
+                fo.write(yaml.dump(dist_result))
 
     else:
         print(dcop_yaml(dcop))
 
-        dist_result = {
-            "inputs": {
-                "dist_algo": "peav",
-                "dcop": "NA",
-                "graph": "constraints_graph",
-                "algo": "NA",
-            },
-            "distribution": distribution.mapping(),
-            "cost": None,
-        }
-        # FIXME proper serialization of the dsitribution:
-        print(yaml.dump(dist_result))
+        if not args.no_agents:
+            dist_result = {
+                "inputs": {
+                    "dist_algo": "peav",
+                    "dcop": "NA",
+                    "graph": "constraints_graph",
+                    "algo": "NA",
+                },
+                "distribution": distribution.mapping(),
+                "cost": None,
+            }
+            # FIXME proper serialization of the distribution:
+            print(yaml.dump(dist_result))
 
 
 # Semantic type definitions:
