@@ -181,6 +181,15 @@ def init_cli_parser(parent_parser):
         help="generate the problem in intentional form (default is extensive form)",
     )
     parser.add_argument(
+        "--no_agents",
+        default=False,
+        required=False,
+        action="store_true",
+        help="generate the problem without any agents. You can use the 'pydcop generate " \
+             "agents' to generate them with their hosting and route costs"
+    )
+
+    parser.add_argument(
         "--fg_dist",
         default=False,
         required=False,
@@ -219,8 +228,9 @@ def generate(args):
         args.bin_range,
         args.un_range,
         not args.intentional,
-        args.fg_dist,
-        args.var_dist,
+        no_agents=args.no_agents,
+        fg_dist=args.fg_dist,
+        var_dist=args.var_dist,
     )
 
     graph = "factor_graph" if args.fg_dist else "constraints_graph"
@@ -267,6 +277,7 @@ def generate_ising(
     bin_range: float,
     un_range: float,
     extensive: bool,
+    no_agents: bool,
     fg_dist: bool,
     var_dist: bool,
 ) -> Tuple[DCOP, Dict, Dict]:
@@ -307,6 +318,8 @@ def generate_ising(
             fg_mapping[agent.name].append(f"cb_v_{r1}_{c1}_v_{r2}_{c2}")
 
     name = f"Ising_{row_count}_{col_count}_{bin_range}_{un_range}"
+    if no_agents:
+        agents = {}
     dcop = DCOP(
         name,
         domains={"var_domain": domain},
