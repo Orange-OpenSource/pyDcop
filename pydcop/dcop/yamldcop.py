@@ -403,7 +403,7 @@ def yaml_agents(agents: List[AgentDef]) -> str:
             }
         if agt.routes:
             routes[agt.name] = agt.routes
-        if agt.default_route != 1:
+        if agt.default_route is not None:
             routes['default'] = agt.default_route
 
     res = {}
