@@ -167,6 +167,19 @@ def init_cli_parser(parent_parser):
         "(in [1, max_resource_value]) at a given time slot",
     )
 
+
+    parser.add_argument(
+        "--routes_default", type=int, required=False, help="Default routes cost"
+    )
+
+    parser.add_argument(
+        "--hosting_default", type=int, required=False, help="Default hosting cost"
+    )
+
+    parser.add_argument(
+        "--capacity", type=int, required=True, help="Capacity of agents"
+    )
+
     # TODO: add support for 'Time Slot As Variable' and 'Events As Variables'
     # parser.add_argument(
     #     "--model",
@@ -201,7 +214,20 @@ def generate(args):
 
     domains = {variable.domain.name: variable.domain for variable in variables.values()}
     variables = {variable.name: variable for variable in variables.values()}
-    agents_defs = {agent.name: agent for agent, _ in agents.values()}
+    # agents_defs = {agent.name: agent for agent, _ in agents.values()}
+    # Generate agents hosting and route costs
+    agents_defs = {}
+    for agent, agt_variables in agents.items():
+        kw = {}
+        kw["hosting_costs"] = {v.name: 0 for v in agt_variables}
+        if args.hosting_default:
+            kw["default_hosting_cost"] = args.hosting_default
+        if args.capacity:
+            kw["capacity"] = args.capacity
+        if args.routes_default:
+            kw["default_route"] = args.routes_default
+        agents_defs[agent] = AgentDef(agent, **kw)
+
     dcop = DCOP(
         "MeetingSceduling",
         objective="max",
@@ -213,8 +239,8 @@ def generate(args):
 
     distribution = Distribution(
         {
-            agent.name: [v.name for v in variables]
-            for agent, variables in agents.values()
+            agent.name: [v.name for v in agents[agent.name]]
+            for agent in agents_defs.values()
         }
     )
 
@@ -281,7 +307,11 @@ def peav_model(
     events: Dict[EVT, Event],
     resources: Dict[RESOURCE, Resource],
     penalty,
-):
+) -> Tuple[
+    Dict[Tuple[RESOURCE, EVT], Variable],
+    Dict[str, Constraint],
+    Dict[str, List[Variable]],
+]:
     """
     In the PEAV model
 
@@ -297,15 +327,14 @@ def peav_model(
     """
     all_variables: Dict[Tuple[RESOURCE, EVT], Variable] = {}
     all_constraints: Dict[str, Constraint] = {}
-    all_agents: Dict[str, Tuple[AgentDef, List[Variable]]] = {}
+    all_agents: Dict[str, List[Variable]] = {}
 
     # Each resource is represented by an agent, which controls one variable
     # for each event it could participate.
     for resource in resources.values():
         variables = peav_variables_for_resource(resource, events, len(slots))
         all_variables.update(variables)
-        agent = AgentDef(f"a_{resource.id}")
-        all_agents[agent.name] = (agent, list(variables.values()))
+        all_agents[f"a_{resource.id}"] = list(variables.values())
 
         constraints = peav_intra_extensive_constraints(
             resource, events, variables, penalty
