@@ -156,8 +156,7 @@ def set_parser(subparsers):
 orchestrator = None
 
 
-def run_cmd(args, timer: Timer):
-
+def run_cmd(args, timer: Timer, timeout):
     logger.debug("Distribution replicas : %s", args)
     global orchestrator
 
@@ -230,8 +229,8 @@ def run_cmd(args, timer: Timer):
         if args.output is not None:
             with open(args.output, encoding="utf-8", mode="w") as fo:
                 fo.write(yaml.dump(result))
-
-        print(yaml.dump(result))
+        else:
+            print(yaml.dump(result))
         sys.exit(0)
 
         # TODO : retrieve and display replica distribution
