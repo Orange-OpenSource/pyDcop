@@ -123,7 +123,7 @@ def run_cmd(args):
     else:
         with open(progress_file, encoding="utf-8", mode="a") as f:
             now = datetime.datetime.now()
-            f.write(f"{batch_file}_{now:%Y%m%d_%H%m}\n")
+            f.write(f"{batch_file}_{now:%Y%m%d_%H%M}\n")
         jobs = set()
 
     run_batches(bench_def, args.simulate, jobs)
