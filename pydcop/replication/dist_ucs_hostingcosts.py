@@ -375,7 +375,8 @@ class UCSReplication(MessagePassingComputation):
             raise ValueError("adding already present computation %s", comp_def)
 
         self.computations[comp_name] = comp_def, footprint
-        self.logger.info("add computation %s to replicate in neighborhood ", comp_name)
+        if self.logger.isEnabledFor(logging.INFO):
+            self.logger.info(f"add computation {comp_name} to replicate")
 
     def remove_computation(self, computation: ComputationName):
         """
@@ -391,7 +392,8 @@ class UCSReplication(MessagePassingComputation):
                 "Attempting to remove unknown computation %s", computation
             )
         else:
-            self.logger.info("Removing computation to replicate %s", computation)
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info(f"Removing computation to replicate {computation}")
             self.computations.pop(computation)
 
     def replicate(
@@ -416,14 +418,12 @@ class UCSReplication(MessagePassingComputation):
         """
         if computations is None:
             self.logger.info(
-                "Request for replications of all computations %s -" " %s",
-                computations,
-                k_target,
+                f"Request for replicating all computations {computations} - {k_target}"
             )
             computations = [c for c in self.computations]
 
         if not computations:
-            self.logger.info("No computation to replicate for %s ", self.name)
+            self.logger.info(f"No computation to replicate for {self.name} ")
             self.replication_done(dict(deepcopy(self._replica_hosts)))
             return
         elif type(computations) == ComputationName:
@@ -437,7 +437,7 @@ class UCSReplication(MessagePassingComputation):
         else:
             unknown = [c for c in computations if c not in self.computations]
             if unknown:
-                msg = "Requesting replication of unknown computation {}".format(unknown)
+                msg = f"Requesting replication of unknown computation {unknown}"
                 self.logger.error(msg)
                 raise ValueError(msg)
 
@@ -445,16 +445,13 @@ class UCSReplication(MessagePassingComputation):
         neighbors = self.replication_neighbors()
         if not neighbors:
             self.logger.warning(
-                "Cannot replicate computations %s : no " "neighbor", computations
+                f"Cannot replicate computations {computations} : no neighbor"
             )
             self.replication_done(dict(deepcopy(self._replica_hosts)))
             return
 
         self.logger.info(
-            "Starting replications of computations %s on " "neighbors %s - %s",
-            computations,
-            neighbors,
-            k_target,
+            f"Starting replications of computations {computations} on neighbors {neighbors} - {k_target}"
         )
 
         for c in computations:
@@ -485,9 +482,7 @@ class UCSReplication(MessagePassingComputation):
     def on_stop(self):
         c_names = list(self.replicas.keys())
         self.logger.info(
-            "Stopping replication computation %s, unregister " "hosted replicas %s",
-            self.name,
-            c_names,
+            f"Stopping replication computation {self.name}, unregister hosted replicas {c_names}"
         )
         # The replication computation stops: unregister all replicas that
         # were hosted here:
@@ -510,9 +505,8 @@ class UCSReplication(MessagePassingComputation):
 
         """
         if msg.rep_msg_type == "replicate_request":
-            self.logger.debug(
-                "Received replication request from %s, %s", sender_name, msg
-            )
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Received replication request from {sender_name}, {msg}")
             self.on_replicate_request(
                 msg.budget,
                 msg.spent,
@@ -525,20 +519,17 @@ class UCSReplication(MessagePassingComputation):
                 msg.hosts,
             )
         elif msg.rep_msg_type == "replicate_answer":
-            self.logger.debug(
-                "Received replication answer from %s, %s", sender_name, msg
-            )
-            agent = msg.rq_path.last()
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Received replication answer from {sender_name}, {msg}")
+            agent = msg.rq_path[-1]  # last()
             pending = self._pending_requests.pop(
                 (agent, msg.computation_def.name), False
             )
             if not pending:
                 # If not in pending request : error !
                 self.logger.error(
-                    "Unexpected answer %s - %s  not in %s",
-                    (agent, msg.computation_def.name),
-                    msg,
-                    list(self._pending_requests.keys()),
+                    f"Unexpected answer {agent}, {msg.computation_def.name} - "
+                    f"{msg} not in {list(self._pending_requests.keys())}"
                 )
 
             self.on_replicate_answer(
@@ -553,7 +544,7 @@ class UCSReplication(MessagePassingComputation):
                 msg.hosts,
             )
         else:
-            raise ValueError("Invalid message type " + str(msg.rep_msg_type))
+            raise ValueError(f"Invalid message type {msg.rep_msg_type}")
 
     def on_replicate_request(
         self,
@@ -584,13 +575,17 @@ class UCSReplication(MessagePassingComputation):
         # Available & affordable with current remaining budget, paths from here:
         affordable_paths = affordable_path_from(rq_path, budget + spent, paths)
 
-        # self.logger.debug('Affordable path %s %s %s %s \n%s', budget, spent,
-        #                   rq_path, affordable_paths, paths)
-
         # Paths to next candidates from paths table.
         target_paths = (rq_path + Path(p.head()) for _, p in affordable_paths)
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(
+                f"Target paths for {comp_def.name} on rq ({budget}, {spent}, {rq_path}) : "
+                f"Affordable: {affordable_paths} Out of {paths}"
+            )
 
         for target_path in target_paths:
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Visiting for {comp_def.name} path {target_path}")
             forwarded, replica_count = self._visit_path(
                 budget,
                 spent,
@@ -605,9 +600,10 @@ class UCSReplication(MessagePassingComputation):
             if forwarded:
                 return
 
-        self.logger.info(
-            "No reachable path for %s with budget %s ", comp_def.name, budget
-        )
+        if self.logger.isEnabledFor(logging.INFO):
+            self.logger.info(
+                "No reachable path for %s with budget %s ", comp_def.name, budget
+            )
 
         # Either:
         #  * No path : Not on a already known path
@@ -665,9 +661,10 @@ class UCSReplication(MessagePassingComputation):
         # signal that replication is done.
         if replica_count == 0:
             if len(rq_path) >= 3:
-                self.logger.debug(
-                    "All replica placed for %s, report back to requester", comp_def.name
-                )
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(
+                        f"All replica placed for {comp_def.name}, report back to requester"
+                    )
                 self._send_answer(
                     budget,
                     spent,
@@ -693,8 +690,15 @@ class UCSReplication(MessagePassingComputation):
             for _, p in affordable_paths
             if back_path + Path(p.head()) != rq_path
         )
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(
+                f"Target paths for {comp_def.name} on answer (b:{budget}, s:{spent} : "
+                f"{rq_path} {affordable_paths} {paths.table} , {list(target_paths)}"
+            )
 
         for target_path in target_paths:
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Visiting for {comp_def.name} path {target_path}")
             forwarded, replica_count = self._visit_path(
                 budget,
                 spent,
@@ -730,12 +734,17 @@ class UCSReplication(MessagePassingComputation):
             # Cannot increase budget, replica distribution is finished for
             # this computation, even if we have not reached target resiliency
             # level. Report the final replica distribution to the orchestrator.
+            self.logger.warning(
+                f"Could not reach target resiliency level for {comp_def.name}, "
+                f"replicated on {hosts}"
+            )
             self.computation_replicated(comp_def.name, hosts)
         else:
             budget = min(c for p, c in paths.items() if p != rq_path)
-            self.logger.info(
-                "Increase budget for computation %s : %s", comp_def.name, budget
-            )
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info(
+                    f"Increase budget for computation {comp_def.name} : {budget}"
+                )
             self.on_replicate_request(
                 budget,
                 0,
@@ -765,16 +774,11 @@ class UCSReplication(MessagePassingComputation):
         budget_to_next = budget - cost_to_next
         spent_to_next = spent + cost_to_next
 
-        self.logger.debug(
-            "sending replica request from  %s to %s for %s - %s ("
-            "budget = %s, cost to next %s)",
-            self.name,
-            target_agt,
-            rq_path,
-            comp_def.name,
-            budget_to_next,
-            cost_to_next,
-        )
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(
+                f"sending replica request from {self.name} to {target_agt} "
+                f"for {rq_path} - {comp_def.name} (b:{budget_to_next}, c: {cost_to_next})"
+            )
         self.post_msg(
             replication_computation_name(target_agt),
             UCSReplicateMessage(
@@ -823,16 +827,12 @@ class UCSReplication(MessagePassingComputation):
         cost_to_target = self.route(target_agt)
         budget += cost_to_target
         spent -= cost_to_target
-        self.logger.debug(
-            "sending replica answer from %s to %s for %s %s" "( %s %s %s )",
-            self.name,
-            target_agt,
-            rq_path,
-            comp_def.name,
-            budget,
-            spent,
-            cost_to_target,
-        )
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(
+                f"sending replica answer from {self.name} to {target_agt} "
+                f"for {comp_def.name} rq {rq_path} ({budget}, {spent}, {cost_to_target}) "
+                f"paths : {paths.table}"
+            )
         self.post_msg(
             replication_computation_name(target_agt),
             UCSReplicateMessage(
@@ -861,24 +861,25 @@ class UCSReplication(MessagePassingComputation):
     ):
         self._replication_in_progress.remove([computation])
         self._replica_hosts[computation].update(hosts)
-        self.logger.info(
-            "Replica of %s accepted by %s, now replicated on %s, " "is done %s",
-            computation,
-            hosts,
-            self._replica_hosts[computation],
-            self._replication_in_progress.is_done(computation),
-        )
+        if self.logger.isEnabledFor(logging.INFO):
+            self.logger.info(
+                f"Replica of {computation} accepted by {hosts}, "
+                f"now replicated on {self._replica_hosts[computation]}, "
+                f"is done {self._replication_in_progress.is_done(computation)}"
+            )
 
         if self._replication_in_progress.is_empty():
             # All computations have been replicated, notify our agent.
             hosts = dict(deepcopy(self._replica_hosts))
-            self.logger.info("All computations replicated : %s", hosts)
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info(f"All computations replicated : {hosts}")
             self.replication_done(hosts)
         else:
-            self.logger.info(
-                "Still waiting for replication of computations " "%s",
-                self._replication_in_progress.in_progress(),
-            )
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info(
+                    "Still waiting for replication of computations "
+                    f"{self._replication_in_progress.in_progress()}"
+                )
 
     def _on_agent_event(self, event: str, agent: str, _: Address):
         # On agent event, update the cache of replication computation and
@@ -896,14 +897,18 @@ class UCSReplication(MessagePassingComputation):
             self._replicate_on_agent_lost(agent)
 
         elif event == "agent_added":
-            if agent != self.agt_name :
-                self._replication_computations_cache.add(agent)
-                self.discovery.register_computation(agt_rep, agent, publish=False)
-                self.logger.info(
-                    "Agent added %s , register replication " "computation %s",
-                    agent,
-                    agt_rep,
-                )
+            if agent != self.agt_name:
+                # Only consider the agent if it is hosting a neighbor computation
+                hosted = set(self.discovery.agent_computations(agent))
+                if hosted.intersection(set(self.computations)):
+
+                    self._replication_computations_cache.add((agent, self.route(agent)))
+                    self.discovery.register_computation(agt_rep, agent, publish=False)
+
+                    if self.logger.isEnabledFor(logging.INFO):
+                        self.logger.info(
+                            f"Agent added {agent} , register replication computation {agt_rep}"
+                        )
 
         else:
             self.logger.error("Unexpected agent event %s - %s ", event, agent)
@@ -935,12 +940,13 @@ class UCSReplication(MessagePassingComputation):
             # hosting cost
             hosting_path = rq_path + Path("__hosting__")
             hosting_cost = spent + self.agent_def.hosting_cost(computation)
-            self.logger.debug(
-                "Add path to host %s on local hosting node %s " "with cost %s ",
-                computation,
-                hosting_path,
-                hosting_cost,
-            )
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    "Add path to host %s on local hosting node %s " "with cost %s ",
+                    computation,
+                    hosting_path,
+                    hosting_cost,
+                )
             paths[hosting_path] = hosting_cost
 
     def _visit_path(
@@ -991,12 +997,13 @@ class UCSReplication(MessagePassingComputation):
                 hosts.append(self.agent_def.name)
                 replica_count -= 1
                 if replica_count == 0:
-                    self.logger.info(
-                        "Target resiliency reached for %s, report back to "
-                        "requester , hosts : %s",
-                        comp_def.name,
-                        hosts,
-                    )
+                    if self.logger.isEnabledFor(logging.INFO):
+                        self.logger.info(
+                            "Target resiliency reached for %s, report back to "
+                            "requester , hosts : %s",
+                            comp_def.name,
+                            hosts,
+                        )
                     self._send_answer(
                         budget,
                         spent,
@@ -1045,12 +1052,13 @@ class UCSReplication(MessagePassingComputation):
                 agents.remove(agent)
 
         if removed_replicas:
-            self.logger.info(
-                "Agent removed %s , discard from our replica " "host %s - %s ",
-                agent,
-                removed_replicas,
-                dict(self._replica_hosts),
-            )
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info(
+                    "Agent removed %s , discard from our replica " "host %s - %s ",
+                    agent,
+                    removed_replicas,
+                    dict(self._replica_hosts),
+                )
 
             for removed_replica in removed_replicas:
                 missing_replica = self.k_target - len(
@@ -1061,11 +1069,13 @@ class UCSReplication(MessagePassingComputation):
                 # when two replications happened concurrently
                 # when repairing replication on 2 agents removal
                 if missing_replica < 0:
-                    self.logger.info(
-                        "No need to re-replicate %s still have enough " "replicas: %s",
-                        removed_replica,
-                        self._replica_hosts[removed_replica],
-                    )
+                    if self.logger.isEnabledFor(logging.INFO):
+                        self.logger.info(
+                            "No need to re-replicate %s still have enough "
+                            "replicas: %s",
+                            removed_replica,
+                            self._replica_hosts[removed_replica],
+                        )
                 else:
                     self.replicate(missing_replica, removed_replica)
 
@@ -1121,29 +1131,32 @@ class UCSReplication(MessagePassingComputation):
         remaining_capacity = self._remaining_capacity()
 
         if remaining_capacity >= max_footprint:
-            self.logger.debug(
-                "Accept replica of %s from %s on %s", computation, agent, self.name
-            )
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    "Accept replica of %s from %s on %s", computation, agent, self.name
+                )
             return True
         else:
-            self.logger.debug(
-                "Reject replica %s (%s) from %s, remaining %s, need %s",
-                computation,
-                footprint,
-                self.agent_def.capacity,
-                remaining_capacity,
-                max_footprint,
-            )
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    "Reject replica %s (%s) from %s, remaining %s, need %s",
+                    computation,
+                    footprint,
+                    self.agent_def.capacity,
+                    remaining_capacity,
+                    max_footprint,
+                )
             return False
 
     def _accept_replica(self, origin_agt, comp_def: ComputationDef, footprint):
-        self.logger.info(
-            "Accepting replica %s on %s from %s with footprint " "%s",
-            comp_def.name,
-            self.name,
-            origin_agt,
-            footprint,
-        )
+        if self.logger.isEnabledFor(logging.INFO):
+            self.logger.info(
+                "Accepting replica %s on %s from %s with footprint " "%s",
+                comp_def.name,
+                self.name,
+                origin_agt,
+                footprint,
+            )
         self._hosted_replicas[comp_def.name] = (origin_agt, footprint)
         self.replicas[comp_def.name] = comp_def
         self.discovery.register_computation(comp_def.name, origin_agt, publish=False)
