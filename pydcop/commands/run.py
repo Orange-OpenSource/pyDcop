@@ -171,6 +171,7 @@ import traceback
 from functools import partial
 from queue import Queue, Empty
 from threading import Thread
+import numpy as np
 
 import sys
 
@@ -425,12 +426,23 @@ def run_cmd(args, timer=None, timeout=None):
             print()
         orchestrator.stop_agents(5)
         orchestrator.stop()
-        _results("ERROR", e)
+        _results("ERROR")
 
 
 def _orchestrator_error(e):
     print("Error in orchestrator: \n ", e)
     sys.exit(2)
+
+import numpy as np
+
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, np.int64):
+            return int(obj)
+        return json.JSONEncoder.default(self, obj)
 
 
 def _results(status):
@@ -451,9 +463,9 @@ def _results(status):
 
     if output_file:
         with open(output_file, encoding="utf-8", mode="w") as fo:
-            fo.write(json.dumps(metrics, sort_keys=True, indent="  "))
+            fo.write(json.dumps(metrics, sort_keys=True, indent="  ", cls=NumpyEncoder))
 
-    print(json.dumps(metrics, sort_keys=True, indent="  "))
+    print(json.dumps(metrics, sort_keys=True, indent="  ", cls=NumpyEncoder))
 
 
 def on_timeout():
