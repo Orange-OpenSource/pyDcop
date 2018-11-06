@@ -118,7 +118,7 @@ def run_cmd(args):
 
     if os.path.exists(progress_file):
         with open(progress_file, encoding="utf-8", mode="r") as f:
-            jobs = [job[:-1] for job in f.readlines()]
+            jobs = [line[5:-2] for line in f.readlines() if line.startswith("JID: ")]
         jobs = set(jobs)
     else:
         with open(progress_file, encoding="utf-8", mode="a") as f:
@@ -391,6 +391,7 @@ def run_batch(
         else:
             jid = job_id(context, command_option_combination)
             if jid not in context["jobs"]:
+                log_cmd(cli_command, command_dir)
                 run_cli_command(cli_command, command_dir)
                 register_job(jid)
             else:
@@ -401,7 +402,15 @@ def register_job(jid):
     global progress_file
     if progress_file:
         with open(progress_file, encoding="utf-8", mode="a") as f:
-            f.write(jid + "\n")
+            f.write(f"JID: {jid} \n\n")
+
+
+def log_cmd(cmd_str, command_dir):
+    global progress_file
+    if progress_file:
+        with open(progress_file, encoding="utf-8", mode="a") as f:
+            f.write(f"CD: {command_dir} \n")
+            f.write(f"CMD: {cmd_str} \n")
 
 
 def job_id(context: dict, combination: dict):
