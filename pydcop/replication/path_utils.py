@@ -34,136 +34,80 @@ from typing import Iterable, Optional, Dict, Tuple, List, Sized, Union
 from pydcop.utils.simple_repr import SimpleRepr, simple_repr, from_repr
 
 Node = str
+Path = Tuple[Node, ...]
 
 
-class Path(Sized, Iterable, SimpleRepr, object):
+def tail_if_start_with(path: Tuple, prefix: Tuple) -> Optional["Path"]:
     """
-    Object representing an immutable path.
+    Checks if starts with `prefix` and returns its tail in that case.
+
+    Parameters
+    ----------
+    prefix: Replication path
+        a path that might be a prefix if `path`
+
+    Returns
+    -------
+    an optional replication path
+        the fail of `path` (everything after the prefix) if it starts with
+        `prefix`, None otherwise.
     """
+    length = len(prefix)
+    if path[:length] == prefix:
+        return path[length:]
+    return None
 
-    def __init__(self, nodes: Union[str, Iterable[Node]] = None, *args) -> None:
-        if nodes is None:
-            self._path = tuple()  # type: Tuple[Node, ...]
-        elif args:
-            if isinstance(nodes, str):
-                self._path = tuple([nodes] + [str(a) for a in args])
-                # type: Tuple[Node, ...]
-            else:
-                self._path = tuple(list(nodes) + [str(a) for a in args])
-                # type: Tuple[Node, ...]
-        elif isinstance(nodes, str):
-            self._path = (nodes,)  # type: Tuple[Node, ...]
-        else:
-            self._path = tuple(nodes)  # type: Tuple[Node, ...]
 
-    def head(self) -> Optional[Node]:
-        """
-        Returns
-        -------
-        The first element of the path of None if the path is empty
-        """
-        try:
-            return self._path[0]
-        except IndexError:
-            return None
-
-    def last(self) -> Optional[Node]:
-        """
-
-        Returns
-        -------
-        The last element of the path, or None if the path is empty
-        """
-        try:
-            return self._path[-1]
-        except IndexError:
-            return None
-
-    def before_last(self):
-        """
-
-        Returns
-        -------
-        The element before the last element in the path
-
-        Raises
-        ------
-        IndexError if the path has 1 or less elements
-        """
-        return self._path[-2]
-
-    def tail_if_start_with(self, prefix: "Path") -> Optional["Path"]:
-        """
-        Checks if starts with `prefix` and returns its tail in that case.
-
-        Parameters
-        ----------
-        prefix: Replication path
-            a path that might be a prefix if `path`
-
-        Returns
-        -------
-        an optional replication path
-            the fail of `path` (everything after the prefix) if it starts with
-            `prefix`, None otherwise.
-        """
-        length = len(prefix)
-        if self._path[:length] == prefix._path:
-            return Path(self._path[length:])
+def head(path) -> Optional[Node]:
+    """
+    Returns
+    -------
+    The first element of the path of None if the path is empty
+    """
+    try:
+        return path[0]
+    except IndexError:
         return None
 
-    @property
-    def empty(self):
-        """
-        Returns
-        -------
-        True if the path is empty
-        """
-        return len(self._path) == 0
 
-    def len(self):
-        return len(self._path)
+def last(path) -> Optional[Node]:
+    """
 
-    def __len__(self):
-        return len(self._path)
+    Returns
+    -------
+    The last element of the path, or None if the path is empty
+    """
+    try:
+        return path[-1]
+    except IndexError:
+        return None
 
-    def __iter__(self):
-        return iter(self._path)
 
-    def __add__(self, path_extension: "Path") -> "Path":
-        """ returns a new path built by concatenating this path with
-            path_extension"""
-        return Path(self._path + path_extension._path)
+def before_last(path):
+    """
 
-    def __getitem__(self, key):
-        if isinstance(key, slice):
-            return Path(self._path[key])
-        else:
-            return self._path[key]
+    Returns
+    -------
+    The element before the last element in the path
 
-    def __eq__(self, other) -> bool:
-        if other is None:
-            return False
-        return self._path == other._path
-
-    def __repr__(self):
-        return "Path({})".format(self._path)
-
-    def __hash__(self):
-        return hash(self._path)
-
-    def _simple_repr(self):
-        r = {"__module__": self.__module__, "__qualname__": self.__class__.__qualname__}
-
-        r["nodes"] = simple_repr(self._path)
-
-        return r
+    Raises
+    ------
+    IndexError if the path has 1 or less elements
+    """
+    return path[-2]
 
 
 # PathsTable = Dict[Path, float]
 
 
+#PathsTable = List[Tuple[Path, float]]
+
 class PathsTable(SimpleRepr):
+    """
+    A PathsTable associate a Path to a cost.
+
+    """
+
     def __init__(self, table: Dict[Path, float] = None):
         if table:
             self.table = table
@@ -200,6 +144,11 @@ class PathsTable(SimpleRepr):
     def copy(self):
         return self.table.copy()
 
+    def __repr__(self):
+        # FIXME : optim perf
+        return "Pathtable"
+        # return repr(self.table)
+
     def _simple_repr(self):
 
         # Full name = module + qualifiedname (for inner classes)
@@ -216,8 +165,8 @@ class PathsTable(SimpleRepr):
         # assert r['__qualname__'] == self.__class__.__qualname__
 
         table = {}
-        for p, c in r["paths"]:
-            p = from_repr(p)
+        for path in r["paths"]:
+            p, c = from_repr(path)
             table[p] = c
 
         return PathsTable(table)
@@ -244,10 +193,10 @@ def cheapest_path_to(target: Node, paths: PathsTable) -> Tuple[float, Path]:
     :return:
     """
     c = float("inf")
-    for p in paths:
-        if p.last() == target:
-            return paths[p], p
-    return c, Path()
+    for p, cost in paths.items():
+        if p[-1] == target:
+            return cost, p
+    return c, ()
 
 
 def path_starting_with(prefix: Path, paths: PathsTable) -> List[Tuple[float, Path]]:
@@ -267,33 +216,53 @@ def path_starting_with(prefix: Path, paths: PathsTable) -> List[Tuple[float, Pat
     List[Tuple[float, Path]]
         a list of tuple (cost, path_without_prefix)
     """
-    found = filter(
-        lambda x: x[1] is not None,
-        ((cost, path.tail_if_start_with(prefix)) for path, cost in paths.items()),
-    )
-    return sorted(found, key=lambda x: x[0])
+    # found = filter(
+    #     lambda x: x[1] is not None,
+    #     ((cost, path.tail_if_start_with(prefix)) for path, cost in paths.items()),
+    # )
+    # return sorted(found, key=lambda x: x[0])
+
+    # Previous, slower, implementation:
+    # tails = ((cost, tail_if_start_with(path, prefix)) for path, cost in paths.items())
+    # return sorted(((cost, tail) for cost, tail in tails if tail is not None), key=lambda x: x[0])
+
+    filtered = []
+    plen = len(prefix)
+    for path, cost in paths.items():
+        if path[:plen] == prefix:
+            filtered.append((cost, path[plen:]))
+    filtered.sort()
+    return filtered
 
 
 def affordable_path_from(prefix: Path, max_path_cost: float, paths: PathsTable):
-    n_paths = path_starting_with(prefix, paths)
-    return {
-        (cost, p) for cost, p in n_paths if round(cost - max_path_cost, 4) <= 0.0001
-    }
+    filtered = []
+    plen = len(prefix)
+    for path, cost in paths.items():
+        if path[:plen] == prefix and (cost - max_path_cost) <= 0.0001:
+            filtered.append((cost, path[plen:]))
+    filtered.sort()
+    return filtered
+
+    # n_paths = path_starting_with(prefix, paths)
+    # return {
+    #     (cost, p) for cost, p in n_paths if round(cost - max_path_cost, 4) <= 0.0001
+    # }
 
 
 def filter_missing_agents_paths(
-    paths: PathsTable, replication_computations: Iterable[Node]
+    paths: PathsTable, removed_agents: Iterable[Node]
 ) -> PathsTable:
     """
-    Filters out all paths passing through a replication computation that is not
+    Filters out all paths passing through an agent that is not
     available any more.
 
     Parameters
     ----------
     paths: PathsTable
         known paths with their associated costs
-    replication_computations:
-        available replication computation names
+    removed_agents:
+        names of removed agents
 
     Returns
     -------
@@ -303,10 +272,20 @@ def filter_missing_agents_paths(
     # include the local virtual node in the list of available path : it is
     # not the name of a replication computation but be definitively want to
     # keep it as it is the only node that accepts replicas:
-    replication_computations = list(replication_computations) + ["__hosting__"]
+
+    # Two attempts of making it faster: no success
+    # return {path: cost for path, cost in paths.items()
+    #         if all(elt not in removed_agents for elt in path)}
+
+    # return filter(lambda p : all(elt not in removed_agents for elt in p[0]), paths.items())
+
     filtered = {}
     for path, cost in paths.items():
-        missing = [elt for elt in path if elt not in replication_computations]
+        missing = False
+        for elt in path:
+            if elt in removed_agents:
+                missing = True
+                break
         if missing:
             continue
         filtered[path] = cost

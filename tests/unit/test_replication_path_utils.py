@@ -32,37 +32,29 @@
 import pytest
 
 from pydcop.replication.path_utils import (
-    Path,
     path_starting_with,
     filter_missing_agents_paths,
     PathsTable,
+    head,
+    last,
+    before_last,
+    tail_if_start_with,
+    affordable_path_from,
 )
 from pydcop.utils.simple_repr import simple_repr, from_repr
 
 
-def test_path_creation():
-
-    assert len(Path(["a", "b"])) == 2
-    assert len(Path(["a1"])) == 1
-    assert len(Path("a1")) == 1
-    assert len(Path("a", "b", "c")) == 3
-    assert len(Path("a1", "a2", "a3")) == 3
-    assert len(Path(["a1", "a2"], "a3")) == 3
-    assert len(Path()) == 0
-
-
 def test_path_head():
 
-    path = Path("a1", "a2", "a3")
-    assert "a1" == path.head()
+    path = ("a1", "a2", "a3")
+    assert "a1" == head(path)
 
-    path = Path([])
-    assert path.head() is None
+    assert head([]) is None
 
 
 def test_path_iter():
 
-    path = Path("a1", "a2", "a3")
+    path = ("a1", "a2", "a3")
     it = iter(path)
     assert "a1" == next(it)
     assert "a2" == next(it)
@@ -71,138 +63,139 @@ def test_path_iter():
         next(it)
 
 
-def test_path_item():
-
-    path = Path("a1", "a2", "a3")
-    assert "a1" == path[0]
-    assert Path("a1", "a2") == path[:-1]
-
-
-def test_path_empty():
-    path = Path()
-    assert path.empty
-
-    path = Path("a1", "a2", "a3")
-    assert not path.empty
-
-
 def test_path_last():
 
-    path = Path(["a1", "a2", "a3"])
-    assert "a3" == path.last()
+    assert "a3" == last(["a1", "a2", "a3"])
 
-    path = Path([])
-    assert path.last() is None
+    assert last([]) is None
 
 
 def test_path_before_last():
 
-    path = Path(["a1", "a2", "a3"])
-    assert "a2" == path.before_last()
+    assert "a2" == before_last(["a1", "a2", "a3"])
 
-    path = Path(["a1"])
     with pytest.raises(IndexError):
-        path.before_last()
+        before_last(["a1"])
 
-    path = Path([])
     with pytest.raises(IndexError):
-        path.before_last()
-
-
-def test_path_add():
-
-    p1 = Path("a1")
-    p2 = Path("a2", "a3")
-    assert p1 + p2 == Path("a1", "a2", "a3")
-    assert p2 + p1 == Path("a2", "a3", "a1")
-
-    p1 = Path()
-    p2 = Path("a2", "a3")
-    assert p1 + p2 == Path("a2", "a3")
-    assert p2 + p1 == Path("a2", "a3")
-
-    p1 = Path([])
-    p2 = Path([])
-    assert p1 + p2 == Path()
-    assert p2 + p1 == Path()
+        before_last([])
 
 
 def test_path_tail_if_start_with():
-    path = Path(("A", "B"))
-    obtained = path.tail_if_start_with(Path("A"))
-    assert obtained == Path(("B",))
+    path = ("A", "B")
+    obtained = tail_if_start_with(path, ("A",))
+    assert obtained == ("B",)
 
-    obtained = path.tail_if_start_with(Path("A", "B"))
-    assert obtained == Path(())
+    obtained = tail_if_start_with(path, ("A", "B"))
+    assert obtained == ()
 
-    obtained = Path("A", "B", "C", "D").tail_if_start_with(Path("A", "B"))
-    assert obtained == Path("C", "D")
+    obtained = tail_if_start_with(("A", "B", "C", "D"), ("A", "B"))
+    assert obtained == ("C", "D")
 
-    obtained = Path("A", "B", "C", "D").tail_if_start_with(Path("A", "D"))
+    obtained = tail_if_start_with(("A", "B", "C", "D"), ("A", "D"))
     assert obtained is None
 
-    obtained = Path(()).tail_if_start_with(Path("A", "B"))
+    obtained = tail_if_start_with((), ("A", "B"))
     assert obtained is None
 
-    obtained = Path(("A", "B", "C", "D")).tail_if_start_with(Path())
-    assert obtained == Path(("A", "B", "C", "D"))
+    obtained = tail_if_start_with(("A", "B", "C", "D"), ())
+    assert obtained == ("A", "B", "C", "D")
 
 
 def test_paths_starting_with():
     paths_starting_a2 = path_starting_with(
-        Path("_replication_a2"),
+        ("a2",),
         PathsTable(
-            {
-                Path("_replication_a2", "_replication_a3"): 4,
-                Path("_replication_a2", "_replication_a5", "_replication_a6"): 3,
-                Path("_replication_a3", "_replication_a4"): 1,
-                Path("_replication_a4", "_replication_a3"): 3,
-            }
+            {("a2", "a3"): 4, ("a2", "a5", "a6"): 3, ("a3", "a4"): 1, ("a4", "a3"): 3}
         ),
     )
 
     cost, path = paths_starting_a2[0]
     assert cost == 3
-    assert path == Path("_replication_a5", "_replication_a6")
+    assert path == ("a5", "a6")
     paths = [path for _, path in paths_starting_a2]
-    assert Path("_replication_a3") in paths
-    assert Path("_replication_a5", "_replication_a6") in paths
+    assert ("a3",) in paths
+    assert ("a5", "a6") in paths
 
 
 def test_filter_missing_agents_paths():
 
     paths = {
-        Path("_replication_a2", "_replication_a3", "__hosting__"): 4,
-        Path("_replication_a2", "_replication_a5", "_replication_a6"): 3,
-        Path("_replication_a3", "_replication_a4"): 1,
-        Path("_replication_a5", "_replication_a3"): 3,
-        Path("_replication_a1", "_replication_a4", "_replication_a2"): 3,
+        ("a2", "a3", "__hosting__"): 4,
+        ("a2", "a5", "a6"): 3,
+        ("a3", "a4"): 1,
+        ("a5", "a3"): 3,
+        ("a1", "a4", "a2"): 3,
     }
 
-    available = {
-        "_replication_a2",
-        "_replication_a3",
-        "_replication_a5",
-        "_replication_a6",
-    }
-    filtered = filter_missing_agents_paths(PathsTable(paths), available)
+    removed = {"a4", "a6"}
+    filtered = filter_missing_agents_paths(PathsTable(paths), removed)
 
-    assert len(filtered) == 3
+    assert len(filtered) == 2
+
+
+def test_filter_missing_agents_paths_2():
+    paths = {
+        ("a28", "a16"): 1,
+        ("a28", "a22"): 1,
+        ("a28", "a32"): 1,
+        ("a28", "a35"): 1,
+        ("a28", "a02"): 1,
+        ("a28", "a20"): 1,
+        ("a28", "a06"): 1,
+        ("a28", "a03"): 1,
+        ("a28", "a26"): 1,
+        ("a28", "a14"): 1,
+        ("a28", "a24"): 1,
+        ("a28", "a18", "__hosting__"): 11,
+    }
+
+    removed = {"a48"}
+
+    filtered = filter_missing_agents_paths(PathsTable(paths), removed)
+
+    assert len(filtered) == len(paths)
+
+@pytest.skip
+def test_bench_filter_missing_agents_paths(benchmark):
+    def to_bench():
+        paths = {
+            ("a28", "a16"): 1,
+            ("a28", "a22"): 1,
+            ("a28", "a32"): 1,
+            ("a28", "a35"): 1,
+            ("a28", "a02"): 1,
+            ("a28", "a20"): 1,
+            ("a28", "a06"): 1,
+            ("a28", "a03"): 1,
+            ("a28", "a26"): 1,
+            ("a28", "a14"): 1,
+            ("a28", "a24"): 1,
+            ("a28", "a18", "__hosting__"): 11,
+        }
+
+        removed = {"a26", "a14"}
+
+        filtered = filter_missing_agents_paths(PathsTable(paths), removed)
+
+        assert len(list(filtered)) == len(paths) - 2
+
+    benchmark(to_bench)
+    assert True
 
 
 def test_path_serialization():
 
-    p = Path("_replication_a2", "_replication_a3", "__hosting__")
+    p = ("a2", "a3", "__hosting__")
     r = simple_repr(p)
     print(r)
 
-    assert "__module__" in r
     assert "__qualname__" in r
-    assert "nodes" in r
+    assert r[0] == "a2"
 
 
 def test_path_unserialize():
-    given = Path("_replication_a2", "_replication_a3", "__hosting__")
+    given = ("a2", "a3", "__hosting__")
     r = simple_repr(given)
 
     obtained = from_repr(r)
@@ -210,23 +203,23 @@ def test_path_unserialize():
 
 
 def test_pathtable_init():
-    p1 = Path("a2", "a3")
-    p2 = Path("a2", "a4")
+    p1 = ("a2", "a3")
+    p2 = ("a2", "a4")
     table = PathsTable({p1: 2, p2: 3})
 
     assert len(table) == 2
 
 
 def test_pathtable_get():
-    p1 = Path("a2", "a3")
+    p1 = ("a2", "a3")
     table = PathsTable({p1: 2})
     assert p1 in table
     assert table[p1] == 2
 
 
 def test_pathtable_iter():
-    p1 = Path("a2", "a3")
-    p2 = Path("a2", "a4")
+    p1 = ("a2", "a3")
+    p2 = ("a2", "a4")
     paths = {p1, p2}
     table = PathsTable({p1: 2, p2: 3})
 
@@ -237,8 +230,8 @@ def test_pathtable_iter():
 
 
 def test_pathtable_serialize():
-    p1 = Path("a2", "a3")
-    p2 = Path("a2", "a4")
+    p1 = ("a2", "a3")
+    p2 = ("a2", "a4")
     paths = {p1, p2}
     table = PathsTable({p1: 2, p2: 3})
 
@@ -247,9 +240,10 @@ def test_pathtable_serialize():
 
     print(r)
 
+
 def test_pathtable_unserialize():
-    p1 = Path("a2", "a3")
-    p2 = Path("a2", "a4")
+    p1 = ("a2", "a3")
+    p2 = ("a2", "a4")
     paths = {p1, p2}
     table = PathsTable({p1: 2, p2: 3})
 
@@ -259,3 +253,134 @@ def test_pathtable_unserialize():
     obtained = from_repr(r)
     assert obtained == table
 
+
+@pytest.skip
+def test_path_starting_with(benchmark):
+
+    table = PathsTable(
+        {
+            ("a2", "a9", "a4", "a8"): 3,
+            ("a2", "a3"): 2,
+            ("a2", "a3", "a4"): 3,
+            ("a5", "a3", "a4"): 6,
+            ("a2", "a3", "a4", "a12"): 4,
+            ("a2", "a4", "a4"): 9,
+            ("a2", "a4", "a4", "a8"): 3,
+            ("a2", "a5", "a4", "a8"): 3,
+            ("a2", "a3", "a4", "a8"): 3,
+            ("a1", "a3", "a4"): 3,
+            ("a2", "a3", "a4", "a1", "a5"): 4,
+        }
+    )
+
+    def to_bench():
+        paths = path_starting_with(("a2", "a3"), table)
+
+        assert len(paths) == 5
+
+    benchmark(to_bench)
+
+    assert True
+
+
+@pytest.skip
+def test_bench_dict_vs_list(benchmark):
+    def iterations_dict():
+        paths = {
+            ("a2", "a9", "a4", "a8"): 3,
+            ("a2", "a3"): 2,
+            ("a2", "a3", "a4"): 3,
+            ("a5", "a3", "a4"): 6,
+            ("a2", "a3", "a4", "a12"): 4,
+            ("a2", "a4", "a4"): 9,
+            ("a2", "a4", "a4", "a8"): 3,
+            ("a2", "a5", "a4", "a8"): 3,
+            ("a2", "a3", "a4", "a8"): 3,
+            ("a1", "a3", "a4"): 3,
+            ("a2", "a3", "a4", "a1", "a5"): 4,
+        }
+
+        i, foo = 0, None
+        for p, c in paths.items():
+            i += 1
+            foo = (p[:4], c + 1)
+
+    def iterations_list():
+        paths = [
+            (("a2", "a9", "a4", "a8"), 3),
+            (("a2", "a3"), 2),
+            (("a2", "a3", "a4"), 3),
+            (("a5", "a3", "a4"), 6),
+            (("a2", "a3", "a4", "a12"), 4),
+            (("a2", "a4", "a4"), 9),
+            (("a2", "a4", "a4", "a8"), 3),
+            (("a2", "a5", "a4", "a8"), 3),
+            (("a2", "a3", "a4", "a8"), 3),
+            (("a1", "a3", "a4"), 3),
+            (("a2", "a3", "a4", "a1", "a5"), 4),
+        ]
+
+        i, foo = 0, None
+        for p, c in paths:
+            i += 1
+            foo = (p[:4], c + 1)
+
+    benchmark(iterations_dict)
+    # benchmark(iterations_list)
+
+    assert True
+
+
+def test_affordable_path_from():
+    table = PathsTable(
+        {
+            ("a2", "a9", "a4", "a8"): 3,
+            ("a2", "a3"): 2,
+            ("a2", "a3", "a4"): 3,
+            ("a5", "a3", "a4"): 6,
+            ("a2", "a3", "a4", "a12"): 4,
+            ("a2", "a4", "a4"): 9,
+            ("a2", "a4", "a4", "a8"): 3,
+            ("a2", "a5", "a4", "a8"): 3,
+            ("a2", "a3", "a4", "a8"): 3,
+            ("a1", "a3", "a4"): 3,
+            ("a2", "a3", "a4", "a1", "a5"): 4,
+        }
+    )
+
+    paths = affordable_path_from(("a2", "a3"), 3, table)
+
+    assert len(paths) == 3
+
+
+@pytest.skip
+def test_bench_affordable_path_from(benchmark):
+    table = PathsTable(
+        {
+            ("a2", "a9", "a4", "a8"): 3,
+            ("a2", "a3"): 2,
+            ("a2", "a3", "a4"): 3,
+            ("a5", "a3", "a4"): 6,
+            ("a2", "a3", "a4", "a12"): 4,
+            ("a2", "a4", "a4"): 9,
+            ("a2", "a4", "a4", "a8"): 3,
+            ("a2", "a5", "a4", "a8"): 3,
+            ("a2", "a3", "a4", "a8"): 3,
+            ("a1", "a3", "a4"): 3,
+            ("a2", "a3", "a4", "a1", "a5"): 4,
+        }
+    )
+
+    def to_bench():
+        paths = affordable_path_from(("a2", "a3"), 3, table)
+
+        assert len(paths) == 3
+
+    benchmark(to_bench)
+
+    assert True
+
+
+def test_2():
+
+    roots = ["a2", "a5"]
