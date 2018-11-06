@@ -302,9 +302,12 @@ class UCSReplication(MessagePassingComputation):
 
         # Cache for the replication computations from other agents. These are
         # the computations we will communicate with to distribute our replicas.
-        self._replication_computations_cache = set()  # type: Set[AgentName]
+        self._replication_computations_cache = (
+            set()
+        )  # type: Set[Tuple[AgentName, float]]
 
         self._pending_requests = {}
+        self._removed_agents = set()
 
         self.logger = (
             logger
@@ -328,10 +331,6 @@ class UCSReplication(MessagePassingComputation):
         List of other neighbor replication computations that can be requested
         to host replicas.
 
-        Here, we consider we can communicate with any agent in the system,
-        (as opposed to previous version - see git history - where only
-        neighbor agents were considered).
-
         Returns
         -------
         Set[AgentName]
@@ -341,13 +340,21 @@ class UCSReplication(MessagePassingComputation):
         # We use a cache to avoid re-computing all replication computations,
         # and re-registering them, every time.
         if not self._replication_computations_cache:
-            # Build the cache of replication computation from other agents.
-            for agt in self.discovery.agents():
-                if agt == self.agt_name:
-                    continue
-                self._replication_computations_cache.add(agt)
-                rep_comp = replication_computation_name(agt)
-                self.discovery.register_computation(rep_comp, agt, publish=False)
+
+            # Find agents hosting the neighbor computations of our computations
+            for c_def, _ in self.computations.values():
+                for neighbor_name in c_def.node.neighbors:
+                    if neighbor_name in self.computations:
+                        continue
+                    agt = self.discovery.computation_agent(neighbor_name)
+                    self._replication_computations_cache.add((agt, self.route(agt)))
+                    rep_comp = replication_computation_name(agt)
+                    self.discovery.register_computation(rep_comp, agt, publish=False)
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    f"Potential path target: {self._replication_computations_cache}"
+                )
+
         return self._replication_computations_cache
 
     def add_computation(self, comp_def: ComputationDef, footprint: float):
@@ -456,16 +463,14 @@ class UCSReplication(MessagePassingComputation):
 
         for c in computations:
             # initialize paths with our neighbors and their costs
-            paths = PathsTable(
-                {Path(self.agt_name, n): self.route(n) for n in neighbors}
-            )
+            paths = PathsTable({(self.agt_name, n): c for n, c in neighbors})
             budget = min(c for c in paths.values())
             visited = [self.agt_name]
             comp_def, footprint = self.computations[c]
             self.on_replicate_request(
                 budget,
                 0,
-                Path(self.agt_name),
+                (self.agt_name,),
                 paths,
                 visited,
                 comp_def,
@@ -506,7 +511,9 @@ class UCSReplication(MessagePassingComputation):
         """
         if msg.rep_msg_type == "replicate_request":
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f"Received replication request from {sender_name}, {msg}")
+                self.logger.debug(
+                    f"Received replication request from {sender_name}, {msg}"
+                )
             self.on_replicate_request(
                 msg.budget,
                 msg.spent,
@@ -520,7 +527,9 @@ class UCSReplication(MessagePassingComputation):
             )
         elif msg.rep_msg_type == "replicate_answer":
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f"Received replication answer from {sender_name}, {msg}")
+                self.logger.debug(
+                    f"Received replication answer from {sender_name}, {msg}"
+                )
             agent = msg.rq_path[-1]  # last()
             pending = self._pending_requests.pop(
                 (agent, msg.computation_def.name), False
@@ -558,7 +567,7 @@ class UCSReplication(MessagePassingComputation):
         replica_count: int,
         hosts: List[str],
     ):
-        assert self.agt_name == rq_path.last()
+        assert self.agt_name == rq_path[-1]  # last()
 
         if rq_path in paths:
             paths.pop(rq_path)
@@ -571,12 +580,13 @@ class UCSReplication(MessagePassingComputation):
         # If some agents have left during replication, some may still be in
         # the received paths table even though sending replication_request to
         # them would block the replication.
-        paths = filter_missing_agents_paths(paths, neighbors | {self.agt_name})
+        paths = filter_missing_agents_paths(paths, self._removed_agents)
+
         # Available & affordable with current remaining budget, paths from here:
         affordable_paths = affordable_path_from(rq_path, budget + spent, paths)
 
         # Paths to next candidates from paths table.
-        target_paths = (rq_path + Path(p.head()) for _, p in affordable_paths)
+        target_paths = (rq_path + (p[0],) for _, p in affordable_paths)
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(
                 f"Target paths for {comp_def.name} on rq ({budget}, {spent}, {rq_path}) : "
@@ -612,7 +622,7 @@ class UCSReplication(MessagePassingComputation):
         # In both cases, we now look at neighbors costs and store them if we
         # do not already known a cheaper path to them.
         neighbors_path = (
-            (n, self.route(n), rq_path + Path(n)) for n in neighbors if n not in visited
+            (n, c, rq_path + (n,)) for n, c in neighbors if n not in visited
         )
 
         for n, r, p in neighbors_path:
@@ -653,9 +663,7 @@ class UCSReplication(MessagePassingComputation):
         *_, current, sender = rq_path
         initial_path = rq_path[:-1]
 
-        paths = filter_missing_agents_paths(
-            paths, self.replication_neighbors() | {self.agt_name}
-        )
+        paths = filter_missing_agents_paths(paths, self._removed_agents)
 
         # If all replica have been placed, report back to requester if any, or
         # signal that replication is done.
@@ -684,11 +692,12 @@ class UCSReplication(MessagePassingComputation):
         # If there are still replica to be placed, keep trying on neighbors
         back_path = rq_path[:-1]
         affordable_paths = affordable_path_from(back_path, budget + spent, paths)
+
         # Paths to next candidates, avoiding the path we're coming from.
         target_paths = (
-            back_path + Path(p.head())
+            back_path + (p[0],)
             for _, p in affordable_paths
-            if back_path + Path(p.head()) != rq_path
+            if back_path + (p[0],) != rq_path
         )
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(
@@ -748,7 +757,7 @@ class UCSReplication(MessagePassingComputation):
             self.on_replicate_request(
                 budget,
                 0,
-                Path(current),
+                (current,),
                 paths,
                 visited,
                 comp_def,
@@ -769,7 +778,7 @@ class UCSReplication(MessagePassingComputation):
         replica_count: int,
         hosts: List[AgentName],
     ):
-        target_agt = rq_path.last()
+        target_agt = rq_path[-1]
         cost_to_next = self.route(target_agt)
         budget_to_next = budget - cost_to_next
         spent_to_next = spent + cost_to_next
@@ -822,8 +831,8 @@ class UCSReplication(MessagePassingComputation):
         replica_count: int,
         hosts: List[AgentName],
     ):
-        assert rq_path.last() == self.agt_name
-        target_agt = rq_path.before_last()
+        assert rq_path[-1] == self.agt_name
+        target_agt = rq_path[-2]  # .before_last()
         cost_to_target = self.route(target_agt)
         budget += cost_to_target
         spent -= cost_to_target
@@ -886,15 +895,20 @@ class UCSReplication(MessagePassingComputation):
         # restart replication when needed.
         agt_rep = replication_computation_name(agent)
         if event == "agent_removed":
-            self._replication_computations_cache.remove(agent)
+            without = {
+                (a, c) for a, c in self._replication_computations_cache if a != agent
+            }
+            if len(without) != len(self._replication_computations_cache):
+                self._replication_computations_cache = without
+                self._removed_agents.add(agent)
 
-            # if we had pending request to this agent, we will never get an
-            # answer
-            self._answer_lost_requests(agent)
+                # if we had pending request to this agent, we will never get an
+                # answer
+                self._answer_lost_requests(agent)
 
-            # Re-launch replication for the computation(s) that have lost a
-            # replica.
-            self._replicate_on_agent_lost(agent)
+                # Re-launch replication for the computation(s) that have lost a
+                # replica.
+                self._replicate_on_agent_lost(agent)
 
         elif event == "agent_added":
             if agent != self.agt_name:
@@ -938,7 +952,7 @@ class UCSReplication(MessagePassingComputation):
         if computation not in self.computations:
             # Add a path to a virtual node with a route corresponding to the
             # hosting cost
-            hosting_path = rq_path + Path("__hosting__")
+            hosting_path = rq_path + ("__hosting__",)
             hosting_cost = spent + self.agent_def.hosting_cost(computation)
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(
@@ -988,12 +1002,12 @@ class UCSReplication(MessagePassingComputation):
         replica_count: int
             the updated replica count.
         """
-        if target_path.last() == "__hosting__":
+        if target_path[-1] == "__hosting__":
             # We are actually 'visiting' the '__hosting__' virtual node
             # so we must remove it form the paths.
             paths.pop(target_path)
-            if self._can_host(target_path.head(), comp_def.name, footprint):
-                self._accept_replica(target_path.head(), comp_def, footprint)
+            if self._can_host(target_path[0], comp_def.name, footprint):
+                self._accept_replica(target_path[0], comp_def, footprint)
                 hosts.append(self.agent_def.name)
                 replica_count -= 1
                 if replica_count == 0:
@@ -1102,7 +1116,7 @@ class UCSReplication(MessagePassingComputation):
         able to activate it (with regards to its own capacity). As at most
         k_target agents could fail at the same time, we must make sure that
         all replicas hosted for any subset of k_target agents could be hosted
-            at the same time.
+        at the same time.
 
         Parameters
         ----------
@@ -1127,7 +1141,9 @@ class UCSReplication(MessagePassingComputation):
         if computation in self._hosted_replicas:
             return False
 
-        max_footprint = self._worst_case_footprint(agent, computation, footprint)
+        max_footprint = self._max_footprint() + footprint
+
+        # max_footprint = self._worst_case_footprint(agent, computation, footprint)
         remaining_capacity = self._remaining_capacity()
 
         if remaining_capacity >= max_footprint:
@@ -1169,6 +1185,32 @@ class UCSReplication(MessagePassingComputation):
             if hasattr(hosted, "footprint"):
                 remaining -= hosted.footprint()
         return remaining
+
+    memoize_footprint = {}
+
+    def _max_footprint(self):
+        """
+        Max footprint if k-1 agents disappear
+        Returns
+        -------
+
+        """
+        tentative_agents = set(a for a, f in self._hosted_replicas.values())
+
+        max_agt = min(self.k_target - 1, len(tentative_agents))
+        max_footprint = 0
+        for selected in itertools.combinations(tentative_agents, max_agt):
+            try:
+                total_footprint = self.memoize_footprint[selected]
+            except KeyError:
+
+                total_footprint = sum(
+                    f for a, f in self._hosted_replicas.values() if a in selected
+                )
+                self.memoize_footprint[selected] = total_footprint
+
+            max_footprint = max(total_footprint, max_footprint)
+        return max_footprint
 
     def _worst_case_footprint(
         self, agent: AgentName, computation: ComputationName, footprint: float
