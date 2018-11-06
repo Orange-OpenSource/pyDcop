@@ -163,6 +163,8 @@ def run_batches(batches_definition, simulate: bool, jobs=None):
         pbar = bar
         for set_name in problems_sets:
             pb_set = problems_sets[set_name]
+            if "env" in pb_set:
+                context.update(pb_set["env"])
             context["set"] = set_name
             logger.debug("Starting set %s", set_name)
 
@@ -421,7 +423,6 @@ def job_id(context: dict, combination: dict):
 
 
 def run_cli_command(cli_command: str, command_dir: str):
-
     with cd_and_create(command_dir):
         try:
             check_output(
