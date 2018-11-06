@@ -40,6 +40,7 @@ Main command-line interface for pydcop.
 import logging
 import signal
 import argparse
+from os import path
 import sys
 from logging.config import fileConfig
 from threading import Timer
@@ -146,9 +147,10 @@ def _on_timeout(on_timeout_func):
 
 def _configure_logs(level: int, log_conf: str):
     if log_conf is not None:
+        if not path.exists(log_conf):
+            raise ValueError(f"Could not find log configuration file {log_conf}")
         fileConfig(log_conf)
-        logging.info('Using log config file %s', log_conf)
-
+        logging.info(f'Using log config file {log_conf}')
         return
 
     # Default: remove all logs except error
