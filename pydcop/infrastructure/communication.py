@@ -34,6 +34,7 @@ import logging
 import socket
 from collections import namedtuple, defaultdict
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from json import JSONDecodeError
 from queue import Empty, PriorityQueue
 from threading import Thread
 from time import perf_counter, sleep
@@ -424,7 +425,12 @@ class MPCHttpHandler(BaseHTTPRequestHandler):
 
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length)
-        content = json.loads(str(post_data, "utf-8"))
+        try:
+            content = json.loads(str(post_data, "utf-8"))
+        except JSONDecodeError as jde:
+            print(jde)
+            print(post_data)
+            raise jde
 
         comp_msg = ComputationMessage(src_comp, dest_comp,
                                       from_repr(content), int(type))
@@ -588,9 +594,9 @@ class Messaging(object):
         try:
             dest_agent = self.discovery.computation_agent(dest_computation)
         except UnknownComputation:
-            self.logger.warning('Cannot send msg from %s to unknown comp %s, '
-                           'will retry  later : %s', src_computation,
-                           dest_computation, msg)
+            if self.logger.isEnabledFor(logging.WARNING):
+                self.logger.warning(f'Cannot send msg from {src_computation} to unknown '
+                                    f'comp {dest_computation}, will retry  later : {msg}')
             self.discovery.subscribe_computation(
                 dest_computation, self._on_computation_registration,
                 one_shot=True)
@@ -601,8 +607,9 @@ class Messaging(object):
         full_msg = ComputationMessage(src_computation, dest_computation,
                                       msg, msg_type)
         if dest_agent == self._local_agent:
-            self.logger.debug('Posting local message {} -> {} : "{!r}"'
-                         .format(src_computation, dest_computation, str(msg)))
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f'Posting local message {src_computation} -> '
+                                  f'{dest_computation} : {msg}')
             if msg_type != MSG_MGT:
                 self.last_msg_time = perf_counter()
             # When putting the message in the queue we add the type,
@@ -615,8 +622,9 @@ class Messaging(object):
             self._queue.put((msg_type, self.msg_queue_count,
                              perf_counter(), full_msg))
         else:
-            self.logger.debug('Posting remote message {} -> {} : "{!r}"'
-                         .format(src_computation, dest_computation, str(msg)))
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f'Posting remote message {src_computation} -> '
+                                  f'{dest_computation} : {msg}')
             # If the destination is on another agent, it means that the
             # message source must be one of our local computation and we
             # should know about it.
