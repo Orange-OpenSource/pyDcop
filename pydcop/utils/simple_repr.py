@@ -142,6 +142,12 @@ def from_repr(r):
         # instance of really a dict!
         if '__qualname__' in r and '__module__' in r:
 
+
+            if r['__qualname__'] == "tuple":
+                # special case for tuple ( not named)
+                values = sorted( [(int(i), v) for i, v in r.items()
+                                  if i not in ['__qualname__', '__module__']] )
+                return tuple([ from_repr(v) for _, v in values])
             module = importlib.import_module(r['__module__'])
             qual = getattr(module, r['__qualname__'])
 
@@ -178,11 +184,16 @@ def simple_repr(o):
     """
     if hasattr(o, '_simple_repr'):
         return o._simple_repr()
-    elif isinstance(o, tuple) and hasattr(o, '_asdict'):
-        # detect namedtuple
-        r = o._asdict()
-        r['__module__'] = o.__module__
-        r['__qualname__'] = o.__class__.__qualname__
+    elif isinstance(o, tuple):
+        if hasattr(o, '_asdict'):
+            # detect namedtuple
+            r = o._asdict()
+            r['__module__'] = o.__module__
+            r['__qualname__'] = o.__class__.__qualname__
+        else:
+            r = {i: simple_repr(v) for i, v in enumerate(o)}
+            r['__module__'] = o.__class__.__module__
+            r['__qualname__'] = o.__class__.__qualname__
         return r
     elif isinstance(o, str) or isinstance(o, Number) or isinstance(o, bool):
         return o
