@@ -50,6 +50,7 @@ from pydcop.replication.path_utils import (
     cheapest_path_to,
     affordable_path_from,
     filter_missing_agents_paths,
+    remove_path,
 )
 
 """
@@ -463,8 +464,9 @@ class UCSReplication(MessagePassingComputation):
 
         for c in computations:
             # initialize paths with our neighbors and their costs
-            paths = PathsTable({(self.agt_name, n): c for n, c in neighbors})
-            budget = min(c for c in paths.values())
+            paths = [(c, (self.agt_name, n)) for n, c in neighbors]
+            paths.sort()
+            budget = min(c for c, _ in paths)
             visited = [self.agt_name]
             comp_def, footprint = self.computations[c]
             self.on_replicate_request(
@@ -568,34 +570,36 @@ class UCSReplication(MessagePassingComputation):
         hosts: List[str],
     ):
         assert self.agt_name == rq_path[-1]  # last()
-
-        if rq_path in paths:
-            paths.pop(rq_path)
+        comp_name = comp_def.name
+        remove_path(paths, rq_path)
         if self.agt_name not in visited:  # first visit for this node
             visited.append(self.agt_name)
-            self._add_hosting_path(spent, comp_def.name, rq_path, paths)
+            self._add_hosting_path(spent, comp_name, rq_path, paths)
 
         neighbors = self.replication_neighbors()
 
         # If some agents have left during replication, some may still be in
         # the received paths table even though sending replication_request to
         # them would block the replication.
-        paths = filter_missing_agents_paths(paths, self._removed_agents)
+        if self._removed_agents:
+            paths = filter_missing_agents_paths(paths, self._removed_agents)
 
         # Available & affordable with current remaining budget, paths from here:
-        affordable_paths = affordable_path_from(rq_path, budget + spent, paths)
+        # affordable_paths = affordable_path_from(rq_path, budget + spent, paths)
+        # self.logger.debug(
+        #     f"Affordable paths for {comp_name} on rq (b:{budget}, s:{spent}, {rq_path}) : "
+        #     f": {affordable_paths} out of {paths}"
+        # )
 
         # Paths to next candidates from paths table.
-        target_paths = (rq_path + (p[0],) for _, p in affordable_paths)
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(
-                f"Target paths for {comp_def.name} on rq ({budget}, {spent}, {rq_path}) : "
-                f"Affordable: {affordable_paths} Out of {paths}"
-            )
+        target_paths = (
+            rq_path + (p[0],)
+            for p in affordable_path_from(rq_path, budget + spent, paths)
+        )
 
         for target_path in target_paths:
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f"Visiting for {comp_def.name} path {target_path}")
+                self.logger.debug(f"Visiting for {comp_name} path {target_path}")
             forwarded, replica_count = self._visit_path(
                 budget,
                 spent,
@@ -612,7 +616,7 @@ class UCSReplication(MessagePassingComputation):
 
         if self.logger.isEnabledFor(logging.INFO):
             self.logger.info(
-                "No reachable path for %s with budget %s ", comp_def.name, budget
+                "No reachable path for %s with budget %s ", comp_name, budget
             )
 
         # Either:
@@ -628,9 +632,9 @@ class UCSReplication(MessagePassingComputation):
         for n, r, p in neighbors_path:
             cheapest, cheapest_path = cheapest_path_to(n, paths)
             if cheapest > spent + r:
-                if cheapest_path in paths:
-                    paths.pop(cheapest_path)
-                paths[p] = spent + r
+                remove_path(paths, cheapest_path)
+                paths.append((spent + r, p))
+                paths.sort()
             else:
                 # self.logger.debug('Cheaper path known to %s : %s (%s)', p,
                 #                   cheapest_path, cheapest)
@@ -661,9 +665,11 @@ class UCSReplication(MessagePassingComputation):
         hosts: List[str],
     ):
         *_, current, sender = rq_path
+        comp_name = comp_def.name
         initial_path = rq_path[:-1]
 
-        paths = filter_missing_agents_paths(paths, self._removed_agents)
+        if self._removed_agents:
+            paths = filter_missing_agents_paths(paths, self._removed_agents)
 
         # If all replica have been placed, report back to requester if any, or
         # signal that replication is done.
@@ -671,7 +677,7 @@ class UCSReplication(MessagePassingComputation):
             if len(rq_path) >= 3:
                 if self.logger.isEnabledFor(logging.DEBUG):
                     self.logger.debug(
-                        f"All replica placed for {comp_def.name}, report back to requester"
+                        f"All replica placed for {comp_name}, report back to requester"
                     )
                 self._send_answer(
                     budget,
@@ -686,28 +692,23 @@ class UCSReplication(MessagePassingComputation):
                 )
                 return
             else:
-                self.computation_replicated(comp_def.name, hosts)
+                self.computation_replicated(comp_name, hosts)
                 return
 
         # If there are still replica to be placed, keep trying on neighbors
         back_path = rq_path[:-1]
-        affordable_paths = affordable_path_from(back_path, budget + spent, paths)
+        # affordable_paths = affordable_path_from(back_path, budget + spent, paths)
 
         # Paths to next candidates, avoiding the path we're coming from.
         target_paths = (
             back_path + (p[0],)
-            for _, p in affordable_paths
+            for p in affordable_path_from(back_path, budget + spent, paths)
             if back_path + (p[0],) != rq_path
         )
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(
-                f"Target paths for {comp_def.name} on answer (b:{budget}, s:{spent} : "
-                f"{rq_path} {affordable_paths} {paths.table} , {list(target_paths)}"
-            )
 
         for target_path in target_paths:
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f"Visiting for {comp_def.name} path {target_path}")
+                self.logger.debug(f"Visiting for {comp_name} path {target_path}")
             forwarded, replica_count = self._visit_path(
                 budget,
                 spent,
@@ -744,15 +745,15 @@ class UCSReplication(MessagePassingComputation):
             # this computation, even if we have not reached target resiliency
             # level. Report the final replica distribution to the orchestrator.
             self.logger.warning(
-                f"Could not reach target resiliency level for {comp_def.name}, "
+                f"Could not reach target resiliency level for {comp_name}, "
                 f"replicated on {hosts}"
             )
-            self.computation_replicated(comp_def.name, hosts)
+            self.computation_replicated(comp_name, hosts)
         else:
-            budget = min(c for p, c in paths.items() if p != rq_path)
+            budget = min(c for c, p in paths if p != rq_path)
             if self.logger.isEnabledFor(logging.INFO):
                 self.logger.info(
-                    f"Increase budget for computation {comp_def.name} : {budget}"
+                    f"Increase budget for computation {comp_name} : {budget}"
                 )
             self.on_replicate_request(
                 budget,
@@ -840,7 +841,7 @@ class UCSReplication(MessagePassingComputation):
             self.logger.debug(
                 f"sending replica answer from {self.name} to {target_agt} "
                 f"for {comp_def.name} rq {rq_path} ({budget}, {spent}, {cost_to_target}) "
-                f"paths : {paths.table}"
+                f"paths : {paths}"
             )
         self.post_msg(
             replication_computation_name(target_agt),
@@ -961,7 +962,8 @@ class UCSReplication(MessagePassingComputation):
                     hosting_path,
                     hosting_cost,
                 )
-            paths[hosting_path] = hosting_cost
+            paths.append((hosting_cost, hosting_path))
+            paths.sort()
 
     def _visit_path(
         self,
@@ -1005,7 +1007,7 @@ class UCSReplication(MessagePassingComputation):
         if target_path[-1] == "__hosting__":
             # We are actually 'visiting' the '__hosting__' virtual node
             # so we must remove it form the paths.
-            paths.pop(target_path)
+            remove_path(paths, target_path)
             if self._can_host(target_path[0], comp_def.name, footprint):
                 self._accept_replica(target_path[0], comp_def, footprint)
                 hosts.append(self.agent_def.name)
@@ -1165,18 +1167,19 @@ class UCSReplication(MessagePassingComputation):
             return False
 
     def _accept_replica(self, origin_agt, comp_def: ComputationDef, footprint):
+        comp_name = comp_def.name
         if self.logger.isEnabledFor(logging.INFO):
             self.logger.info(
                 "Accepting replica %s on %s from %s with footprint " "%s",
-                comp_def.name,
+                comp_name,
                 self.name,
                 origin_agt,
                 footprint,
             )
-        self._hosted_replicas[comp_def.name] = (origin_agt, footprint)
-        self.replicas[comp_def.name] = comp_def
-        self.discovery.register_computation(comp_def.name, origin_agt, publish=False)
-        self.discovery.register_replica(comp_def.name, self.agt_name)
+        self._hosted_replicas[comp_name] = (origin_agt, footprint)
+        self.replicas[comp_name] = comp_def
+        self.discovery.register_computation(comp_name, origin_agt, publish=False)
+        self.discovery.register_replica(comp_name, self.agt_name)
 
     def _remaining_capacity(self) -> float:
         """The remaining capacity on the agent"""
