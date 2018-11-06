@@ -408,7 +408,7 @@ def generate_resources(
     count: int, max_value: VALUE, slots: List[SLOT]
 ) -> Dict[RESOURCE, Resource]:
     resources: Dict[RESOURCE, Resource] = {}
-    for i in range(1, count + 1):
+    for i in range(count):
         # A resource has, for each time slot, a value if kept free:
         value_free = {j: random.randint(0, max_value) for j in slots}
         resources[i] = Resource(i, value_free)
@@ -423,7 +423,7 @@ def generate_events(
     max_resources_count: int,
 ) -> Dict[EVT, Event]:
     events: Dict[EVT, Event] = {}
-    for i in range(1, count + 1):
+    for i in range(count):
         # Event's length:
         length = random.randint(1, max_length)
         # Resources required for this event:
@@ -619,7 +619,7 @@ def resource_value_for_event(resource: Resource, event: Event, t: SLOT) -> float
 
     Returns
     -------
-    the utility of affcteing the resource to this event at time slot t.
+    the utility of affecting the resource to this event at time slot t.
     """
     if t == 0:
         return 0
