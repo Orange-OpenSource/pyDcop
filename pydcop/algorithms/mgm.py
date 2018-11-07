@@ -284,18 +284,12 @@ class MgmComputation(VariableComputation):
         # randomly select a value
         if self.variable.initial_value is None:
             self.value_selection(random.choice(self.variable.domain), None)
-            self.logger.info(
-                "%s mgm starts: randomly select value %s and " "send to neighbors",
-                self.variable.name,
-                self.current_value,
-            )
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info(f"Select initial random value {self.current_value}")
         else:
             self.value_selection(self.variable.initial_value, None)
-            self.logger.info(
-                "%s mgm starts: select initial value %s and " "send to neighbors",
-                self.variable.name,
-                self.current_value,
-            )
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info(f"Select initial value {self.current_value}")
         self._wait_for_values()
 
     @register("mgm_value")
@@ -308,21 +302,16 @@ class MgmComputation(VariableComputation):
 
         """
         if self._state == "values":
-            self.logger.debug(
-                "%s received variable value %s from %s " "and processes it",
-                self.variable.name,
-                recv_msg.value,
-                variable_name,
-            )
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    f"Received variable value {recv_msg.value} from {variable_name}"
+                )
             self._handle_value_message(variable_name, recv_msg)
         else:
-            self.logger.debug(
-                "%s received variable value %s from %s and "
-                "postponed  its processing",
-                self.variable.name,
-                recv_msg.value,
-                variable_name,
-            )
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    f"Postponing variable value {recv_msg.value} from {variable_name}"
+                )
             self.__postponed_value_messages__.append((variable_name, recv_msg))
 
     def _handle_value_message(self, variable_name, recv_msg):
@@ -338,11 +327,10 @@ class MgmComputation(VariableComputation):
         # if we have a value for all neighbors, compute the best value for
         # conflict reduction
         if len(self._neighbors_values) == len(self._neighbors):
-            self.logger.debug(
-                "%s received values from all neighbors : %s",
-                self.name,
-                self._neighbors_values,
-            )
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    f"Received values from all neighbors : {self._neighbors_values}"
+                )
             # Compute the current_cost on the first step (initialization) of
             # the algorithm
             if self.current_cost is None:
@@ -376,24 +364,23 @@ class MgmComputation(VariableComputation):
             else:
                 self._new_value = self.current_value
 
-            self.logger.info(
-                "Best local value for %s: %s %s (neighbors: %s)",
-                self.name,
-                self._new_value,
-                self._gain,
-                self._neighbors_values,
-            )
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info(
+                    f"Best local value for {self.name}: {self._new_value}"
+                    f" {self._gain} (neighbors: {self._neighbors_values})"
+                )
 
             self._send_gain()
 
             self._wait_for_gains()
         else:
             # Still waiting for other neighbors
-            self.logger.debug(
-                "%s waiting for values from other neighbors: %s",
-                self.name,
-                [n for n in self._neighbors if n not in self._neighbors_values],
-            )
+            if self.logger.isEnabledFor(logging.DEBUG):
+                waited = [n for n in self._neighbors if n not in self._neighbors_values]
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(
+                        f"Waiting for values from other neighbors: {waited}"
+                    )
 
     def _send_gain(self):
         """
@@ -403,9 +390,8 @@ class MgmComputation(VariableComputation):
         """
         self.__random__ = random.random()
         msg = MgmGainMessage(self._gain, self.__random__)
-        self.logger.debug(
-            "%s sends gain message %s to %s", self.name, msg, self.neighbors
-        )
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"Sends gain message {msg} to {self.neighbors}")
         for n in self.neighbors:
             self.post_msg(n, msg)
 
@@ -420,9 +406,8 @@ class MgmComputation(VariableComputation):
             self.finished()
             return
         msg = MgmValueMessage(self.current_value)
-        self.logger.debug(
-            "%s sends value message %s to %s", self.name, msg, self.neighbors
-        )
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"Sends value message {msg} to {self.neighbors}")
         for n in self._neighbors:
             self.post_msg(n, msg)
 
@@ -433,9 +418,11 @@ class MgmComputation(VariableComputation):
 
         """
         self._state = "gain"
-        self.logger.debug("%s enters gain state", self.name)
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug("Enters gain state")
         for msg in self.__postponed_gain_messages__:
-            self.logger.debug("%s processes postponed message %s", self.name, msg)
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Processes postponed message {msg}")
             self._handle_gain_message(msg[0], msg[1])
         self.__postponed_gain_messages__.clear()
 
@@ -482,20 +469,16 @@ class MgmComputation(VariableComputation):
         """
 
         if self._state == "gain":
-            self.logger.debug(
-                "%s received gain %s from %s and processes it",
-                self.variable.name,
-                recv_msg.value,
-                variable_name,
-            )
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    f"Received gain {recv_msg.value} from {variable_name}"
+                )
             self._handle_gain_message(variable_name, recv_msg)
         else:
-            self.logger.debug(
-                "%s received gain %s from %s and postponed its" " processing",
-                self.variable.name,
-                recv_msg.value,
-                variable_name,
-            )
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    f"Postponing gain {recv_msg.value} from {variable_name}"
+                )
             self.__postponed_gain_messages__.append((variable_name, recv_msg))
 
     def _handle_gain_message(self, variable_name, recv_msg):
@@ -513,42 +496,38 @@ class MgmComputation(VariableComputation):
         # if messages received from all neighbors
         if len(self._neighbors_gains) == len(self._neighbors):
             gains = {var: gain for var, gain in self._neighbors_gains.items()}
-            self.logger.debug(
-                "%s has all gains : %s -  %s", self.name, self._gain, gains
-            )
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Has all gains {self._gain}, {gains}")
             # determine if can change value and send ok message to neighbors
             max_neighbors = max([gain for gain, _ in gains.values()])
             if self._gain > max_neighbors:
-                self.logger.info(
-                    '%s selects new value "%s", best gain: %s > ' "%s",
-                    self.name,
-                    self._new_value,
-                    self._gain,
-                    gains,
-                )
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"Selects new value {self._new_value}, "
+                        f"best gain: {self._gain} > {gains}"
+                    )
                 self.value_selection(self._new_value, self.current_cost - self._gain)
             elif self._gain == max_neighbors:
                 # same gain, break ties through variable ordering to
                 # determine which variable can change its value
                 self._break_ties(max_neighbors)
             else:
-                self.logger.info(
-                    "%s doe not change value : not the best " "gain %s < %s ",
-                    self.name,
-                    self._gain,
-                    max_neighbors,
-                )
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"Doe not change value : "
+                        f"not the best gain {self._gain} < {max_neighbors} ",
+                    )
 
             self._neighbors_gains.clear()
             self._neighbors_values.clear()
             self._wait_for_values()
         else:
             # Still waiting for other neighbors
-            self.logger.debug(
-                "%s waiting for gain msg from other neighbors " ": %s",
-                self.name,
-                [n for n in self._neighbors if n not in self._neighbors_gains],
-            )
+            if self.logger.isEnabledFor(logging.DEBUG):
+                waited = [n for n in self._neighbors if n not in self._neighbors_gains]
+                self.logger.debug(
+                    f"Waiting for gain msg from other neighbors : {waited}"
+                )
 
     def _break_ties(self, max_gain):
         if self.break_mode == random:
@@ -561,23 +540,18 @@ class MgmComputation(VariableComputation):
                 + [(self.random_nb, self.name)]
             )
             if ties[0][1] == self.name:
-                self.logger.info(
-                    "Won ties for equal gain %s , %s " 'selects new value "%s - %s"',
-                    self._gain,
-                    self.name,
-                    self._new_value,
-                    ties,
-                )
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"Won ties for equal gain {self._gain} , "
+                        f"selects new value {self._new_value} - {ties}"
+                    )
                 self.value_selection(self._new_value, self.current_cost - self._gain)
             else:
-                self.logger.info(
-                    "Lost ties for equal gain %s , %s does "
-                    'not change value to "%s" - %s',
-                    self._gain,
-                    self.name,
-                    self._new_value,
-                    ties,
-                )
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"Lost ties for equal gain {self._gain} , "
+                        f"does not change value to {self._new_value} - {ties}"
+                    )
         else:
             ties = sorted(
                 [
@@ -588,35 +562,33 @@ class MgmComputation(VariableComputation):
                 + [self.name]
             )
             if ties[0] == self.name:
-                self.logger.info(
-                    "Won ties for equal gain %s , %s " 'selects new value "%s - %s"',
-                    self._gain,
-                    self.name,
-                    self._new_value,
-                    ties,
-                )
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"Won ties for equal gain {self._gain} , "
+                        f"selects new value {self._new_value} - {ties}"
+                    )
                 self.value_selection(self._new_value, self.current_cost - self._gain)
             else:
-                self.logger.info(
-                    "Lost ties for equal gain %s , %s does "
-                    'not change value to "%s" - %s',
-                    self._gain,
-                    self.name,
-                    self._new_value,
-                    ties,
-                )
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"Lost ties for equal gain {self._gain} , does "
+                        f"not change value to {self._new_value} - {ties}"
+                    )
 
     def _wait_for_values(self):
         """
         Change variable state to 'values'
 
         """
-        self.logger.debug("%s enters values state", self.name)
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug("Enters values state")
         # End of a cycle: clear agent view
 
         self._state = "values"
         self._send_value()
         for msg in self.__postponed_value_messages__:
-            self.logger.debug("%s processes postponed message %s", self.name, msg)
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug("Processing postponed message {msg}", )
+
             self._handle_value_message(msg[0], msg[1])
         self.__postponed_value_messages__.clear()
