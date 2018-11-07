@@ -83,8 +83,8 @@ def test_tracker_when_reaching_0_computation_is_removed():
 
 
 def test_serialization_message():
-    p1 = Path("1", "2", "2")
-    table = PathsTable({p1: 3})
+    p1 = ("1", "2", "2")
+    table = [(3, p1)]
 
     msg = UCSReplicateMessage("msg_type", 0, 0, p1, table, ["1", "2"], None, 5, 2, [])
 
@@ -96,8 +96,8 @@ def test_serialization_message():
 
 
 def test_unserialization_msg():
-    p1 = Path("1", "2", "2")
-    table = PathsTable({p1: 3})
+    p1 = ("1", "2", "2")
+    table = [(3, p1)]
 
     msg = UCSReplicateMessage("msg_type", 0, 0, p1, table, ["1", "2"], None, 5, 2, [])
 

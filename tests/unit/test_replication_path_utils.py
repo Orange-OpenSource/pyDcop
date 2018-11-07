@@ -119,7 +119,7 @@ def test_filter_missing_agents_paths_2():
     assert len(filtered) == len(paths)
 
 
-#@pytest.mark.skip
+@pytest.mark.skip
 def test_bench_filter_missing_agents_paths(benchmark):
     def to_bench():
         paths = [
@@ -335,7 +335,7 @@ def test_affordable_path_from():
 
     paths = affordable_path_from(("a2", "a3"), 3, table)
 
-    assert len(paths) == 3
+    assert len(list(paths)) == 3
 
 
 @pytest.mark.skip
