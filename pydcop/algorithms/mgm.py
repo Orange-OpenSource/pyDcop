@@ -55,21 +55,21 @@ from typing import Any
 from typing import Dict
 from typing import Iterable, Set
 
-from pydcop.algorithms import AlgoParameterDef, ComputationDef, \
-    check_param_value
-from pydcop.computations_graph.constraints_hypergraph import \
-    VariableComputationNode
+from pydcop.algorithms import AlgoParameterDef, ComputationDef, check_param_value
+from pydcop.computations_graph.constraints_hypergraph import VariableComputationNode
 from pydcop.dcop.objects import Variable
-from pydcop.dcop.relations import RelationProtocol, filter_assignment_dict, \
-    find_arg_optimal
-from pydcop.infrastructure.computations import Message, VariableComputation, \
-    register
+from pydcop.dcop.relations import (
+    RelationProtocol,
+    filter_assignment_dict,
+    find_arg_optimal,
+)
+from pydcop.infrastructure.computations import Message, VariableComputation, register
 
-GRAPH_TYPE = 'constraints_hypergraph'
+GRAPH_TYPE = "constraints_hypergraph"
 
 HEADER_SIZE = 100
 UNIT_SIZE = 5
-BREAK_MODES = ['lexic', 'random']
+BREAK_MODES = ["lexic", "random"]
 
 
 """
@@ -78,8 +78,8 @@ MGM supports two paramaters:
 * stop_cycle
 """
 algo_params = [
-    AlgoParameterDef('break_mode', 'str', ['lexic', 'random'], 'lexic'),
-    AlgoParameterDef('stop_cycle', 'int', None, 0),
+    AlgoParameterDef("break_mode", "str", ["lexic", "random"], "lexic"),
+    AlgoParameterDef("stop_cycle", "int", None, 0),
 ]
 
 
@@ -106,8 +106,9 @@ def computation_memory(computation: VariableComputationNode) -> float:
         the memory footprint of the computation.
 
     """
-    neighbors = set((n for l in computation.links for n in l.nodes
-                     if n not in computation.name))
+    neighbors = set(
+        (n for l in computation.links for n in l.nodes if n not in computation.name)
+    )
     return len(neighbors) * UNIT_SIZE
 
 
@@ -143,7 +144,7 @@ class MgmValueMessage(Message):
     """
 
     def __init__(self, value):
-        super().__init__('mgm_value', None)
+        super().__init__("mgm_value", None)
         self._value = value
 
     @property
@@ -155,10 +156,10 @@ class MgmValueMessage(Message):
         return 1
 
     def __str__(self):
-        return 'MgmValueMessage({})'.format(self.value)
+        return "MgmValueMessage({})".format(self.value)
 
     def __repr__(self):
-        return 'MgmValueMessage({})'.format(self.value)
+        return "MgmValueMessage({})".format(self.value)
 
     def __eq__(self, other):
         if type(other) != MgmValueMessage:
@@ -178,7 +179,7 @@ class MgmGainMessage(Message):
     """
 
     def __init__(self, value, random_nb=0):
-        super().__init__('mgm_gain', None)
+        super().__init__("mgm_gain", None)
         self._value = value
         self._random_nb = random_nb
 
@@ -195,10 +196,10 @@ class MgmGainMessage(Message):
         return 1
 
     def __str__(self):
-        return 'MgmGainMessage({})'.format(self.value)
+        return "MgmGainMessage({})".format(self.value)
 
     def __repr__(self):
-        return 'MgmGainMessage({})'.format(self.value)
+        return "MgmGainMessage({})".format(self.value)
 
     def __eq__(self, other):
         if type(other) != MgmGainMessage:
@@ -206,7 +207,6 @@ class MgmGainMessage(Message):
         if self.value == other.value:
             return True
         return False
-
 
 
 # ###########################   COMPUTATION   ############################
@@ -225,27 +225,33 @@ class MgmComputation(VariableComputation):
 
     def __init__(self, computation_definition: ComputationDef):
 
-        assert computation_definition.algo.algo == 'mgm'
-        assert (computation_definition.algo.mode == 'min') or \
-               (computation_definition.algo.mode == 'max')
+        assert computation_definition.algo.algo == "mgm"
+        assert (computation_definition.algo.mode == "min") or (
+            computation_definition.algo.mode == "max"
+        )
 
-        super().__init__(computation_definition.node.variable,
-                         computation_definition)
+        super().__init__(computation_definition.node.variable, computation_definition)
 
         self.__utilities__ = list(computation_definition.node.constraints)
-        self._mode = computation_definition.algo.mode # min or max
+        self._mode = computation_definition.algo.mode  # min or max
 
         # Handling messages arriving during wrong mode
         self.__postponed_gain_messages__ = []
         self.__postponed_value_messages__ = []
         # _state is set to 'values' or 'gains', according what the agent is
         # currently waiting for
-        self._state = 'starting'
+        self._state = "starting"
 
         # Some constraints might be unary, and our variable can have several
         # constraints involving the same variable
-        self._neighbors = set([v.name for c in self.__utilities__
-                               for v in c.dimensions if v != self.variable])
+        self._neighbors = set(
+            [
+                v.name
+                for c in self.__utilities__
+                for v in c.dimensions
+                if v != self.variable
+            ]
+        )
 
         # Agent view of its neighbors resp. for values and gains state
         self._neighbors_values = {}  # type: Dict[str, Any]
@@ -253,8 +259,8 @@ class MgmComputation(VariableComputation):
         self._gain = None
         self._new_value = None
 
-        self.stop_cycle = computation_definition.algo.param_value('stop_cycle')
-        self.break_mode = computation_definition.algo.param_value('break_mode')
+        self.stop_cycle = computation_definition.algo.param_value("stop_cycle")
+        self.break_mode = computation_definition.algo.param_value("break_mode")
         self._random_nb = 0  # used in case break_mode is 'random'
 
     @property
@@ -278,14 +284,18 @@ class MgmComputation(VariableComputation):
         # randomly select a value
         if self.variable.initial_value is None:
             self.value_selection(random.choice(self.variable.domain), None)
-            self.logger.info('%s mgm starts: randomly select value %s and '
-                             'send to neighbors',
-                             self.variable.name, self.current_value)
+            self.logger.info(
+                "%s mgm starts: randomly select value %s and " "send to neighbors",
+                self.variable.name,
+                self.current_value,
+            )
         else:
             self.value_selection(self.variable.initial_value, None)
-            self.logger.info('%s mgm starts: select initial value %s and '
-                             'send to neighbors',
-                             self.variable.name, self.current_value)
+            self.logger.info(
+                "%s mgm starts: select initial value %s and " "send to neighbors",
+                self.variable.name,
+                self.current_value,
+            )
         self._wait_for_values()
 
     @register("mgm_value")
@@ -297,16 +307,22 @@ class MgmComputation(VariableComputation):
         :param recv_msg: received Value message (MgmValueMessage)
 
         """
-        if self._state == 'values':
-            self.logger.debug('%s received variable value %s from %s '
-                              'and processes it', self.variable.name,
-                              recv_msg.value, variable_name)
+        if self._state == "values":
+            self.logger.debug(
+                "%s received variable value %s from %s " "and processes it",
+                self.variable.name,
+                recv_msg.value,
+                variable_name,
+            )
             self._handle_value_message(variable_name, recv_msg)
         else:
-            self.logger.debug('%s received variable value %s from %s and '
-                              'postponed  its processing',
-                              self.variable.name, recv_msg.value,
-                              variable_name)
+            self.logger.debug(
+                "%s received variable value %s from %s and "
+                "postponed  its processing",
+                self.variable.name,
+                recv_msg.value,
+                variable_name,
+            )
             self.__postponed_value_messages__.append((variable_name, recv_msg))
 
     def _handle_value_message(self, variable_name, recv_msg):
@@ -322,8 +338,11 @@ class MgmComputation(VariableComputation):
         # if we have a value for all neighbors, compute the best value for
         # conflict reduction
         if len(self._neighbors_values) == len(self._neighbors):
-            self.logger.debug('%s received values from all neighbors : %s',
-                              self.name, self._neighbors_values)
+            self.logger.debug(
+                "%s received values from all neighbors : %s",
+                self.name,
+                self._neighbors_values,
+            )
             # Compute the current_cost on the first step (initialization) of
             # the algorithm
             if self.current_cost is None:
@@ -331,46 +350,50 @@ class MgmComputation(VariableComputation):
                 concerned_vars = set()
                 cost = 0
                 for c in self.utilities:
-                    asgt = filter_assignment_dict(self._neighbors_values,
-                                                  c.dimensions)
+                    asgt = filter_assignment_dict(self._neighbors_values, c.dimensions)
                     reduced_cs.append(c.slice(asgt))
                     cost = functools.reduce(
-                        operator.add, [f(self.current_value) for f in
-                                       reduced_cs])
+                        operator.add, [f(self.current_value) for f in reduced_cs]
+                    )
                     # Cost for variable, if any:
                     concerned_vars.update(c.dimensions)
 
                 for v in concerned_vars:
-                    if hasattr(v, 'cost_for_val'):
+                    if hasattr(v, "cost_for_val"):
                         if v.name == self.name:
                             cost += v.cost_for_val(self.current_value)
                         else:
-                            cost += v.cost_for_val(
-                                self._neighbors_values[v.name])
+                            cost += v.cost_for_val(self._neighbors_values[v.name])
 
                 self.value_selection(self.current_value, cost)
 
             new_values, val_cost = self._compute_best_value()
             self._gain = self.current_cost - val_cost
-            if ((self._mode == 'min') & (self._gain > 0)) or \
-                    ((self._mode == 'max') & (self._gain < 0)):
+            if ((self._mode == "min") & (self._gain > 0)) or (
+                (self._mode == "max") & (self._gain < 0)
+            ):
                 self._new_value = random.choice(new_values)
             else:
                 self._new_value = self.current_value
 
-            self.logger.info('Best local value for %s: %s %s (neighbors: %s)',
-                             self.name, self._new_value, self._gain,
-                             self._neighbors_values)
+            self.logger.info(
+                "Best local value for %s: %s %s (neighbors: %s)",
+                self.name,
+                self._new_value,
+                self._gain,
+                self._neighbors_values,
+            )
 
             self._send_gain()
 
             self._wait_for_gains()
         else:
             # Still waiting for other neighbors
-            self.logger.debug('%s waiting for values from other neighbors: %s',
-                              self.name,
-                              [n for n in self._neighbors
-                               if n not in self._neighbors_values])
+            self.logger.debug(
+                "%s waiting for values from other neighbors: %s",
+                self.name,
+                [n for n in self._neighbors if n not in self._neighbors_values],
+            )
 
     def _send_gain(self):
         """
@@ -380,8 +403,9 @@ class MgmComputation(VariableComputation):
         """
         self.__random__ = random.random()
         msg = MgmGainMessage(self._gain, self.__random__)
-        self.logger.debug('%s sends gain message %s to %s', self.name, msg,
-                          self.neighbors)
+        self.logger.debug(
+            "%s sends gain message %s to %s", self.name, msg, self.neighbors
+        )
         for n in self.neighbors:
             self.post_msg(n, msg)
 
@@ -396,8 +420,9 @@ class MgmComputation(VariableComputation):
             self.finished()
             return
         msg = MgmValueMessage(self.current_value)
-        self.logger.debug('%s sends value message %s to %s', self.name, msg,
-                          self.neighbors)
+        self.logger.debug(
+            "%s sends value message %s to %s", self.name, msg, self.neighbors
+        )
         for n in self._neighbors:
             self.post_msg(n, msg)
 
@@ -407,11 +432,10 @@ class MgmComputation(VariableComputation):
         if any.
 
         """
-        self._state = 'gain'
-        self.logger.debug('%s enters gain state', self.name)
+        self._state = "gain"
+        self.logger.debug("%s enters gain state", self.name)
         for msg in self.__postponed_gain_messages__:
-            self.logger.debug('%s processes postponed message %s', self.name,
-                              msg)
+            self.logger.debug("%s processes postponed message %s", self.name, msg)
             self._handle_gain_message(msg[0], msg[1])
         self.__postponed_gain_messages__.clear()
 
@@ -433,17 +457,16 @@ class MgmComputation(VariableComputation):
             concerned_vars.update(c.dimensions)
         var_val, rel_val = find_arg_optimal(
             self.variable,
-            lambda x: functools.reduce(operator.add, [f(x) for f in
-                                                      reduced_cs]),
-            self._mode)
+            lambda x: functools.reduce(operator.add, [f(x) for f in reduced_cs]),
+            self._mode,
+        )
         # Add the cost for each variable value if any
         for var in concerned_vars:
-            if hasattr(var, 'cost_for_val'):
+            if hasattr(var, "cost_for_val"):
                 if var.name == self.name:
                     rel_val += var.cost_for_val(self.current_value)
                 else:
-                    rel_val += var.cost_for_val(
-                        self._neighbors_values[var.name])
+                    rel_val += var.cost_for_val(self._neighbors_values[var.name])
 
         return var_val, rel_val
 
@@ -458,15 +481,21 @@ class MgmComputation(VariableComputation):
 
         """
 
-        if self._state == 'gain':
-            self.logger.debug('%s received gain %s from %s and processes it',
-                              self.variable.name, recv_msg.value,
-                              variable_name)
+        if self._state == "gain":
+            self.logger.debug(
+                "%s received gain %s from %s and processes it",
+                self.variable.name,
+                recv_msg.value,
+                variable_name,
+            )
             self._handle_gain_message(variable_name, recv_msg)
         else:
-            self.logger.debug('%s received gain %s from %s and postponed its'
-                              ' processing', self.variable.name,
-                              recv_msg.value, variable_name)
+            self.logger.debug(
+                "%s received gain %s from %s and postponed its" " processing",
+                self.variable.name,
+                recv_msg.value,
+                variable_name,
+            )
             self.__postponed_gain_messages__.append((variable_name, recv_msg))
 
     def _handle_gain_message(self, variable_name, recv_msg):
@@ -479,89 +508,115 @@ class MgmComputation(VariableComputation):
 
         """
 
-        self._neighbors_gains[variable_name] = (recv_msg.value,
-                                                recv_msg.random_nb)
+        self._neighbors_gains[variable_name] = (recv_msg.value, recv_msg.random_nb)
 
         # if messages received from all neighbors
         if len(self._neighbors_gains) == len(self._neighbors):
             gains = {var: gain for var, gain in self._neighbors_gains.items()}
-            self.logger.debug('%s has all gains : %s -  %s', self.name,
-                              self._gain,
-                              gains)
+            self.logger.debug(
+                "%s has all gains : %s -  %s", self.name, self._gain, gains
+            )
             # determine if can change value and send ok message to neighbors
             max_neighbors = max([gain for gain, _ in gains.values()])
             if self._gain > max_neighbors:
-                self.logger.info('%s selects new value "%s", best gain: %s > '
-                                 '%s',
-                                 self.name, self._new_value, self._gain,
-                                 gains)
-                self.value_selection(self._new_value,
-                                     self.current_cost - self._gain)
+                self.logger.info(
+                    '%s selects new value "%s", best gain: %s > ' "%s",
+                    self.name,
+                    self._new_value,
+                    self._gain,
+                    gains,
+                )
+                self.value_selection(self._new_value, self.current_cost - self._gain)
             elif self._gain == max_neighbors:
                 # same gain, break ties through variable ordering to
                 # determine which variable can change its value
                 self._break_ties(max_neighbors)
             else:
-                self.logger.info('%s doe not change value : not the best '
-                                 'gain %s < %s ', self.name, self._gain,
-                                 max_neighbors)
+                self.logger.info(
+                    "%s doe not change value : not the best " "gain %s < %s ",
+                    self.name,
+                    self._gain,
+                    max_neighbors,
+                )
 
             self._neighbors_gains.clear()
             self._neighbors_values.clear()
             self._wait_for_values()
         else:
             # Still waiting for other neighbors
-            self.logger.debug('%s waiting for gain msg from other neighbors '
-                              ': %s', self.name,
-                              [n for n in self._neighbors
-                               if n not in self._neighbors_gains])
+            self.logger.debug(
+                "%s waiting for gain msg from other neighbors " ": %s",
+                self.name,
+                [n for n in self._neighbors if n not in self._neighbors_gains],
+            )
 
     def _break_ties(self, max_gain):
         if self.break_mode == random:
-            ties = sorted([(rand_nb, name) for name, (gain, rand_nb) in
-                           self._neighbors_gains.items()
-                           if gain == max_gain] + [(self.random_nb,
-                                                    self.name)],
-                          )
+            ties = sorted(
+                [
+                    (rand_nb, name)
+                    for name, (gain, rand_nb) in self._neighbors_gains.items()
+                    if gain == max_gain
+                ]
+                + [(self.random_nb, self.name)]
+            )
             if ties[0][1] == self.name:
-                self.logger.info('Won ties for equal gain %s , %s '
-                                 'selects new value "%s - %s"', self._gain,
-                                 self.name, self._new_value, ties)
-                self.value_selection(self._new_value,
-                                     self.current_cost - self._gain)
+                self.logger.info(
+                    "Won ties for equal gain %s , %s " 'selects new value "%s - %s"',
+                    self._gain,
+                    self.name,
+                    self._new_value,
+                    ties,
+                )
+                self.value_selection(self._new_value, self.current_cost - self._gain)
             else:
-                self.logger.info('Lost ties for equal gain %s , %s does '
-                                 'not change value to "%s" - %s',
-                                 self._gain, self.name, self._new_value,
-                                 ties)
+                self.logger.info(
+                    "Lost ties for equal gain %s , %s does "
+                    'not change value to "%s" - %s',
+                    self._gain,
+                    self.name,
+                    self._new_value,
+                    ties,
+                )
         else:
-            ties = sorted([k for k, (gain, _) in
-                           self._neighbors_gains.items() if
-                           gain == max_gain] + [self.name])
+            ties = sorted(
+                [
+                    k
+                    for k, (gain, _) in self._neighbors_gains.items()
+                    if gain == max_gain
+                ]
+                + [self.name]
+            )
             if ties[0] == self.name:
-                self.logger.info('Won ties for equal gain %s , %s '
-                                 'selects new value "%s - %s"', self._gain,
-                                 self.name, self._new_value, ties)
-                self.value_selection(self._new_value,
-                                     self.current_cost - self._gain)
+                self.logger.info(
+                    "Won ties for equal gain %s , %s " 'selects new value "%s - %s"',
+                    self._gain,
+                    self.name,
+                    self._new_value,
+                    ties,
+                )
+                self.value_selection(self._new_value, self.current_cost - self._gain)
             else:
-                self.logger.info('Lost ties for equal gain %s , %s does '
-                                 'not change value to "%s" - %s',
-                                 self._gain, self.name, self._new_value,
-                                 ties)
+                self.logger.info(
+                    "Lost ties for equal gain %s , %s does "
+                    'not change value to "%s" - %s',
+                    self._gain,
+                    self.name,
+                    self._new_value,
+                    ties,
+                )
 
     def _wait_for_values(self):
         """
         Change variable state to 'values'
 
         """
-        self.logger.debug('%s enters values state', self.name)
+        self.logger.debug("%s enters values state", self.name)
         # End of a cycle: clear agent view
 
-        self._state = 'values'
+        self._state = "values"
         self._send_value()
         for msg in self.__postponed_value_messages__:
-            self.logger.debug('%s processes postponed message %s', self.name,
-                              msg)
+            self.logger.debug("%s processes postponed message %s", self.name, msg)
             self._handle_value_message(msg[0], msg[1])
         self.__postponed_value_messages__.clear()
