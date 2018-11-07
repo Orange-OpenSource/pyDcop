@@ -44,10 +44,13 @@ class EventDispatcher(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, enabled = False):
         self._cbs = defaultdict(lambda: [])
+        self.enabled = enabled
 
     def send(self, topic, evt):
+        if not self.enabled:
+            return
         for cb in self._cbs[topic]:
             cb(topic, evt)
         all_cbs = list(self._cbs.items())
