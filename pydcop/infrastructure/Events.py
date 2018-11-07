@@ -44,7 +44,7 @@ class EventDispatcher(object):
 
     """
 
-    def __init__(self, enabled = False):
+    def __init__(self, enabled=False):
         self._cbs = defaultdict(lambda: [])
         self.enabled = enabled
 
@@ -54,8 +54,11 @@ class EventDispatcher(object):
         for cb in self._cbs[topic]:
             cb(topic, evt)
         all_cbs = list(self._cbs.items())
-        eligibles = [cbs for s_topic, cbs  in all_cbs
-                    if s_topic[-1] == '*' and topic.startswith(s_topic[:-1])]
+        eligibles = [
+            cbs
+            for s_topic, cbs in all_cbs
+            if s_topic[-1] == "*" and topic.startswith(s_topic[:-1])
+        ]
         for cbs in eligibles:
             for cb in cbs:
                 cb(topic, evt)
@@ -79,12 +82,11 @@ class EventDispatcher(object):
         self._cbs[topic].append(cb)
         return cb
 
-
-    def unsubscribe(self, cb: Callable, topic: str=None):
+    def unsubscribe(self, cb: Callable, topic: str = None):
 
         if topic is None:
             all_cbs = list(self._cbs.items())
-            for s_topic,  s_cbs in all_cbs:
+            for s_topic, s_cbs in all_cbs:
                 if cb in s_cbs:
                     s_cbs.remove(cb)
         # else:
@@ -93,11 +95,10 @@ class EventDispatcher(object):
         self._cbs.clear()
 
 
-
 event_bus = EventDispatcher()
 
-buses = defaultdict(lambda : EventDispatcher())
+buses = defaultdict(lambda: EventDispatcher())
+
 
 def get_bus(name: str):
     return buses[name]
-
