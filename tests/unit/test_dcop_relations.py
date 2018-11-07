@@ -1673,7 +1673,7 @@ def test_assignment_cost_missing_vars():
     c1 = constraint_from_str("c1", "v1+v2", [v1, v2])
     c2 = constraint_from_str("c2", "v1*v2", [v1, v2])
 
-    with pytest.raises(TypeError):
+    with pytest.raises(KeyError):
         assignment_cost({"v1": 2}, [c1, c2])
 
 
@@ -1685,3 +1685,39 @@ def test_assignment_cost_extra_vars():
     c2 = constraint_from_str("c2", "v1*v2", [v1, v2])
 
     assert assignment_cost({"v1": 2, "v2": 5, "v3": 4}, [c1, c2]) == 17
+
+
+@pytest.mark.skip
+def test_bench_compute_cost(benchmark):
+    x1 = Variable("x1", list(range(5)))
+    x2 = Variable("x2", list(range(5)))
+    x3 = Variable("x3", list(range(5)))
+    x4 = Variable("x4", list(range(5)))
+    all_vars = [x1, x2, x3, x4]
+
+    c1 = constraint_from_str("c1", "x1 - x2 - 3", all_vars)
+    c2 = constraint_from_str("c2", "x1 - x2 -4", all_vars)
+    c3 = constraint_from_str("c3", "x4 + x2  -5", all_vars)
+    c4 = constraint_from_str("c4", "x3 - x2 -7", all_vars)
+
+    def to_bench():
+        assignment_cost({"x1": 3, "x2": 4, "x3": 1, "x4": 2}, [c1, c2, c3, c4])
+
+    benchmark(to_bench)
+
+
+def test_assignment_cost_same_as_becnh():
+    x1 = Variable("x1", list(range(5)))
+    x2 = Variable("x2", list(range(5)))
+    x3 = Variable("x3", list(range(5)))
+    x4 = Variable("x4", list(range(5)))
+    all_vars = [x1, x2, x3, x4]
+
+    c1 = constraint_from_str("c1", "x1 - x2 - 3", all_vars)
+    c2 = constraint_from_str("c2", "x1 - x2 -4", all_vars)
+    c3 = constraint_from_str("c3", "x4 + x2  -5", all_vars)
+    c4 = constraint_from_str("c4", "x3 - x2 -7", all_vars)
+
+    cost = assignment_cost({"x1": 3, "x2": 4, "x3": 1, "x4": 2}, [c1, c2, c3, c4])
+
+    assert cost == -18

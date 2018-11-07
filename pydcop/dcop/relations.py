@@ -1387,7 +1387,8 @@ def generate_assignment_as_dict(variables: List[Variable]):
 
 
 def assignment_cost(assignment: Dict[str, Any],
-                    constraints: Iterable['Constraint']):
+                    constraints: Iterable['Constraint'],
+                    consider_variable_cost=False):
     """
     Compute the cost of an assignment over a set of constraints.
 
@@ -1408,9 +1409,23 @@ def assignment_cost(assignment: Dict[str, Any],
     The sum of the costs of the constraints for this assignment.
 
     """
+    # NOTE: this method is performance-cirtcal and has been profiled and tuned,
+    # make sure to do it again if you need to change it !!
     cost = 0
+    if consider_variable_cost:
+        cost_vars = set()
     for c in constraints:
-        cost += c(**filter_assignment_dict(assignment, c.dimensions))
+        filtered_ass = {}
+        for v in c.dimensions:
+            v_name = v.name
+            if consider_variable_cost:
+                if v_name not in cost_vars:
+                    if hasattr(v, "cost_for_val"):
+                        cost += v.cost_for_val(assignment[v_name])
+                    cost_vars.add(v_name)
+            filtered_ass[v_name] = assignment[v_name]
+        cost += c(**filtered_ass)
+
     return cost
 
 
