@@ -53,7 +53,9 @@ from pydcop.dcop.relations import (
     assignment_matrix,
     random_assignment_matrix,
     generate_assignment_as_dict,
-    constraint_from_str, assignment_cost)
+    constraint_from_str,
+    assignment_cost,
+)
 from pydcop.utils.expressionfunction import ExpressionFunction
 from pydcop.utils.simple_repr import simple_repr, from_repr, SimpleReprException
 
@@ -1149,7 +1151,6 @@ class ConditionalRelationsTest(unittest.TestCase):
         def condition(v1_, v2_):
             return v1_ or v2_
 
-
         @AsNAryFunctionRelation(v2)
         def rel2(_):
             return 2
@@ -1632,3 +1633,55 @@ def test_random_ass_matrix_two_var():
     m = random_assignment_matrix([v1, v2], list(range(5)))
     assert m[1][3] in range(5)
     print(m)
+
+
+def test_assignment_cost_empty():
+    assert assignment_cost({}, []) == 0
+
+
+def test_assignment_cost_one_constraint():
+    domain = VariableDomain("d", "test", list(range(10)))
+    v1 = Variable("v1", domain)
+    c1 = constraint_from_str("c1", "v1", [v1])
+
+    assert assignment_cost({"v1": 3}, [c1]) == 3
+
+
+def test_assignment_cost_one_constraint_two_vars():
+    domain = VariableDomain("d", "test", list(range(10)))
+    v1 = Variable("v1", domain)
+    v2 = Variable("v2", domain)
+    c1 = constraint_from_str("c1", "v1+v2", [v1, v2])
+
+    assert assignment_cost({"v1": 3, "v2": 4}, [c1]) == 7
+
+
+def test_assignment_cost_two_constraints_two_vars():
+    domain = VariableDomain("d", "test", list(range(10)))
+    v1 = Variable("v1", domain)
+    v2 = Variable("v2", domain)
+    c1 = constraint_from_str("c1", "v1+v2", [v1, v2])
+    c2 = constraint_from_str("c2", "v1*v2", [v1, v2])
+
+    assert assignment_cost({"v1": 2, "v2": 5}, [c1, c2]) == 17
+
+
+def test_assignment_cost_missing_vars():
+    domain = VariableDomain("d", "test", list(range(10)))
+    v1 = Variable("v1", domain)
+    v2 = Variable("v2", domain)
+    c1 = constraint_from_str("c1", "v1+v2", [v1, v2])
+    c2 = constraint_from_str("c2", "v1*v2", [v1, v2])
+
+    with pytest.raises(TypeError):
+        assignment_cost({"v1": 2}, [c1, c2])
+
+
+def test_assignment_cost_extra_vars():
+    domain = VariableDomain("d", "test", list(range(10)))
+    v1 = Variable("v1", domain)
+    v2 = Variable("v2", domain)
+    c1 = constraint_from_str("c1", "v1+v2", [v1, v2])
+    c2 = constraint_from_str("c2", "v1*v2", [v1, v2])
+
+    assert assignment_cost({"v1": 2, "v2": 5, "v3": 4}, [c1, c2]) == 17
