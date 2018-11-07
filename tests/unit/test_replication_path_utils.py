@@ -217,6 +217,7 @@ def test_remove_path():
     assert len(paths) == 10
 
 
+@pytest.mark.skip
 def test_remove_path_bench(benchmark):
     def to_bench():
         paths = [
@@ -265,9 +266,6 @@ def test_pathtable_unserialize():
 
     obtained = from_repr(r)
     assert obtained == table
-
-
-
 
 
 @pytest.mark.skip
