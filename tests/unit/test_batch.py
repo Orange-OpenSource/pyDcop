@@ -40,8 +40,8 @@ def test_input_files_re(tmpdir):
     tmpdir.join("dcop_coloring_3.yaml").write("")
     tmpdir.join("dcop_coloring_3_dist.yaml").write("")
 
-    files, extras = input_files_re(dir_path,
-        "dcop_(?P<index>.*).yaml", ["dcop_{index}_dist.yaml"]
+    files, extras, contexts = input_files_re(
+        dir_path, "dcop_(?P<index>.*).yaml", ["dcop_{index}_dist.yaml"]
     )
 
     assert "dcop_ising_1.yaml" in files
@@ -50,6 +50,9 @@ def test_input_files_re(tmpdir):
 
     index = files.index("dcop_ising_1.yaml")
     assert "dcop_ising_1_dist.yaml" in extras[index]
+
+    for context in contexts:
+        assert "index" in context
 
 
 def test_params_configuration_one_parameter():
@@ -275,14 +278,14 @@ def test_expand_variables_in_dict():
 
 def test_build_final_command_file_only():
 
-    cmd, _ = build_final_command("cmd", {}, {}, {}, files="file")
+    cmd, _ = build_final_command("cmd", {}, {}, {}, files=["file"])
     assert cmd == "pydcop cmd file"
 
 
 def test_build_final_command_with_global_options():
 
     cmd, _ = build_final_command(
-        "cmd", {}, {"logs": "log_file.conf", "timeout": "10"}, {}, files="file"
+        "cmd", {}, {"logs": "log_file.conf", "timeout": "10"}, {}, files=["file"]
     )
     assert cmd == "pydcop --logs log_file.conf --timeout 10 cmd file"
 
@@ -290,7 +293,11 @@ def test_build_final_command_with_global_options():
 def test_build_final_command_with_command_options():
 
     cmd, _ = build_final_command(
-        "solve", {}, {}, {"algo": "dsa", "algo_params": {"variant": "A"}}, files="file"
+        "solve",
+        {},
+        {},
+        {"algo": "dsa", "algo_params": {"variant": "A"}},
+        files=["file"],
     )
     assert cmd == "pydcop solve --algo dsa --algo_params variant:A file"
 
@@ -302,7 +309,7 @@ def test_build_final_command_with_command_options_and_expansion():
         {},
         {},
         {"algo": "dsa", "algo_params": {"variant": "A"}},
-        files="file_{algo_params[variant]}.yaml",
+        files=["file_{algo_params[variant]}.yaml"],
     )
     assert cmd == "pydcop solve --algo dsa --algo_params variant:A file_A.yaml"
 
