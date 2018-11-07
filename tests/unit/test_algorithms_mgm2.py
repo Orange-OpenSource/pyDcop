@@ -220,7 +220,7 @@ class TestsCostComputation(unittest.TestCase):
             ))
         computation.__value__ = 0
 
-        self.assertEqual(computation._compute_cost({'x': 0}), 1)
+        self.assertEqual(computation._compute_cost(**{'x': 0}), 1)
 
     def test_binary_func(self):
         x1 = Variable("x1", list(range(2)))
@@ -235,10 +235,10 @@ class TestsCostComputation(unittest.TestCase):
                 VariableComputationNode(x1, [phi]),
                 AlgorithmDef.build_with_default_param('mgm2')
             ))
-        self.assertEqual(computation._compute_cost({'x1': 0, 'x2': 0}), 0)
-        self.assertEqual(computation._compute_cost({'x1': 0, 'x2': 1}), 1)
-        self.assertEqual(computation._compute_cost({'x1': 1, 'x2': 0}), 1)
-        self.assertEqual(computation._compute_cost({'x1': 1, 'x2': 1}), 2)
+        self.assertEqual(computation._compute_cost(**{'x1': 0, 'x2': 0}), 0)
+        self.assertEqual(computation._compute_cost(**{'x1': 0, 'x2': 1}), 1)
+        self.assertEqual(computation._compute_cost(**{'x1': 1, 'x2': 0}), 1)
+        self.assertEqual(computation._compute_cost(**{'x1': 1, 'x2': 1}), 2)
 
     def test_3_ary_func(self):
         x1 = Variable("x1", list(range(2)))
@@ -254,14 +254,10 @@ class TestsCostComputation(unittest.TestCase):
                 VariableComputationNode(x1, [phi]),
                 AlgorithmDef.build_with_default_param('mgm2')
             ))
-        self.assertEqual(computation._compute_cost({'x1': 0, 'x2': 0,
-                                                    'x3': 1}), 1)
-        self.assertEqual(computation._compute_cost({'x1': 0, 'x2': 1,
-                                                    'x3': 1}), 2)
-        self.assertEqual(computation._compute_cost({'x1': 1, 'x2': 0,
-                                                    'x3': 1}), 2)
-        self.assertEqual(computation._compute_cost({'x1': 1, 'x2': 1,
-                                                    'x3': 1}), 3)
+        self.assertEqual(computation._compute_cost(**{'x1': 0, 'x2': 0,'x3': 1}), 1)
+        self.assertEqual(computation._compute_cost(**{'x1': 0, 'x2': 1, 'x3': 1}), 2)
+        self.assertEqual(computation._compute_cost(**{'x1': 1, 'x2': 0, 'x3': 1}), 2)
+        self.assertEqual(computation._compute_cost(**{'x1': 1, 'x2': 1,'x3': 1}), 3)
 
     def test_current_local_cost_unary(self):
         x = Variable("x", list(range(5)))

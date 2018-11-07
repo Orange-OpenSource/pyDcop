@@ -43,6 +43,7 @@ import random
 
 import functools as fp
 from collections import defaultdict
+from functools import lru_cache
 from typing import Dict, Any, Tuple, List
 
 from pydcop.algorithms import AlgoParameterDef, ComputationDef
@@ -53,7 +54,7 @@ from pydcop.dcop.relations import (
     find_dependent_relations,
     generate_assignment_as_dict,
     filter_assignment_dict,
-)
+    assignment_cost)
 
 __author__ = "Pierre Nagellen, Pierre Rust"
 
@@ -516,7 +517,7 @@ class Mgm2Computation(VariableComputation):
 
         for v in self._variable.domain:
             asgt[self.variable.name] = v
-            c = self._compute_cost(asgt)
+            c = self._compute_cost(**asgt)
             if (
                 best_cost is None
                 or (best_cost > c and self._mode == "min")
@@ -549,7 +550,7 @@ class Mgm2Computation(VariableComputation):
 
         for limited_asgt in generate_assignment_as_dict([self.variable, self._partner]):
             partial_asgt.update(limited_asgt)
-            cost = self._compute_cost(partial_asgt)
+            cost = self._compute_cost(**partial_asgt)
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(
                     f"looking for offer : {partial_asgt} - cost {cost}"
@@ -600,7 +601,7 @@ class Mgm2Computation(VariableComputation):
 
                 # Then we evaluate the agent constraint's for the offer
                 # and add the partner's local gain.
-                cost = self._compute_cost(partial_asgt, concerned)
+                cost = assignment_cost(partial_asgt, concerned)
                 global_gain = self.current_cost - cost + partner_local_gain
 
                 if (global_gain > best_gain and self._mode == "min") or (
@@ -1037,26 +1038,7 @@ class Mgm2Computation(VariableComputation):
     def _current_local_cost(self):
         assignment = self._neighbors_values.copy()
         assignment.update({self.variable.name: self.current_value})
-        return self._compute_cost(assignment)
-
-    def _compute_cost(self, assignment, constraints=None):
-        constraints = self._constraints if constraints is None else constraints
-        # Cost for constraints:
-        cost = fp.reduce(
-            op.add,
-            [
-                f(**filter_assignment_dict(assignment, f.dimensions))
-                for f in constraints
-            ],
-            0,
-        )
-        # Cost for variable, if any:
-        concerned_vars = set(v for c in constraints for v in c.dimensions)
-        for v in concerned_vars:
-            if hasattr(v, "cost_for_val"):
-                cost += v.cost_for_val(assignment[v.name])
-
-        return cost
+        return self._compute_cost(**assignment)
 
     def _neighbor_var(self, name):
         """
@@ -1078,3 +1060,7 @@ class Mgm2Computation(VariableComputation):
         self._partner = self._neighbor_var(partner_name)
         self._committed = True
         self.post_msg(partner_name, Mgm2ResponseMessage(True, val_p, gain))
+
+    @lru_cache(maxsize=512)
+    def _compute_cost(self, **kwargs):
+        return assignment_cost(kwargs, self._constraints)
