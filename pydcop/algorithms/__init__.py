@@ -82,6 +82,7 @@ to describe and define DCOP algorithms' computations.
 
 import inspect
 import pkgutil
+from functools import lru_cache
 from importlib import import_module
 from typing import Dict, Any, List, Iterable, NamedTuple, Optional, Union
 
@@ -521,7 +522,7 @@ def list_available_algorithms() -> List[str]:
 
     return algorithms
 
-
+@lru_cache(maxsize=32)
 def load_algorithm_module(algo_name: str):
     """
     Dynamically load an algorithm module.
