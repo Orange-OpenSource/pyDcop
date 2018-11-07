@@ -41,7 +41,8 @@ from typing import List, Dict, Tuple, Set, Iterable, Union
 
 from pydcop.algorithms import ComputationDef
 from pydcop.infrastructure.agents import Agent
-from pydcop.infrastructure.computations import MessagePassingComputation, Message
+from pydcop.infrastructure.computations import MessagePassingComputation, Message, \
+    register
 from pydcop.infrastructure.discovery import Discovery, Address
 from pydcop.replication.path_utils import (
     Node,
@@ -280,7 +281,6 @@ class UCSReplication(MessagePassingComputation):
 
     def __init__(self, agent: Agent, discovery: Discovery, k_target=3, logger=None):
         super().__init__(replication_computation_name(agent.name))
-        self._msg_handlers.update({"ucs_replicate": self._on_replicate_msg})
         self.agent = agent
         self.agt_name = agent.name
         self.agent_def = agent.agent_def
@@ -496,6 +496,7 @@ class UCSReplication(MessagePassingComputation):
         for c_name in c_names:
             self.remove_replica(c_name)
 
+    @register("ucs_replicate")
     def _on_replicate_msg(self, sender_name: str, msg: UCSReplicateMessage, _: float):
         """
         This method is called when receiving a request from another agent to
