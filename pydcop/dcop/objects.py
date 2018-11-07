@@ -53,7 +53,7 @@ class Domain(Sized, SimpleRepr, Iterable[Any]):
     list-like operations : 'in', 'len', iterable...
     """
 
-    def __init__(self, name: str, domain_type: str, values: Iterable)-> None:
+    def __init__(self, name: str, domain_type: str, values: Iterable) -> None:
         """
 
         :param: name: name of the domain.
@@ -94,18 +94,16 @@ class Domain(Sized, SimpleRepr, Iterable[Any]):
     def __eq__(self, o: object) -> bool:
         if not isinstance(o, Domain):
             return False
-        if self.name == o.name and self.values == o.values and self.type == \
-                o.type:
+        if self.name == o.name and self.values == o.values and self.type == o.type:
             return True
 
         return False
 
     def __str__(self):
-        return 'VariableDomain({})'.format(self.name)
+        return "VariableDomain({})".format(self.name)
 
     def __repr__(self):
-        return 'VariableDomain({}, {}, {})'.format(self.name, self.type,
-                                                   self.values)
+        return "VariableDomain({}, {}, {})".format(self.name, self.type, self.values)
 
     def __hash__(self):
         return hash((self._name, self._domain_type, self._values))
@@ -134,7 +132,7 @@ class Domain(Sized, SimpleRepr, Iterable[Any]):
         for i, v in enumerate(self._values):
             if val == v:
                 return i
-        raise ValueError(str(val) + ' is not in the domain ' + self._name)
+        raise ValueError(str(val) + " is not in the domain " + self._name)
 
     def to_domain_value(self, val: str):
         """
@@ -164,14 +162,14 @@ class Domain(Sized, SimpleRepr, Iterable[Any]):
         for i, v in enumerate(self._values):
             if str(v) == val:
                 return i, v
-        raise ValueError(str(val) + ' is not in the domain ' + self._name)
+        raise ValueError(str(val) + " is not in the domain " + self._name)
 
 
 # We keep VariableDomain as an alias for the moment, but Domain should be
 # preferred.
 VariableDomain = Domain
 
-binary_domain = Domain('binary', 'binary', [0, 1])
+binary_domain = Domain("binary", "binary", [0, 1])
 
 
 class Variable(SimpleRepr):
@@ -196,27 +194,28 @@ class Variable(SimpleRepr):
 
     """
 
-    def __init__(self, name: str,
-                 domain: Union[Domain, Iterable[Any]],
-                 initial_value=None) -> None:
+    def __init__(
+        self, name: str, domain: Union[Domain, Iterable[Any]], initial_value=None
+    ) -> None:
         self._name = name
         # If the domain has no name, simply use a named derived from the
         # variable name
-        if not hasattr(domain, '__iter__') \
-                and not isinstance(domain, VariableDomain):
-            raise ValueError('Invalid domain, must be an iterable or '
-                             'VariableDomain ')
+        if not hasattr(domain, "__iter__") and not isinstance(domain, VariableDomain):
+            raise ValueError(
+                "Invalid domain, must be an iterable or " "VariableDomain "
+            )
         if not isinstance(domain, Domain):
-            domain = Domain('d_'+name, 'unkown', domain)
+            domain = Domain("d_" + name, "unkown", domain)
         self._domain = domain
-        if initial_value is not None and initial_value not in \
-                self.domain.values:
-            raise ValueError('Invalid initial value {}, not in domain values'
-                             ' {}'.format(initial_value, self.domain.values))
+        if initial_value is not None and initial_value not in self.domain.values:
+            raise ValueError(
+                "Invalid initial value {}, not in domain values"
+                " {}".format(initial_value, self.domain.values)
+            )
         self._initial_value = initial_value
 
     @property
-    def name(self)-> str:
+    def name(self) -> str:
         return self._name
 
     @property
@@ -228,17 +227,19 @@ class Variable(SimpleRepr):
         return self._initial_value
 
     def __str__(self):
-        return 'Variable({})'.format(self.name)
+        return "Variable({})".format(self.name)
 
     def __repr__(self):
-        return 'Variable({}, {}, {})'.format(self.name, self.initial_value,
-                                             self.domain)
+        return "Variable({}, {}, {})".format(self.name, self.initial_value, self.domain)
 
     def __eq__(self, other):
         if type(self) != type(other):
             return False
-        if self.name == other.name and self.initial_value == \
-                other.initial_value and self.domain == other.domain:
+        if (
+            self.name == other.name
+            and self.initial_value == other.initial_value
+            and self.domain == other.domain
+        ):
             return True
         return False
 
@@ -246,15 +247,15 @@ class Variable(SimpleRepr):
         return hash((self._name, self._domain, self._initial_value))
 
     def clone(self):
-        return Variable(self.name, self.domain,
-                        initial_value=self.initial_value)
+        return Variable(self.name, self.domain, initial_value=self.initial_value)
 
 
-def create_variables(name_prefix: str,
-                     indexes: Union[str, Tuple, Iterable],
-                     domain: Domain,
-                     separator: str='_') \
-        -> Dict[Union[str, Tuple[str, ...]], Variable]:
+def create_variables(
+    name_prefix: str,
+    indexes: Union[str, Tuple, Iterable],
+    domain: Domain,
+    separator: str = "_",
+) -> Dict[Union[str, Tuple[str, ...]], Variable]:
     """Mass creation of variables.
 
     Parameters
@@ -312,38 +313,37 @@ def create_variables(name_prefix: str,
             name = name_prefix + separator.join(combi)
             variables[tuple(combi)] = Variable(name, domain)
     elif isinstance(indexes, range):
-        digit_count = len(str(indexes.stop-1))
+        digit_count = len(str(indexes.stop - 1))
         for i in indexes:
             name = f"{name_prefix}{i:0{digit_count}d}"
             variables[name] = Variable(name, domain)
-    elif hasattr(indexes, '__iter__'):
+    elif hasattr(indexes, "__iter__"):
         for i in indexes:
             name = name_prefix + str(i)
             variables[name] = Variable(name, domain)
     else:
-        raise TypeError('indexes must be an iterable or a tuple of iterables')
+        raise TypeError("indexes must be an iterable or a tuple of iterables")
 
     return variables
 
 
 class BinaryVariable(Variable):
-
-    def __init__(self, name: str, initial_value=0)-> None:
+    def __init__(self, name: str, initial_value=0) -> None:
         super().__init__(name, binary_domain, initial_value)
 
     def __str__(self):
-        return 'BinaryVariable({})'.format(self.name)
+        return "BinaryVariable({})".format(self.name)
 
     def __repr__(self):
-        return 'BinaryVariable({}, {})'.format(self.name,
-                                               self.initial_value)
+        return "BinaryVariable({}, {})".format(self.name, self.initial_value)
 
     def clone(self):
         return BinaryVariable(self.name, initial_value=self.initial_value)
 
 
-def create_binary_variables(name_prefix: str, indexes, separator: str='_') \
-        -> Dict[Union[str, Tuple], BinaryVariable]:
+def create_binary_variables(
+    name_prefix: str, indexes, separator: str = "_"
+) -> Dict[Union[str, Tuple], BinaryVariable]:
     """Mass creation of binary variables.
 
     Parameters
@@ -392,20 +392,24 @@ def create_binary_variables(name_prefix: str, indexes, separator: str='_') \
         for combi in itertools.product(*indexes):
             name = name_prefix + separator.join(combi)
             variables[tuple(combi)] = BinaryVariable(name)
-    elif hasattr(indexes, '__iter__'):
+    elif hasattr(indexes, "__iter__"):
         for i in indexes:
             name = name_prefix + str(i)
             variables[name] = BinaryVariable(name)
     else:
-        raise TypeError('indexes must be an iterable or a tuple of iterables')
+        raise TypeError("indexes must be an iterable or a tuple of iterables")
 
     return variables
 
 
 class VariableWithCostDict(Variable):
-    def __init__(self, name: str, domain: VariableDomain,
-                 costs: Dict[Any, float],
-                 initial_value=None)-> None:
+    def __init__(
+        self,
+        name: str,
+        domain: Union[VariableDomain, Iterable[Any]],
+        costs: Dict[Any, float],
+        initial_value=None,
+    ) -> None:
         """
         :param name: The name of the variable
         :param domain: A VariableDomain object of a list
@@ -415,26 +419,29 @@ class VariableWithCostDict(Variable):
         super().__init__(name, domain, initial_value)
         self._costs = costs
 
-    def cost_for_val(self, val)-> float:
+    def cost_for_val(self, val) -> float:
         try:
             return self._costs[val]
         except KeyError:
             return 0.0
 
     def __str__(self):
-        return 'VariableWithCostDict({})'.format(self.name)
+        return "VariableWithCostDict({})".format(self.name)
 
     def __repr__(self):
-        return 'VariableWithCostDict' \
-               '({}, {}, {}, {})'.format(self.name, self.initial_value,
-                                         self.domain, self._costs)
+        return "VariableWithCostDict" "({}, {}, {}, {})".format(
+            self.name, self.initial_value, self.domain, self._costs
+        )
 
     def __eq__(self, other):
         if type(self) != type(other):
             return False
-        if self.name == other.name and self.initial_value == \
-                other.initial_value and self.domain == other.domain\
-                and self._costs == other._costs:
+        if (
+            self.name == other.name
+            and self.initial_value == other.initial_value
+            and self.domain == other.domain
+            and self._costs == other._costs
+        ):
             return True
         return False
 
@@ -442,16 +449,19 @@ class VariableWithCostDict(Variable):
         return super().__hash__() ^ hash(tuple(self._costs.values()))
 
     def clone(self):
-        return VariableWithCostDict(self.name, self.domain, self._costs,
-                                    initial_value=self.initial_value)
+        return VariableWithCostDict(
+            self.name, self.domain, self._costs, initial_value=self.initial_value
+        )
 
 
 class VariableWithCostFunc(Variable):
-
-    def __init__(self, name: str, domain: Domain,
-                 cost_func: Union[Callable[..., float],
-                 ExpressionFunction],
-                 initial_value:Any =None) -> None:
+    def __init__(
+        self,
+        name: str,
+        domain: Union[VariableDomain, Iterable[Any]],
+        cost_func: Union[Callable[..., float], ExpressionFunction],
+        initial_value: Any = None,
+    ) -> None:
         """
         :param name: The name of the variable
         :param domain: A VariableDomain object of a list
@@ -460,64 +470,80 @@ class VariableWithCostFunc(Variable):
         :param initial_value: optional, if given must be in the domain
         """
         super().__init__(name, domain, initial_value)
-        if hasattr(cost_func, 'variable_names'):
+        if hasattr(cost_func, "variable_names"):
             # Specific corner case when using an ExpressionFunction as a
             # cost_func: check arguments
-            if len(cost_func.variable_names) != 1 \
-                    or name not in cost_func.variable_names:
-                raise ValueError('Cost function for var {} must have a single '
-                                 'variable, which must be the same as '
-                                 'the variable : "{} != {}'
-                                 .format(name, name, cost_func.variable_names))
+            if (
+                len(cost_func.variable_names) != 1
+                or name not in cost_func.variable_names
+            ):
+                raise ValueError(
+                    "Cost function for var {} must have a single "
+                    "variable, which must be the same as "
+                    'the variable : "{} != {}'.format(
+                        name, name, cost_func.variable_names
+                    )
+                )
         self._cost_func = cost_func
 
     def cost_for_val(self, val) -> float:
-        if hasattr(self._cost_func, 'variable_names'):
+        if hasattr(self._cost_func, "variable_names"):
             # for function that need keyword arg, like ExpressionFunction
             return self._cost_func(**{self.name: val})
         else:
             return self._cost_func(val)
 
     def __str__(self):
-        return 'VariableWithCostFunc({})'.format(self.name)
+        return "VariableWithCostFunc({})".format(self.name)
 
     def __repr__(self):
-        return 'VariableWithCostFunc' \
-               '({}, {}, {}, {})'.format(self.name, self.initial_value,
-                                         self.domain, self._cost_func)
+        return "VariableWithCostFunc" "({}, {}, {}, {})".format(
+            self.name, self.initial_value, self.domain, self._cost_func
+        )
 
     def __eq__(self, other):
         if type(self) != type(other):
             return False
-        if self.name == other.name and self.initial_value == \
-                other.initial_value and self.domain == other.domain:
-            if [self.cost_for_val(v)for v in self.domain]\
-                    == [other.cost_for_val(v)for v in other.domain]:
+        if (
+            self.name == other.name
+            and self.initial_value == other.initial_value
+            and self.domain == other.domain
+        ):
+            if [self.cost_for_val(v) for v in self.domain] == [
+                other.cost_for_val(v) for v in other.domain
+            ]:
                 return True
         return False
 
     def __hash__(self):
-        costs = [self.cost_for_val(v)for v in self.domain]
+        costs = [self.cost_for_val(v) for v in self.domain]
         return super().__hash__() ^ hash(tuple(costs))
 
     def clone(self):
-        return VariableWithCostFunc(self.name, self.domain, self._cost_func,
-                                    initial_value=self._initial_value)
+        return VariableWithCostFunc(
+            self.name, self.domain, self._cost_func, initial_value=self._initial_value
+        )
 
     def _simple_repr(self):
-        if not hasattr(self._cost_func, '_simple_repr'):
-            raise SimpleReprException('Cannot take a simple repr from a '
-                                      'variable with arbitrary cost function, '
-                                      'use an ExpressionFunction instead')
+        if not hasattr(self._cost_func, "_simple_repr"):
+            raise SimpleReprException(
+                "Cannot take a simple repr from a "
+                "variable with arbitrary cost function, "
+                "use an ExpressionFunction instead"
+            )
         else:
             return super()._simple_repr()
 
 
 class VariableNoisyCostFunc(VariableWithCostFunc):
-
-    def __init__(self, name: str, domain: Domain,
-                 cost_func, initial_value=None,
-                 noise_level: float=0.02)-> None:
+    def __init__(
+        self,
+        name: str,
+        domain: Union[VariableDomain, Iterable[Any]],
+        cost_func,
+        initial_value=None,
+        noise_level: float = 0.02,
+    ) -> None:
         """
         :param cost_func: a function that returns a cost for each value in the
         domain.
@@ -527,8 +553,7 @@ class VariableNoisyCostFunc(VariableWithCostFunc):
         self._noise_level = noise_level
         self._costs = {}  # type: Dict[Any, float]
         for d in domain:
-            self._costs[d] = super().cost_for_val(d) \
-                             + random.uniform(0, noise_level)
+            self._costs[d] = super().cost_for_val(d) + random.uniform(0, noise_level)
 
     @property
     def noise_level(self) -> float:
@@ -538,35 +563,45 @@ class VariableNoisyCostFunc(VariableWithCostFunc):
         return self._costs[val]
 
     def __str__(self):
-        return 'VariableNoisyCostFunc({})'.format(self.name)
+        return "VariableNoisyCostFunc({})".format(self.name)
 
     def __repr__(self):
-        return 'VariableNoisyCostFunc' \
-               '({}, {}, {}, {}, {})'.format(self.name, self.initial_value,
-                                             self.domain, self._cost_func,
-                                             self._noise_level)
+        return "VariableNoisyCostFunc" "({}, {}, {}, {}, {})".format(
+            self.name,
+            self.initial_value,
+            self.domain,
+            self._cost_func,
+            self._noise_level,
+        )
 
     def __eq__(self, other):
         if type(self) != type(other):
             return False
-        if self.name == other.name and self.noise_level == other.noise_level \
-           and self.domain == other.domain \
-           and self._cost_func == other._cost_func \
-           and self.initial_value == other.initial_value:
+        if (
+            self.name == other.name
+            and self.noise_level == other.noise_level
+            and self.domain == other.domain
+            and self._cost_func == other._cost_func
+            and self.initial_value == other.initial_value
+        ):
             return True
         return False
 
     def __hash__(self):
         # hash on costs without noise
-        costs = [super(VariableNoisyCostFunc, self).cost_for_val(d)
-                 for d in self.domain]
+        costs = [
+            super(VariableNoisyCostFunc, self).cost_for_val(d) for d in self.domain
+        ]
         return Variable.__hash__(self) ^ hash(tuple(costs))
 
     def clone(self):
-        return VariableNoisyCostFunc(self.name, self.domain,
-                                     self._cost_func,
-                                     initial_value=self.initial_value,
-                                     noise_level=self._noise_level)
+        return VariableNoisyCostFunc(
+            self.name,
+            self.domain,
+            self._cost_func,
+            initial_value=self.initial_value,
+            noise_level=self._noise_level,
+        )
 
 
 class ExternalVariable(Variable):
@@ -583,7 +618,9 @@ class ExternalVariable(Variable):
     sensor or manually by the user (when using a simulator).
     """
 
-    def __init__(self, name: str, domain: VariableDomain, value=None)-> None:
+    def __init__(
+        self, name: str, domain: Union[VariableDomain, Iterable[Any]], value=None
+    ) -> None:
         super().__init__(name, domain)
         self._cb = []  # type: List[Callable[[Any], Any]]
         self._value = list(domain.values)[0]
@@ -598,8 +635,9 @@ class ExternalVariable(Variable):
         if val == self._value:
             return
         if val not in self._domain:
-            raise ValueError('Invalid value {} for sensor variable {}'.format(
-                val, self._name))
+            raise ValueError(
+                "Invalid value {} for sensor variable {}".format(val, self._name)
+            )
         self._value = val
         self._fire(val)
 
@@ -665,12 +703,15 @@ class AgentDef(SimpleRepr):
 
     """
 
-    def __init__(self, name: str,
-                 default_route: float=1,
-                 routes:  Dict[str, float]= None,
-                 default_hosting_cost: float=0,
-                 hosting_costs: Dict[str, float]=None,
-                 **kwargs: Union[str, int, float])->None:
+    def __init__(
+        self,
+        name: str,
+        default_route: float = 1,
+        routes: Dict[str, float] = None,
+        default_hosting_cost: float = 0,
+        hosting_costs: Dict[str, float] = None,
+        **kwargs: Union[str, int, float],
+    ) -> None:
         """Build an AgentDef, only the name is mandatory."""
         super().__init__()
         self._name = name
@@ -787,8 +828,7 @@ class AgentDef(SimpleRepr):
         try:
             return self._attr[item]
         except KeyError:
-            raise AttributeError('No attribute '+str(item) + ' on ' + str(
-                self))
+            raise AttributeError("No attribute " + str(item) + " on " + str(self))
 
     # When using the process mode, AgentDef objects are pickled to be
     # passed to another process. because we use the special method
@@ -796,39 +836,45 @@ class AgentDef(SimpleRepr):
     # for pickle support.
 
     def __getstate__(self):
-        return (self._name, self._hosting_costs,
-                self.default_hosting_cost, self._attr)
+        return (self._name, self._hosting_costs, self.default_hosting_cost, self._attr)
 
     def __setstate__(self, state):
-        (self._name, self._hosting_costs,
-         self._default_hosting_cost, self._attr) = state
+        (
+            self._name,
+            self._hosting_costs,
+            self._default_hosting_cost,
+            self._attr,
+        ) = state
 
     def __str__(self):
-        return 'AgentDef({})'.format(self.name)
+        return "AgentDef({})".format(self.name)
 
     def __repr__(self):
-        return 'AgentDef({}, {})'.format(self.name, self._attr)
+        return "AgentDef({}, {})".format(self.name, self._attr)
 
     def __eq__(self, other):
         if type(other) != AgentDef:
             return False
-        if self.name == other.name \
-                and self.hosting_costs == other.hosting_costs \
-                and self._attr == other._attr \
-                and self.default_hosting_cost == other.default_hosting_cost:
+        if (
+            self.name == other.name
+            and self.hosting_costs == other.hosting_costs
+            and self._attr == other._attr
+            and self.default_hosting_cost == other.default_hosting_cost
+        ):
             return True
         return False
 
 
-def create_agents(name_prefix: str,
-                  indexes: Union[Iterable, Tuple[Iterable]],
-                  default_route: float = 1,
-                  routes: Dict[str, float] = None,
-                  default_hosting_costs: float = 0,
-                  hosting_costs: Dict[str, float] = None,
-                  separator :str='_',
-                  **kwargs: Union[str, int, float]) \
-        -> Dict[Union[str, Tuple[str, ...]], AgentDef]:
+def create_agents(
+    name_prefix: str,
+    indexes: Union[Iterable, Tuple[Iterable]],
+    default_route: float = 1,
+    routes: Dict[str, float] = None,
+    default_hosting_costs: float = 0,
+    hosting_costs: Dict[str, float] = None,
+    separator: str = "_",
+    **kwargs: Union[str, int, float],
+) -> Dict[Union[str, Tuple[str, ...]], AgentDef]:
     """Mass creation of agents definitions.
 
     Parameters
@@ -876,31 +922,43 @@ def create_agents(name_prefix: str,
     >>> assert isinstance(agts['a08'], AgentDef)
 
     """
-    agents = {}  #type: Dict[Union[str, Tuple[str, ...]], AgentDef]
+    agents = {}  # type: Dict[Union[str, Tuple[str, ...]], AgentDef]
 
     if isinstance(indexes, tuple):
         for combi in itertools.product(*indexes):
             name = name_prefix + separator.join(combi)
             agents[tuple(combi)] = AgentDef(
-                name, default_route=default_route, routes=routes,
+                name,
+                default_route=default_route,
+                routes=routes,
                 default_hosting_costs=default_hosting_costs,
-                hosting_costs=hosting_costs, **kwargs)
+                hosting_costs=hosting_costs,
+                **kwargs,
+            )
     elif isinstance(indexes, range):
-        digit_count = len(str(indexes.stop-1))
+        digit_count = len(str(indexes.stop - 1))
         for i in indexes:
             name = f"{name_prefix}{i:0{digit_count}d}"
             agents[name] = AgentDef(
-                name, default_route=default_route, routes=routes,
+                name,
+                default_route=default_route,
+                routes=routes,
                 default_hosting_costs=default_hosting_costs,
-                hosting_costs=hosting_costs, **kwargs)
-    elif hasattr(indexes, '__iter__'):
+                hosting_costs=hosting_costs,
+                **kwargs,
+            )
+    elif hasattr(indexes, "__iter__"):
         for i in indexes:
             name = name_prefix + str(i)
             agents[name] = AgentDef(
-                name, default_route=default_route, routes=routes,
+                name,
+                default_route=default_route,
+                routes=routes,
                 default_hosting_costs=default_hosting_costs,
-                hosting_costs=hosting_costs, **kwargs)
+                hosting_costs=hosting_costs,
+                **kwargs,
+            )
     else:
-        raise TypeError('indexes must be an iterable or a tuple of iterables')
+        raise TypeError("indexes must be an iterable or a tuple of iterables")
 
     return agents
