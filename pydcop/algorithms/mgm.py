@@ -394,6 +394,7 @@ class MgmComputation(VariableComputation):
         self.new_cycle()
         if self.stop_cycle and self.cycle_count >= self.stop_cycle:
             self.finished()
+            return
         msg = MgmValueMessage(self.current_value)
         self.logger.debug('%s sends value message %s to %s', self.name, msg,
                           self.neighbors)
