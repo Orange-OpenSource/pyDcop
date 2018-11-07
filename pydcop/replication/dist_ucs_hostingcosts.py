@@ -325,7 +325,7 @@ class UCSReplication(MessagePassingComputation):
         -------
         The list of hosted replica with their original agent and footprint.
         """
-        return deepcopy(self._hosted_replicas)
+        return self._hosted_replicas
 
     def replication_neighbors(self) -> Set[AgentName]:
         """
