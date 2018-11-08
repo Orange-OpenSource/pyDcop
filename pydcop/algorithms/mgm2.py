@@ -420,15 +420,6 @@ class Mgm2Computation(VariableComputation):
         assert computation_def.algo.algo == "mgm2"
         super().__init__(computation_def.node.variable, computation_def)
 
-        # MGM2 a 5 different states, each with a specific handler method:
-        self.states = {
-            "value": self._handle_value_message,
-            "offer": self._handle_offer_msg,
-            "answer?": self._handle_response_msg,
-            "gain": self._handle_gain_message,
-            "go?": self._handle_go_message,
-        }
-
         self._mode = computation_def.algo.mode
         self.stop_cycle = computation_def.algo.param_value("stop_cycle")
         self._threshold = computation_def.algo.param_value("threshold")
@@ -646,40 +637,6 @@ class Mgm2Computation(VariableComputation):
     def on_stop(self):
         super().on_stop()
 
-    def _send_offer(self, real_offer):
-        """
-        Send an Mgm2OfferMessage to the chosen partner after computing the
-        acceptable offers from the local constraints/utility functions.
-
-        Parameters
-        ----------
-        real_offer: boolean
-            True if the agent is sending a true offer. False
-            if it sends a "fake" offer message; which serves for synchronicity
-            purpose: informing the neighbor that this agent does not send him an
-            offer, so that each agent knows when it has received all the offers
-            he should consider. This prevent an agent from moving forward while
-            he should have waited for another offer to consider.
-        """
-        offers = None
-        # Send offers to the partner if I'm an offerer
-        if real_offer:
-            offers = self._compute_offers_to_send()
-            msg = Mgm2OfferMessage(offers, True)
-            if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(
-                    f"{self.name} sends offer message {msg} to {self._partner.name}"
-                )
-            self.post_msg(self._partner.name, msg)
-
-        # Inform other neighbors that it doesn't send offers to them
-        for n in self.neighbors_vars:
-            if n != self._partner:
-                self.post_msg(n.name, Mgm2OfferMessage(dict(), False))
-            if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f"{self.name} sends no-offer message to {n}")
-        return offers
-
     def _send_gain(self):
         """
         Send a Mgm2GainMessage to neighbors to inform them of the best gain
@@ -696,119 +653,164 @@ class Mgm2Computation(VariableComputation):
 
     @register("value")
     def on_value_msg(self, sender_name, msg, t):
-        self.on_all_message(sender_name, msg, t)
+        if "value" == self._state:
+            self._neighbors_values[sender_name] = msg.value
+            if len(self._neighbors_values) == len(self._neighbors):
 
-    @register("gain")
-    def on_gain_msg(self, sender_name, msg, t):
-        self.on_all_message(sender_name, msg, t)
-
-    @register("offer")
-    def on_offer_msg(self, sender_name, msg, t):
-        self.on_all_message(sender_name, msg, t)
-
-    @register("answer?")
-    def on_answer_msg(self, sender_name, msg, t):
-        self.on_all_message(sender_name, msg, t)
-
-    @register("go?")
-    def on_go_msg(self, sender_name, msg, t):
-        self.on_all_message(sender_name, msg, t)
-
-    def on_all_message(self, sender_name, msg, _):
-        # This handlers makes sure that we got all messages form our
-        # neighbors before evaluating a phase of the algorithm.
-        # We should probably find a better way to handle this kind of
-        # situation, which is quite common in synchronous algorithms.
-        msg_state = msg.type
-        if msg_state == self._state:
-            # Call handler for this state:
-            self.states[msg_state](sender_name, msg)
+                self._handle_value_messages(sender_name, msg)
+            else:
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    missing = set(n.name for n in self._neighbors) - set(
+                        self._neighbors_values
+                    )
+                    self.logger.debug(
+                        f"Waiting for values from other neighbors (missing {missing},"
+                        f" got {[n for n in self._neighbors_values]})"
+                    )
         else:
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(
                     f"{self.variable.name} postponed message from {sender_name} "
-                    f"for state {msg_state} : {msg} "
+                    f"for value : {msg} "
                 )
-            self._postponed_msg[msg_state].append((sender_name, msg))
+            self._postponed_msg["value"].append((sender_name, msg, t))
 
-    def _handle_value_message(self, variable_name: str, recv_msg):
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(f"processes {recv_msg} from {variable_name}")
-        self._neighbors_values[variable_name] = recv_msg.value
+    @register("gain")
+    def on_gain_msg(self, sender_name, msg, t):
+        if "gain" == self._state:
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"processes {recv_msg} from {variable_name}")
+            # TODO : only keep max gain ?
+            self._neighbors_gains[sender_name] = msg.value
 
-        # Once we have a value for all neighbors:
-        if len(self._neighbors_values) == len(self._neighbors):
+            # if messages received from all neighbors
+            if len(self._neighbors_gains) == len(self._neighbors):
 
+                self._handle_gain_messages(sender_name, msg)
+            else:
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info("Waiting for other neighbors gains")
+        else:
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(
-                    f"{self.name} received values from all neighbors : {self._neighbors_values}"
+                    f"{self.variable.name} postponed message from {sender_name} "
+                    f"for gain : {msg} "
+                )
+            self._postponed_msg["gain"].append((sender_name, msg, t))
+
+    @register("offer")
+    def on_offer_msg(self, sender_name, msg, t):
+        if "offer" == self._state:
+            self._offers.append((sender_name, msg))
+            # When sure that all offers have been received
+            if len(self._offers) == len(self._neighbors):
+
+                self._handle_offer_messages(sender_name, msg)
+            else:
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info("Waiting for other neighbors offers ")
+        else:
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    f"{self.variable.name} postponed message from {sender_name} "
+                    f"for offer : {msg} "
+                )
+            self._postponed_msg["offer"].append((sender_name, msg, t))
+
+    @register("answer?")
+    def on_answer_msg(self, sender_name, msg, t):
+        if "answer?" == self._state:
+
+            self._handle_response_message(sender_name, msg)
+        else:
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    f"{self.variable.name} postponed message from {sender_name} "
+                    f"for answer? : {msg} "
+                )
+            self._postponed_msg["answer?"].append((sender_name, msg, t))
+
+    @register("go?")
+    def on_go_msg(self, sender_name, msg, t):
+        if "go?" == self._state:
+            self._handle_go_message(sender_name, msg)
+        else:
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    f"{self.variable.name} postponed message from {sender_name} "
+                    f"for go? : {msg} "
+                )
+            self._postponed_msg["go?"].append((sender_name, msg, t))
+
+    def _handle_value_messages(self, variable_name: str, recv_msg):
+
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(
+                f"{self.name} received values from all neighbors : {self._neighbors_values}"
+            )
+
+        # We have our neighbors value , we can compute our real local cost
+        self.__cost__ = self._current_local_cost()
+
+        # random offerer choice
+        self._partner = None
+        self._is_offerer = False
+        if random.uniform(0, 1) < self._threshold:
+            self._is_offerer = True
+            self._partner = random.choice(list(self._neighbors))
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info(
+                    f"{self.name} is an offerer and chose {self._partner.name} "
+                    f"as partner, offers: {offers}"
                 )
 
-            # We have our neighbors value , we can compute our real local cost
-            self.__cost__ = self._current_local_cost()
-
-            # random offerer choice
-            if random.uniform(0, 1) < self._threshold:
-                self._is_offerer = True
-                self._partner = random.choice(list(self._neighbors))
-                offers = self._send_offer(True)
-                if self.logger.isEnabledFor(logging.INFO):
-                    self.logger.info(
-                        f"{self.name} is an offerer and chose {self._partner.name} "
-                        f"as partner, offers: {offers}"
-                    )
+        for n in self.neighbors_vars:
+            if n != self._partner:
+                self.post_msg(n.name, Mgm2OfferMessage(dict(), False))
             else:
-                # Informing neighbors they won't receive an offer from me
-                if self.logger.isEnabledFor(logging.INFO):
-                    self.logger.info(f"{self.name} is NOT an offerer ")
-                self._send_offer(False)
+                self.post_msg(
+                    n.name, Mgm2OfferMessage(self._compute_offers_to_send(), True)
+                )
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"{self.name} sends offer message to {n}")
 
-            # Compute best unilateral move:
-            best_vals, best_cost = self._compute_best_value()
-            self._potential_gain = self.current_cost - best_cost
+        # Compute best unilateral move:
+        best_vals, best_cost = self._compute_best_value()
+        self._potential_gain = self.current_cost - best_cost
 
-            if (self._mode == "min" and self._potential_gain > 0) or (
-                self._mode == "max" and self._potential_gain < 0
-            ):
-                self._potential_value = random.choice(best_vals)
-            else:
-                self._potential_value = self.current_value
+        if (self._mode == "min" and self._potential_gain > 0) or (
+            self._mode == "max" and self._potential_gain < 0
+        ):
+            self._potential_value = random.choice(best_vals)
+        else:
+            self._potential_value = self.current_value
 
-            self._enter_state("offer")
+        self._enter_state("offer")
+
+    def _handle_offer_messages(self, variable_name, recv_msg):
+
+        if self.logger.isEnabledFor(logging.INFO):
+            self.logger.info(f"{self.name} has all offer msg ")
+
+        if self._is_offerer:
+            for sender, offer_msg in self._offers:
+                if offer_msg.is_offering:
+                    self.post_msg(sender, Mgm2ResponseMessage(False))
+                    if self.logger.isEnabledFor(logging.INFO):
+                        self.logger.info(
+                            f"Refusing offer from {sender} (already an offerer)"
+                        )
+            self._enter_state("answer?")
 
         else:
-            # Still waiting for other neighbors
-            if self.logger.isEnabledFor(logging.DEBUG):
-                missing = set(n.name for n in self._neighbors) - set(
-                    self._neighbors_values
-                )
-                self.logger.debug(
-                    f"Waiting for values from other neighbors (missing {missing},"
-                    f" got {[n for n in self._neighbors_values]})"
-                )
-
-    def _handle_offer_msg(self, variable_name, recv_msg):
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(f"processes {recv_msg} from {variable_name}")
-        self.__nb_received_offers__ += 1
-
-        if recv_msg.is_offering:
-            if self._is_offerer:
-                self.post_msg(variable_name, Mgm2ResponseMessage(False))
-                if self.logger.isEnabledFor(logging.INFO):
-                    self.logger.info(
-                        f"Refusing offer from {variable_name} (already an offerer)"
-                    )
-            else:
-                self._offers.append((variable_name, recv_msg.offers))
-
-        # When sure that all offers have been received
-        if self.__nb_received_offers__ == len(self._neighbors):
-            if self.logger.isEnabledFor(logging.INFO):
-                self.logger.info(f"{self.name} has all offer msg ")
-
             # accept the best offer if any
-            best_offers, gain = self._find_best_offer(self._offers)
+            best_offers, gain = self._find_best_offer(
+                [
+                    (sender, offer_msg.offers)
+                    for sender, offer_msg in self._offers
+                    if offer_msg.is_offering
+                ]
+            )
             if (
                 gain == 0
                 or not best_offers
@@ -831,26 +833,19 @@ class Mgm2Computation(VariableComputation):
                         self.accept_offer(best_offers, gain)
 
             # send reject messages to all other offerers
-            for n, _ in self._offers:
+            for n, msg in self._offers:
                 if self._partner is not None and n == self._partner.name:
+                    continue
+                if not msg.is_offering:
                     continue
                 if self.logger.isEnabledFor(logging.INFO):
                     self.logger.info(f"Refusing offer from {n}")
                 self.post_msg(n, Mgm2ResponseMessage(False))
 
-            if self._is_offerer:
-                self._enter_state("answer?")
-            else:
-                self._send_gain()
-                self._enter_state("gain")
-        else:
-            if self.logger.isEnabledFor(logging.INFO):
-                self.logger.info(
-                    f"Waiting for other neighbors offers "
-                    f"(got {self.__nb_received_offers__} messages)"
-                )
+            self._send_gain()
+            self._enter_state("gain")
 
-    def _handle_response_msg(self, variable_name, msg: Mgm2ResponseMessage):
+    def _handle_response_message(self, variable_name, msg: Mgm2ResponseMessage):
         # We should get a single response message, as we made a single offer.
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f"processes {msg} from {variable_name}")
@@ -884,106 +879,87 @@ class Mgm2Computation(VariableComputation):
         self._send_gain()
         self._enter_state("gain")
 
-    def _handle_gain_message(self, variable_name, recv_msg):
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(f"processes {recv_msg} from {variable_name}")
-        # TODO : only keep max gain ?
-        self._neighbors_gains[variable_name] = recv_msg.value
+    def _handle_gain_messages(self, variable_name, recv_msg):
 
-        # if messages received from all neighbors
-        if len(self._neighbors_gains) == len(self._neighbors):
-            # determine if can change value and send ok message to neighbors
-            if self._potential_gain == 0:
-                if self.logger.isEnabledFor(logging.INFO):
-                    self.logger.info(
-                        f"Potential gain is 0: no reason to change local value"
-                    )
-                self._clear_agent()
-                self._send_value()
-                self._enter_state("value")
-                return
+        # determine if can change value and send ok message to neighbors
+        if self._potential_gain == 0:
             if self.logger.isEnabledFor(logging.INFO):
                 self.logger.info(
-                    f"Received gain from all neighbors {self._neighbors_gains}"
+                    f"Potential gain is 0: no reason to change local value"
                 )
-            if self._committed:
-                neigh_gains = [
-                    val
-                    for n, val in self._neighbors_gains.items()
-                    if n != self._partner.name
-                ]
-                if neigh_gains == [] or self._potential_gain > max(neigh_gains):
-                    if self.logger.isEnabledFor(logging.INFO):
-                        self.logger.info(
-                            f"Commited and best gain : GO for "
-                            f"coordinated change with {self._partner.name}"
-                        )
-                    self._can_move = True
-                    self.post_msg(self._partner.name, Mgm2GoMessage(True))
-                else:
-                    if self.logger.isEnabledFor(logging.INFO):
-                        self.logger.info(
-                            f"Commited but lower gain: NO-GO "
-                            f"for cordinated change with {self._partner.name}"
-                        )
-                    self._can_move = False
-                    self.post_msg(self._partner.name, Mgm2GoMessage(False))
-                self._enter_state("go?")
-
+            self._clear_agent()
+            self._send_value()
+            self._enter_state("value")
+            return
+        if self.logger.isEnabledFor(logging.INFO):
+            self.logger.info(
+                f"Received gain from all neighbors {self._neighbors_gains}"
+            )
+        if self._committed:
+            neigh_gains = [
+                val
+                for n, val in self._neighbors_gains.items()
+                if n != self._partner.name
+            ]
+            if neigh_gains == [] or self._potential_gain > max(neigh_gains):
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"Commited and best gain : GO for "
+                        f"coordinated change with {self._partner.name}"
+                    )
+                self._can_move = True
+                self.post_msg(self._partner.name, Mgm2GoMessage(True))
             else:
-                max_neighbors = max(list(self._neighbors_gains.values()))
-                if self._potential_gain > max_neighbors:
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"Commited but lower gain: NO-GO "
+                        f"for cordinated change with {self._partner.name}"
+                    )
+                self._can_move = False
+                self.post_msg(self._partner.name, Mgm2GoMessage(False))
+            self._enter_state("go?")
+
+        else:
+            max_neighbors = max(list(self._neighbors_gains.values()))
+            if self._potential_gain > max_neighbors:
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"Local gain is best, {self.name} unilaterally changes its "
+                        f"value to {self._potential_value}"
+                    )
+                self.value_selection(
+                    self._potential_value, self.current_cost - self._potential_gain
+                )
+
+            elif self._potential_gain == max_neighbors:
+                ties = sorted(
+                    [k for k, v in self._neighbors_gains.items() if v == max_neighbors]
+                    + [self.name]
+                )
+                if ties[0] == self.name:
                     if self.logger.isEnabledFor(logging.INFO):
                         self.logger.info(
-                            f"Local gain is best, {self.name} unilaterally changes its "
-                            f"value to {self._potential_value}"
+                            f"Won tie-break on gain {max_neighbors} "
+                            f"with variable order: {ties}"
                         )
                     self.value_selection(
                         self._potential_value, self.current_cost - self._potential_gain
                     )
-
-                elif self._potential_gain == max_neighbors:
-                    ties = sorted(
-                        [
-                            k
-                            for k, v in self._neighbors_gains.items()
-                            if v == max_neighbors
-                        ]
-                        + [self.name]
-                    )
-                    if ties[0] == self.name:
-                        if self.logger.isEnabledFor(logging.INFO):
-                            self.logger.info(
-                                f"Won tie-break on gain {max_neighbors} "
-                                f"with variable order: {ties}"
-                            )
-                        self.value_selection(
-                            self._potential_value,
-                            self.current_cost - self._potential_gain,
-                        )
-                    else:
-                        if self.logger.isEnabledFor(logging.INFO):
-                            self.logger.info(
-                                f"Lost tie-break on gain {max_neighbors} "
-                                f"with variable order: {ties}"
-                            )
-
                 else:
                     if self.logger.isEnabledFor(logging.INFO):
                         self.logger.info(
-                            f"Lower local gain on {self.name}: do NOT change " "value"
+                            f"Lost tie-break on gain {max_neighbors} "
+                            f"with variable order: {ties}"
                         )
-                self._clear_agent()
-                self._send_value()
-                self._enter_state("value")
 
-        else:
-            # Still waiting for other neighbors
-            if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(
-                    f"Waiting for gain msg from other neighbors "
-                    f"(got {[n for n in self._neighbors_gains]})"
-                )
+            else:
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"Lower local gain on {self.name}: do NOT change " "value"
+                    )
+            self._clear_agent()
+            self._send_value()
+            self._enter_state("value")
 
     def _handle_go_message(self, variable: str, msg: Mgm2GoMessage):
         if self.logger.isEnabledFor(logging.INFO):
@@ -1020,7 +996,18 @@ class Mgm2Computation(VariableComputation):
         self._state = state
         while self._postponed_msg[state]:
             msg = self._postponed_msg[state].pop()
-            self.states[state](*msg)
+            if state == "value":
+                self.on_value_msg(*msg)
+            elif state == "offer":
+                self.on_offer_msg(*msg)
+            elif state == "answer?":
+                self.on_answer_msg(*msg)
+            elif state == "gain":
+                self.on_gain_msg(*msg)
+            elif state == "go?":
+                self.on_go_msg(*msg)
+            else:
+                raise ValueError(f"Unkown mgm2 state {state}")
 
     def _clear_agent(self):
         self._neighbors_values.clear()
