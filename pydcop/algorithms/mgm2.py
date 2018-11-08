@@ -54,7 +54,8 @@ from pydcop.dcop.relations import (
     find_dependent_relations,
     generate_assignment_as_dict,
     filter_assignment_dict,
-    assignment_cost)
+    assignment_cost,
+)
 
 __author__ = "Pierre Nagellen, Pierre Rust"
 
@@ -491,15 +492,13 @@ class Mgm2Computation(VariableComputation):
                 self.value_selection(random.choice(self.variable.domain), None)
                 if self.logger.isEnabledFor(logging.INFO):
                     self.logger.info(
-                        f"Select random initial value {self.current_value} ",
+                        f"Select random initial value {self.current_value} "
                     )
 
             else:
                 self.value_selection(self.variable.initial_value, None)
                 if self.logger.isEnabledFor(logging.INFO):
-                    self.logger.info(
-                        f"Select initial value {self.current_value}"
-                    )
+                    self.logger.info(f"Select initial value {self.current_value}")
 
             self._send_value()
             self._enter_state("value")
@@ -742,8 +741,8 @@ class Mgm2Computation(VariableComputation):
 
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(
-                        f"{self.name} received values from all neighbors : {self._neighbors_values}"
-                    )
+                    f"{self.name} received values from all neighbors : {self._neighbors_values}"
+                )
 
             # We have our neighbors value , we can compute our real local cost
             self.__cost__ = self._current_local_cost()
@@ -779,8 +778,10 @@ class Mgm2Computation(VariableComputation):
 
         else:
             # Still waiting for other neighbors
-            missing = set(n.name for n in self._neighbors) - set(self._neighbors_values)
             if self.logger.isEnabledFor(logging.DEBUG):
+                missing = set(n.name for n in self._neighbors) - set(
+                    self._neighbors_values
+                )
                 self.logger.debug(
                     f"Waiting for values from other neighbors (missing {missing},"
                     f" got {[n for n in self._neighbors_values]})"
@@ -981,7 +982,7 @@ class Mgm2Computation(VariableComputation):
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(
                     f"Waiting for gain msg from other neighbors "
-                    f"(got {[n for n in self._neighbors_gains]})",
+                    f"(got {[n for n in self._neighbors_gains]})"
                 )
 
     def _handle_go_message(self, variable: str, msg: Mgm2GoMessage):
@@ -1006,9 +1007,7 @@ class Mgm2Computation(VariableComputation):
                     )
         else:
             if self.logger.isEnabledFor(logging.INFO):
-                self.logger.info(
-                    f"Received NO-GO from {variable}, do NOT change value"
-                )
+                self.logger.info(f"Received NO-GO from {variable}, do NOT change value")
         # End of the cycle. Resetting view & computation attributes before
         # going to next cycle
         self._clear_agent()
