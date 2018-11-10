@@ -637,6 +637,10 @@ class AgentsMgt(MessagePassingComputation):
     def type(self):
         return 'mgt'
 
+    @property
+    def replica_hosts(self):
+        return dict(self.discovery._replicas_data)
+
     def on_start(self):
         """Called when running the computation"""
         for agt in self._dcop.agents:
