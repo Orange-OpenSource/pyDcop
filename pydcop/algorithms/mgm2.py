@@ -38,10 +38,8 @@ J. Pearce, M. Tambe, 2004)
 
 """
 import logging
-import operator as op
 import random
 
-import functools as fp
 from collections import defaultdict
 from functools import lru_cache
 from typing import Dict, Any, Tuple, List
@@ -53,7 +51,6 @@ from pydcop.computations_graph.constraints_hypergraph import VariableComputation
 from pydcop.dcop.relations import (
     find_dependent_relations,
     generate_assignment_as_dict,
-    filter_assignment_dict,
     assignment_cost,
 )
 
@@ -657,7 +654,7 @@ class Mgm2Computation(VariableComputation):
             self._neighbors_values[sender_name] = msg.value
             if len(self._neighbors_values) == len(self._neighbors):
 
-                self._handle_value_messages(sender_name, msg)
+                self._handle_value_messages()
             else:
                 if self.logger.isEnabledFor(logging.DEBUG):
                     missing = set(n.name for n in self._neighbors) - set(
@@ -679,14 +676,13 @@ class Mgm2Computation(VariableComputation):
     def on_gain_msg(self, sender_name, msg, t):
         if "gain" == self._state:
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f"processes {recv_msg} from {variable_name}")
-            # TODO : only keep max gain ?
+                self.logger.debug(f"processes {msg} from {sender_name}")
             self._neighbors_gains[sender_name] = msg.value
 
             # if messages received from all neighbors
             if len(self._neighbors_gains) == len(self._neighbors):
 
-                self._handle_gain_messages(sender_name, msg)
+                self._handle_gain_messages()
             else:
                 if self.logger.isEnabledFor(logging.INFO):
                     self.logger.info("Waiting for other neighbors gains")
@@ -705,7 +701,7 @@ class Mgm2Computation(VariableComputation):
             # When sure that all offers have been received
             if len(self._offers) == len(self._neighbors):
 
-                self._handle_offer_messages(sender_name, msg)
+                self._handle_offer_messages()
             else:
                 if self.logger.isEnabledFor(logging.INFO):
                     self.logger.info("Waiting for other neighbors offers ")
@@ -742,7 +738,7 @@ class Mgm2Computation(VariableComputation):
                 )
             self._postponed_msg["go?"].append((sender_name, msg, t))
 
-    def _handle_value_messages(self, variable_name: str, recv_msg):
+    def _handle_value_messages(self):
 
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(
@@ -761,7 +757,7 @@ class Mgm2Computation(VariableComputation):
             if self.logger.isEnabledFor(logging.INFO):
                 self.logger.info(
                     f"{self.name} is an offerer and chose {self._partner.name} "
-                    f"as partner, offers: {offers}"
+                    f"as partner"
                 )
 
         for n in self.neighbors_vars:
@@ -787,7 +783,7 @@ class Mgm2Computation(VariableComputation):
 
         self._enter_state("offer")
 
-    def _handle_offer_messages(self, variable_name, recv_msg):
+    def _handle_offer_messages(self):
 
         if self.logger.isEnabledFor(logging.INFO):
             self.logger.info(f"{self.name} has all offer msg ")
@@ -824,6 +820,7 @@ class Mgm2Computation(VariableComputation):
                 elif self._favor == "no" and random.uniform(0, 1) > 0.5:
                     self._committed = True
 
+            val_p = None
             if self._committed:
                 val_p, self._potential_value, partner_name = random.choice(best_offers)
                 if self.logger.isEnabledFor(logging.INFO):
@@ -851,7 +848,7 @@ class Mgm2Computation(VariableComputation):
                     self.post_msg(sender, Mgm2ResponseMessage(True, val_p, gain))
                 else:
                     if self.logger.isEnabledFor(logging.INFO):
-                        self.logger.info(f"Refusing offer from {n}")
+                        self.logger.info(f"Refusing offer from {sender}")
                     self.post_msg(sender, Mgm2ResponseMessage(False))
 
             self._send_gain()
@@ -891,7 +888,7 @@ class Mgm2Computation(VariableComputation):
         self._send_gain()
         self._enter_state("gain")
 
-    def _handle_gain_messages(self, variable_name, recv_msg):
+    def _handle_gain_messages(self):
 
         # determine if can change value and send ok message to neighbors
         if self._potential_gain == 0:

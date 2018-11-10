@@ -1340,7 +1340,7 @@ class TestsHandleMessage(unittest.TestCase):
         computation._potential_gain = 2
         computation._neighbors_gains["x3"] = 2
         computation._potential_value = 0
-        computation._handle_gain_messages("x2", Mgm2GainMessage(5))
+        computation.on_gain_msg("x2", Mgm2GainMessage(5), 1)
         self.assertEqual(computation.current_value, 1)
         self.assertEqual(computation.current_cost, 1)
         self.assertEqual(computation._state, "value")
