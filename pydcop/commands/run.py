@@ -464,8 +464,8 @@ def _results(status):
     if output_file:
         with open(output_file, encoding="utf-8", mode="w") as fo:
             fo.write(json.dumps(metrics, sort_keys=True, indent="  ", cls=NumpyEncoder))
-
-    print(json.dumps(metrics, sort_keys=True, indent="  ", cls=NumpyEncoder))
+    else:
+        print(json.dumps(metrics, sort_keys=True, indent="  ", cls=NumpyEncoder))
 
 
 def on_timeout():
