@@ -38,6 +38,7 @@ from typing import Optional, Any
 
 from collections import defaultdict
 
+import time
 import yaml
 
 from pydcop.algorithms import AlgorithmDef, ComputationDef
@@ -335,9 +336,8 @@ class Orchestrator(object):
     def _process_event(self):
 
         # FIXME: hack too avoid overlapping events
-        states = self.mgt._agts_state.copy()
-        waited = [a for a in states
-                  if states[a] == 'repair_run']
+        waited = [a for a, state in self.mgt._agts_state.items()
+                  if state != 'running']
         if waited:
             self.logger.warning(f"Event while agents {waited} are still processing"
                                 f" previous event, wait 20 s ")
@@ -1074,6 +1074,12 @@ class AgentsMgt(MessagePassingComputation):
                                  msg.agent, waited)
             else:
                 done_time = perf_counter() - self.start_time
+
+                # Restore all repair agents to running state
+                for a in self._agts_state:
+                    if self._agts_state[a] == 'repair_done':
+                        self._agts_state[a] = "running"
+
 
                 d = time.perf_counter() - self.start_profile
                 # Now that the reparation process is finished, resume,
