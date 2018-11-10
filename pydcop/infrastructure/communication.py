@@ -43,14 +43,14 @@ from typing import Tuple, Dict, Optional
 import requests
 from requests.exceptions import ConnectionError
 
-from pydcop.infrastructure.discovery import UnknownComputation, \
-    UnknownAgent
+from pydcop.infrastructure.discovery import UnknownComputation, UnknownAgent
 from pydcop.utils.simple_repr import simple_repr, from_repr
 
-logger = logging.getLogger('infrastructure.communication')
+logger = logging.getLogger("infrastructure.communication")
 
-ComputationMessage = namedtuple('ComputationMessage',
-                                ['src_comp', 'dest_comp', 'msg', 'msg_type'])
+ComputationMessage = namedtuple(
+    "ComputationMessage", ["src_comp", "dest_comp", "msg", "msg_type"]
+)
 
 
 class CommunicationLayer(object):
@@ -105,7 +105,7 @@ class CommunicationLayer(object):
 
     """
 
-    def __init__(self, on_error=None)-> None:
+    def __init__(self, on_error=None) -> None:
         self._on_error = on_error
         self.discovery = None
         self.messaging = None
@@ -119,10 +119,16 @@ class CommunicationLayer(object):
         The concrete type of object returned depends on the class 
         implementing the CommunicationLayer protocol. 
         """
-        raise NotImplementedError('Protocol class')
+        raise NotImplementedError("Protocol class")
 
-    def send_msg(self, src_agent: str, dest_agent: str,
-                 msg: ComputationMessage, on_error=None, from_retry=False):
+    def send_msg(
+        self,
+        src_agent: str,
+        dest_agent: str,
+        msg: ComputationMessage,
+        on_error=None,
+        from_retry=False,
+    ):
         """
 
         Parameters
@@ -140,29 +146,44 @@ class CommunicationLayer(object):
             internal arg, do NOT use.
 
         """
-        raise NotImplementedError('Protocol class')
+        raise NotImplementedError("Protocol class")
 
     def shutdown(self):
-        raise NotImplementedError('Protocol class')
+        raise NotImplementedError("Protocol class")
 
     def _on_send_error(self, src_agent, dest_agent, msg, on_error, exception):
-        if on_error == 'fail':
-            raise exception('Error when sending message {} -> {} : {}'
-                            .format(src_agent, dest_agent, msg))
-        elif on_error == 'ignore':
-            logger.warning('could not send message from %s to %s, ignoring : '
-                           '%s', src_agent, dest_agent, msg)
+        if on_error == "fail":
+            raise exception(
+                "Error when sending message {} -> {} : {}".format(
+                    src_agent, dest_agent, msg
+                )
+            )
+        elif on_error == "ignore":
+            logger.warning(
+                "could not send message from %s to %s, ignoring : " "%s",
+                src_agent,
+                dest_agent,
+                msg,
+            )
             return True
-        elif on_error == 'retry':
-            logger.warning('could not send message from %s to %s, will retry '
-                           'later : %s', src_agent, dest_agent, msg)
-            self._failed_msg[dest_agent].append((src_agent, dest_agent,
-                                                 msg, on_error))
+        elif on_error == "retry":
+            logger.warning(
+                "could not send message from %s to %s, will retry " "later : %s",
+                src_agent,
+                dest_agent,
+                msg,
+            )
+            self._failed_msg[dest_agent].append((src_agent, dest_agent, msg, on_error))
             return False
         else:
-            logger.warning('could not send message from %s to %s, '
-                           'and no on_erro policy : ignoring : '
-                           '%s', src_agent, dest_agent, msg)
+            logger.warning(
+                "could not send message from %s to %s, "
+                "and no on_erro policy : ignoring : "
+                "%s",
+                src_agent,
+                dest_agent,
+                msg,
+            )
             return False
 
     def retry(self, dest_agent: str):
@@ -173,8 +194,9 @@ class CommunicationLayer(object):
         :return:
         """
         for src, dest, msg, on_error in self._failed_msg[dest_agent]:
-            logger.warning('retrying delivery of message from %s to %s : '
-                           '%s', src, dest, msg)
+            logger.warning(
+                "retrying delivery of message from %s to %s : " "%s", src, dest, msg
+            )
             self.send_msg(src, dest, msg, on_error, from_retry=True)
 
 
@@ -204,9 +226,14 @@ class InProcessCommunicationLayer(CommunicationLayer):
         """
         return self
 
-    def send_msg(self, src_agent: str, dest_agent: str,
-                 msg: ComputationMessage, on_error=None,
-                 from_retry=False):
+    def send_msg(
+        self,
+        src_agent: str,
+        dest_agent: str,
+        msg: ComputationMessage,
+        on_error=None,
+        from_retry=False,
+    ):
         """
         Send a message to an agent.
         
@@ -224,14 +251,18 @@ class InProcessCommunicationLayer(CommunicationLayer):
             address = self.discovery.agent_address(dest_agent)
             address.receive_msg(src_agent, dest_agent, msg)
         except UnknownAgent:
-            logger.warning('Sending message from %s to unknown agent %s : %s ',
-                           src_agent, dest_agent, msg)
-            return self._on_send_error(src_agent, dest_agent, msg, on_error,
-                                       UnknownAgent)
+            logger.warning(
+                "Sending message from %s to unknown agent %s : %s ",
+                src_agent,
+                dest_agent,
+                msg,
+            )
+            return self._on_send_error(
+                src_agent, dest_agent, msg, on_error, UnknownAgent
+            )
         return True
 
-    def receive_msg(self, src_agent: str, dest_agent: str,
-                    msg: ComputationMessage):
+    def receive_msg(self, src_agent: str, dest_agent: str, msg: ComputationMessage):
         """
         Called when receiving a message.
         
@@ -242,8 +273,7 @@ class InProcessCommunicationLayer(CommunicationLayer):
         python object with InProcess communication)
         """
         src_computation, dest_computation, msg_obj, msg_type = msg
-        self.messaging.post_msg(src_computation, dest_computation,
-                                msg_obj, msg_type)
+        self.messaging.post_msg(src_computation, dest_computation, msg_obj, msg_type)
 
     def shutdown(self):
         # There's no resources to release for InProcessCommunicationLayer as
@@ -258,11 +288,10 @@ class InProcessCommunicationLayer(CommunicationLayer):
     #         .discovery.agent_address(agt_name)
 
     def __str__(self):
-        return 'InProcessCommunicationLayer({})'.format(
-                self.messaging)
+        return "InProcessCommunicationLayer({})".format(self.messaging)
 
     def __repr__(self):
-        return 'Comm({})'.format(self.messaging)
+        return "Comm({})".format(self.messaging)
 
 
 def find_local_ip():
@@ -272,10 +301,10 @@ def find_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # doesn't even have to be reachable
-        s.connect(('10.255.255.255', 1))
+        s.connect(("10.255.255.255", 1))
         IP = s.getsockname()[0]
     except:
-        IP = '127.0.0.1'
+        IP = "127.0.0.1"
     finally:
         s.close()
     return IP
@@ -302,51 +331,52 @@ class HttpCommunicationLayer(CommunicationLayer):
 
     """
 
-    def __init__(self, address_port: Optional[Tuple[str, int]]=None,
-                 on_error: Optional[str]='ignore'):
+    def __init__(
+        self,
+        address_port: Optional[Tuple[str, int]] = None,
+        on_error: Optional[str] = "ignore",
+    ):
         super().__init__(on_error)
         if not address_port:
             self._address = find_local_ip(), 9000
-        else :
+        else:
             ip_addr, port = address_port
             ip_addr = ip_addr if ip_addr else find_local_ip()
-            ip_addr = ip_addr if ip_addr else '0.0.0.0'
+            ip_addr = ip_addr if ip_addr else "0.0.0.0"
             port = port if port else 9000
             self._address = ip_addr, port
 
         self.logger = logging.getLogger(
-            'infrastructure.communication.HttpCommunicationLayer')
+            "infrastructure.communication.HttpCommunicationLayer"
+        )
         self._start_server()
 
     def shutdown(self):
-        self.logger.info('Shutting down HttpCommunicationLayer '
-                         'on %s', self.address)
+        self.logger.info("Shutting down HttpCommunicationLayer " "on %s", self.address)
         self.httpd.shutdown()
         self.httpd.server_close()
 
     def _start_server(self):
         # start a server listening for messages
-        self.logger.info('Starting http server for HttpCommunicationLayer '
-                         'on %s', self.address)
+        self.logger.info(
+            "Starting http server for HttpCommunicationLayer " "on %s", self.address
+        )
         try:
             _, port = self._address
             self.httpd = HTTPServer(("0.0.0.0", port), MPCHttpHandler)
         except OSError:
-            self.logger.error('Cannot bind http server on adress {}'.format(
-                self.address))
+            self.logger.error(
+                "Cannot bind http server on adress {}".format(self.address)
+            )
             raise
         self.httpd.comm = self
 
-        t = Thread(name='http_thread',
-                   target=self.httpd.serve_forever,
-                   daemon=True)
+        t = Thread(name="http_thread", target=self.httpd.serve_forever, daemon=True)
         t.start()
 
     def on_post_message(self, path, sender, dest, msg: ComputationMessage):
-        self.logger.debug('Http message received %s - %s %s', path, sender,
-                          dest)
-        self.messaging.post_msg(
-            msg.src_comp, msg.dest_comp, msg.msg, msg.msg_type)
+        self.logger.debug("Http message received %s - %s %s", path, sender, dest)
+        self.messaging.post_msg(msg.src_comp, msg.dest_comp, msg.msg, msg.msg_type)
 
     @property
     def address(self) -> Tuple[str, int]:
@@ -358,8 +388,9 @@ class HttpCommunicationLayer(CommunicationLayer):
         """
         return self._address
 
-    def send_msg(self, src_agent: str, dest_agent: str,
-                 msg: ComputationMessage, on_error=None):
+    def send_msg(
+        self, src_agent: str, dest_agent: str, msg: ComputationMessage, on_error=None
+    ):
         """
         Send msg from src_agent to dest_agent.
 
@@ -375,55 +406,61 @@ class HttpCommunicationLayer(CommunicationLayer):
         try:
             server, port = self.discovery.agent_address(dest_agent)
         except UnknownAgent:
-            return self._on_send_error(src_agent, dest_agent, msg, on_error,
-                                       UnknownAgent)
+            return self._on_send_error(
+                src_agent, dest_agent, msg, on_error, UnknownAgent
+            )
 
-        dest_address = 'http://{}:{}/pydcop'.format(server, port)
+        dest_address = "http://{}:{}/pydcop".format(server, port)
         msg_repr = simple_repr(msg.msg)
         try:
-            r = requests.post(dest_address,
-                              headers={'sender-agent': src_agent,
-                                       'dest-agent': dest_agent,
-                                       'sender-comp': msg.src_comp,
-                                       'dest-comp': msg.dest_comp,
-                                       'type': str(msg.msg_type)},
-                              json=msg_repr,
-                              timeout=0.5)
+            r = requests.post(
+                dest_address,
+                headers={
+                    "sender-agent": src_agent,
+                    "dest-agent": dest_agent,
+                    "sender-comp": msg.src_comp,
+                    "dest-comp": msg.dest_comp,
+                    "type": str(msg.msg_type),
+                },
+                json=msg_repr,
+                timeout=0.5,
+            )
         except ConnectionError:
             # Could not reach the target agent: connection refused or name
             # or service not known
-            return self._on_send_error(src_agent, dest_agent, msg, on_error,
-                                       UnreachableAgent)
+            return self._on_send_error(
+                src_agent, dest_agent, msg, on_error, UnreachableAgent
+            )
 
         if r is not None and r.status_code == 404:
             # It seems that the target computation of this message is not
             # hosted on the agent
-            return self._on_send_error(src_agent, dest_agent, msg, on_error,
-                                       UnknownComputation)
+            return self._on_send_error(
+                src_agent, dest_agent, msg, on_error, UnknownComputation
+            )
         return True
 
     def __str__(self):
-        return 'HttpCommunicationLayer({}:{})'.format(*self._address)
+        return "HttpCommunicationLayer({}:{})".format(*self._address)
 
 
 class MPCHttpHandler(BaseHTTPRequestHandler):
-
     def do_POST(self):
         sender, dest = None, None
         type = MSG_ALGO
-        if 'sender-agent' in self.headers:
-            sender = self.headers['sender-agent']
-        if 'dest-agent' in self.headers:
-            dest = self.headers['dest-agent']
+        if "sender-agent" in self.headers:
+            sender = self.headers["sender-agent"]
+        if "dest-agent" in self.headers:
+            dest = self.headers["dest-agent"]
         src_comp, dest_comp = None, None
-        if 'sender-comp' in self.headers:
-            src_comp = self.headers['sender-comp']
-        if 'dest-comp' in self.headers:
-            dest_comp = self.headers['dest-comp']
-        if 'type' in self.headers:
-            type = self.headers['type']
+        if "sender-comp" in self.headers:
+            src_comp = self.headers["sender-comp"]
+        if "dest-comp" in self.headers:
+            dest_comp = self.headers["dest-comp"]
+        if "type" in self.headers:
+            type = self.headers["type"]
 
-        content_length = int(self.headers['Content-Length'])
+        content_length = int(self.headers["Content-Length"])
         post_data = self.rfile.read(content_length)
         try:
             content = json.loads(str(post_data, "utf-8"))
@@ -432,8 +469,9 @@ class MPCHttpHandler(BaseHTTPRequestHandler):
             print(post_data)
             raise jde
 
-        comp_msg = ComputationMessage(src_comp, dest_comp,
-                                      from_repr(content), int(type))
+        comp_msg = ComputationMessage(
+            src_comp, dest_comp, from_repr(content), int(type)
+        )
         try:
             self.server.comm.on_post_message(self.path, sender, dest, comp_msg)
 
@@ -449,7 +487,7 @@ class MPCHttpHandler(BaseHTTPRequestHandler):
             self.send_header("Content-type", "text/plain")
             self.end_headers()
 
-    def log_request(self, code='-', size='-'):
+    def log_request(self, code="-", size="-"):
         # Avoid logging all requests to stdout
         pass
 
@@ -488,8 +526,7 @@ class Messaging(object):
         runtime.
     """
 
-    def __init__(self, agent_name: str,
-                 comm: CommunicationLayer, delay: float=None):
+    def __init__(self, agent_name: str, comm: CommunicationLayer, delay: float = None):
         self._queue = PriorityQueue()
         self._local_agent = agent_name
         self.discovery = comm.discovery
@@ -510,11 +547,11 @@ class Messaging(object):
         self._shutdown = False
 
     @property
-    def communication(self)-> CommunicationLayer:
+    def communication(self) -> CommunicationLayer:
         return self._comm
 
     @property
-    def local_agent(self)-> str:
+    def local_agent(self) -> str:
         """
         The name of the local agent.
         Returns
@@ -524,7 +561,7 @@ class Messaging(object):
         return self._local_agent
 
     @property
-    def count_all_ext_msg(self)-> int:
+    def count_all_ext_msg(self) -> int:
         """
         Count of all non-management external messages sent.
         :return:
@@ -532,25 +569,30 @@ class Messaging(object):
         return sum(v for v in self.count_ext_msg.values())
 
     @property
-    def size_all_ext_msg(self)-> int:
+    def size_all_ext_msg(self) -> int:
         """
         Size of all non-management external messages sent.
         :return:
         """
         return sum(v for v in self.size_ext_msg.values())
 
-    def next_msg(self, timeout: float=0):
+    def next_msg(self, timeout: float = 0):
         try:
-            msg_type, _, t, full_msg = self._queue.get(block=True,
-                                                timeout=timeout)
+            msg_type, _, t, full_msg = self._queue.get(block=True, timeout=timeout)
             if self._delay and msg_type == MSG_ALGO:
                 sleep(self._delay)
             return full_msg, t
         except Empty:
             return None, None
 
-    def post_msg(self, src_computation: str, dest_computation: str,
-                 msg, msg_type: int=MSG_ALGO, on_error=None):
+    def post_msg(
+        self,
+        src_computation: str,
+        dest_computation: str,
+        msg,
+        msg_type: int = MSG_ALGO,
+        on_error=None,
+    ):
         """
         Send a message `msg` from computation `src_computation` to computation
         `dest_computation`.
@@ -595,23 +637,28 @@ class Messaging(object):
             dest_agent = self.discovery.computation_agent(dest_computation)
         except UnknownComputation:
             if self.logger.isEnabledFor(logging.WARNING):
-                self.logger.warning(f'Cannot send msg from {src_computation} to unknown '
-                                    f'comp {dest_computation}, will retry  later : {msg}')
+                self.logger.warning(
+                    f"Cannot send msg from {src_computation} to unknown "
+                    f"comp {dest_computation}, will retry  later : {msg}"
+                )
             self.discovery.subscribe_computation(
-                dest_computation, self._on_computation_registration,
-                one_shot=True)
+                dest_computation, self._on_computation_registration, one_shot=True
+            )
             self._failed.append(
-                (src_computation, dest_computation, msg, msg_type, on_error))
+                (src_computation, dest_computation, msg, msg_type, on_error)
+            )
             return
 
-        full_msg = ComputationMessage(src_computation, dest_computation,
-                                      msg, msg_type)
+        full_msg = ComputationMessage(src_computation, dest_computation, msg, msg_type)
         if dest_agent == self._local_agent:
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f'Posting local message {src_computation} -> '
-                                  f'{dest_computation} : {msg}')
+                self.logger.debug(
+                    f"Posting local message {src_computation} -> "
+                    f"{dest_computation} : {msg}"
+                )
+            now = perf_counter()
             if msg_type != MSG_MGT:
-                self.last_msg_time = perf_counter()
+                self.last_msg_time = now
             # When putting the message in the queue we add the type,
             # a monotonic msg counter and the time of reception. As the queue
             # is a priority queue, putting type and counter first ensure
@@ -619,22 +666,26 @@ class Messaging(object):
             # useful to measure the delay between reception and handling
             # of a message.
             self.msg_queue_count += 1
-            self._queue.put((msg_type, self.msg_queue_count,
-                             perf_counter(), full_msg))
+            self._queue.put((msg_type, self.msg_queue_count, now, full_msg))
         else:
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f'Posting remote message {src_computation} -> '
-                                  f'{dest_computation} : {msg}')
+                self.logger.debug(
+                    f"Posting remote message {src_computation} -> "
+                    f"{dest_computation} : {msg}"
+                )
+
             # If the destination is on another agent, it means that the
             # message source must be one of our local computation and we
             # should know about it.
+
+            # NOTE: the computation might have been removed, but that's considered as a
+            # bug, a computation should not send message once removed
             try:
                 self.discovery.computation_agent(src_computation)
             except:
-                self.logger.error('Could not find src computation %s when posting '
-                             'msg %s to %s (dest agt %s, local_agt %s)',
-                             src_computation, msg,
-                             dest_computation, dest_agent, self._local_agent)
+                self.logger.error(f"Could not find src computation {src_computation} "
+                                  f" when posting msg {msg} to {dest_computation} "
+                                  f"{dest_agent}, {self._local_agent}) ")
                 raise
 
             # send using Communication Layer
@@ -642,8 +693,9 @@ class Messaging(object):
                 self.count_ext_msg[src_computation] += 1
                 self.size_ext_msg[src_computation] += msg.size
 
-            self._comm.send_msg(self._local_agent, dest_agent, full_msg,
-                                on_error=on_error)
+            self._comm.send_msg(
+                self._local_agent, dest_agent, full_msg, on_error=on_error
+            )
 
     def shutdown(self):
         """Shutdown messaging
@@ -655,23 +707,23 @@ class Messaging(object):
         """
         self._shutdown = True
 
-    def _on_computation_registration(self, evt: str, computation: str,
-                                     agent: str):
+    def _on_computation_registration(self, evt: str, computation: str, agent: str):
         """
         Callback for DeploymentInfo on computatino registration.
 
         Called when a new computation-agent is registered.
         """
 
-        if evt == 'computation_added':
+        if evt == "computation_added":
             for failed in self._failed[:]:
                 src, dest, msg, msg_type, on_error = failed
                 if dest != computation:
                     continue
-                self.logger.info('Retrying failed message to %s on %s : %s',
-                            dest, agent, msg)
+                self.logger.info(
+                    "Retrying failed message to %s on %s : %s", dest, agent, msg
+                )
                 self.post_msg(src, dest, msg, msg_type, on_error)
                 self._failed.remove(failed)
 
     def __str__(self):
-        return 'Messaging({})'.format(self._local_agent)
+        return "Messaging({})".format(self._local_agent)
