@@ -973,6 +973,15 @@ class AgentsMgt(MessagePassingComputation):
             leaving_agents, self.discovery)
         orphaned = _removal_orphaned_computations(leaving_agents,
                                                   self.discovery)
+
+        # Dump stats for this event
+        f_name = 'events.yaml'
+        self.removal_time = perf_counter() - self.start_time
+
+        with open(f_name, mode='a', encoding='utf-8') as f:
+            f.write(f"{self.removal_time}, {self.dist_count}, {len(candidates_agents)},"
+                    f" {len(orphaned)}\n")
+
         if not orphaned:
             # If the departed agent was not hosting any computation, simply resume the
             # system
@@ -1044,8 +1053,8 @@ class AgentsMgt(MessagePassingComputation):
                               current_agt_state, msg)
 
     def _on_repair_done(self, sender_name: str, msg: RepairDoneMessage, _):
-        self.logger.debug('Repair done on agent %s, selected computations %s',
-                          msg.agent, msg.selected_computations)
+        self.logger.debug(f'Repair done on agent {msg.agent} '
+                          f'selected {msg.selected_computations}')
         try:
             current_agt_state = self._agts_state[msg.agent]
         except KeyError:
@@ -1064,6 +1073,9 @@ class AgentsMgt(MessagePassingComputation):
                 self.logger.info('Repair done on agent %s, waiting for %s',
                                  msg.agent, waited)
             else:
+                done_time = perf_counter() - self.start_time
+
+                d = time.perf_counter() - self.start_profile
                 # Now that the reparation process is finished, resume,
                 # all computation from the original dcop
                 self.logger.info('Repair done on agent %s, all agents done, '
@@ -1094,6 +1106,17 @@ class AgentsMgt(MessagePassingComputation):
                     self.logger.error('Repair process is finished but they '
                                       'are still some orphaned computations !'
                                       ' %s', lost_orphaned)
+                    # Dump repair time
+                    f_name = 'repair.yaml'
+                    with open(f_name, mode='a', encoding='utf-8') as f:
+                        f.write(f"{self.dist_count}, {self.removal_time}, {done_time}, "
+                                f"{d}, FAILED\n")
+                else:
+                    # Dump repair time
+                    f_name = 'repair.yaml'
+                    with open(f_name, mode='a', encoding='utf-8') as f:
+                        f.write(f"{self.dist_count}, {self.removal_time}, {done_time},"
+                                f"{d}, OK\n")
 
     def _request_pause(self, agents=None):
         if agents is None:
