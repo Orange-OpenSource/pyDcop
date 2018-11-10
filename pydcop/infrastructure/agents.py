@@ -1201,7 +1201,7 @@ class ResilientAgent(Agent):
         self._repair_computations.clear()
         algo_def = AlgorithmDef.build_with_default_param(
             repair_algo.algorithm_name,
-            {'stop_cycle': 10, 'threshold': 0.2},
+            {'stop_cycle': 20, 'threshold': 0.2},
             mode='min',
             parameters_definitions=repair_algo.algo_params)
         for (comp, agt), candidate_var in candidate_binvars.items():
