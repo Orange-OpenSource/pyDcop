@@ -1106,6 +1106,11 @@ class ResilientAgent(Agent):
             # candidate_comp:
             v_binvar = create_binary_variables(
                 'B', ([candidate_comp], candidate_info[0]))
+            # Set initial values for binary decision variable
+            for v in v_binvar.values():
+                v._intial_value = 1 if random.random() < 1/3 else 0
+
+
             orphaned_binvars.update(v_binvar)
 
             # the variable representing if the computation will be hosted on
