@@ -416,7 +416,7 @@ class TestsChangeState(unittest.TestCase):
         self.assertEqual(computation._state, "offer")
         self.assertEqual(computation._postponed_msg["offer"], [])
         self.assertEqual(
-            computation._offers, [("x2", Mgm2OfferMessage(True, {(1, 1): 5}))]
+            computation._offers, [("x2", Mgm2OfferMessage({(1, 1): 5}, True))]
         )
 
     def test_enter_answer_state(self):
