@@ -811,36 +811,48 @@ class Mgm2Computation(VariableComputation):
                     if offer_msg.is_offering
                 ]
             )
-            if (
-                gain == 0
-                or not best_offers
-                or (self._mode == "min" and gain < self._potential_gain)
-                or (self._mode == "max" and gain > self._potential_gain)
-            ):
-                if self.logger.isEnabledFor(logging.INFO):
-                    self.logger.info(
-                        f"{self.name} has considered no offer as acceptable"
-                    )
+            self._committed = False
+            if gain == 0 or not best_offers:
+                self._committed = False
             elif (self._mode == "min" and gain > self._potential_gain) or (
                 self._mode == "max" and gain < self._potential_gain
             ):
-                self.accept_offer(best_offers, gain)
+                self._committed = True
             elif gain == self._potential_gain:
                 if self._favor == "coordinated":
-                    self.accept_offer(best_offers, gain)
-                elif self._favor == "no":
-                    if random.uniform(0, 1) > 0.5:
-                        self.accept_offer(best_offers, gain)
+                    self._committed = True
+                elif self._favor == "no" and random.uniform(0, 1) > 0.5:
+                    self._committed = True
 
-            # send reject messages to all other offerers
-            for n, msg in self._offers:
-                if self._partner is not None and n == self._partner.name:
-                    continue
-                if not msg.is_offering:
-                    continue
+            if self._committed:
+                val_p, self._potential_value, partner_name = random.choice(best_offers)
                 if self.logger.isEnabledFor(logging.INFO):
-                    self.logger.info(f"Refusing offer from {n}")
-                self.post_msg(n, Mgm2ResponseMessage(False))
+                    self.logger.info(
+                        f"Accepts offer ({val_p}, {self._potential_value}) "
+                        f"from {partner_name} with gain {gain}"
+                    )
+                self._potential_gain = gain
+                self._partner = self._neighbor_var(partner_name)
+            else:
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(f"No accepted offer")
+
+            # send accept / reject messages to all offerers
+            for sender, offer_msg in self._offers:
+                if not offer_msg.is_offering:
+                    continue
+                if self._is_offerer:
+                    self.post_msg(sender, Mgm2ResponseMessage(False))
+                    if self.logger.isEnabledFor(logging.INFO):
+                        self.logger.info(
+                            f"Refusing offer from {sender} (already an offerer)"
+                        )
+                elif self._partner and sender == self._partner.name:
+                    self.post_msg(sender, Mgm2ResponseMessage(True, val_p, gain))
+                else:
+                    if self.logger.isEnabledFor(logging.INFO):
+                        self.logger.info(f"Refusing offer from {n}")
+                    self.post_msg(sender, Mgm2ResponseMessage(False))
 
             self._send_gain()
             self._enter_state("gain")
