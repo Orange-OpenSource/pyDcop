@@ -539,7 +539,7 @@ class UCSReplication(MessagePassingComputation):
             )
             if not pending:
                 # If not in pending request : error !
-                self.logger.error(
+                self.logger.warning(
                     f"Unexpected answer {agent}, {msg.computation_def.name} - "
                     f"{msg} not in {list(self._pending_requests.keys())}"
                 )
