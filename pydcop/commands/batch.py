@@ -73,8 +73,17 @@ import logging
 import shutil
 import re
 import os
+import signal
 
-from subprocess import check_output, STDOUT, CalledProcessError, TimeoutExpired
+from subprocess import (
+    check_output,
+    STDOUT,
+    CalledProcessError,
+    TimeoutExpired,
+    CompletedProcess,
+    Popen,
+    PIPE,
+)
 from typing import Dict, Tuple, Union, List
 
 import itertools
@@ -443,7 +452,7 @@ def job_id(context: dict, combination: dict):
 def run_cli_command(cli_command: str, command_dir: str, timeout):
     with cd_and_create(command_dir):
         try:
-            check_output(
+            check_output_group_kill(
                 cli_command,
                 stderr=STDOUT,
                 shell=True,
@@ -461,6 +470,42 @@ def run_cli_command(cli_command: str, command_dir: str, timeout):
                 )
                 ef.write(f"Command returned: \n\n{cpe.output}")
             raise
+
+
+def check_output_group_kill(*popenargs, timeout=None, **kwargs):
+    """
+    Custom check_output implementation that kill the whole process tree instead of
+    simply it's head.
+
+    Idea taken from
+    https://stackoverflow.com/questions/36952245/subprocess-timeout-failure
+    """
+    if "stdout" in kwargs:
+        raise ValueError("stdout argument not allowed, it will be overridden.")
+
+    input = "" if kwargs.get("universal_newlines", False) else b""
+
+    kwargs["stdin"] = PIPE
+
+    with Popen(*popenargs, **kwargs, stdout=PIPE, preexec_fn=os.setsid) as process:
+        try:
+            stdout, stderr = process.communicate(input, timeout=timeout)
+        except TimeoutExpired:
+            process.kill()
+            os.killpg(process.pid, signal.SIGKILL)  # send signal to the process group
+            stdout, stderr = process.communicate()
+            raise TimeoutExpired(process.args, timeout, output=stdout, stderr=stderr)
+        except:
+            process.kill()
+            process.wait()
+            raise
+        retcode = process.poll()
+        if retcode:
+            raise CalledProcessError(
+                retcode, process.args, output=stdout, stderr=stderr
+            )
+
+    return CompletedProcess(process.args, retcode, stdout, stderr)
 
 
 def build_final_command(
