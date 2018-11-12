@@ -394,8 +394,10 @@ def run_batch(
             jid = job_id(context, command_option_combination)
             if jid not in context["jobs"]:
                 log_cmd(cli_command, command_dir)
-                timeout = global_options["timeout"] if "timeout" in global_options else None
-                timeout= int(timeout) + 20
+                if "timeout" in global_options:
+                    timeout = int(global_options["timeout"]) + 20
+                else:
+                    timeout = None
                 try:
                     run_cli_command(cli_command, command_dir, timeout)
                 except TimeoutExpired as te:
@@ -419,7 +421,6 @@ def register_job(jid):
             f.write(f"JID: {jid} \n")
             now_time = datetime.datetime.time(datetime.datetime.now())
             f.write(f"END: {now_time} \n\n")
-
 
 
 def log_cmd(cmd_str, command_dir):

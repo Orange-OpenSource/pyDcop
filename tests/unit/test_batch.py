@@ -370,28 +370,33 @@ batches:
     batch_module.run_batches(batches_def, simulate=False)
 
     assert run_mock.call_count == 5
-
+    print(run_mock.calls)
     run_mock.assert_has_calls(
         [
             call(
                 "pydcop --output ising_0.yaml generate ising --col_count 3 --row_count 3",
                 "",
+                None,
             ),
             call(
                 "pydcop --output ising_1.yaml generate ising --col_count 3 --row_count 3",
                 "",
+                None,
             ),
             call(
                 "pydcop --output ising_2.yaml generate ising --col_count 3 --row_count 3",
                 "",
+                None,
             ),
             call(
                 "pydcop --output ising_3.yaml generate ising --col_count 3 --row_count 3",
                 "",
+                None,
             ),
             call(
                 "pydcop --output ising_4.yaml generate ising --col_count 3 --row_count 3",
                 "",
+                None,
             ),
         ],
         any_order=True,
@@ -425,10 +430,12 @@ batches:
             call(
                 "pydcop --output ising_0_3_3.yaml generate ising --col_count 3 --row_count 3",
                 "",
+                None,
             ),
             call(
                 "pydcop --output ising_0_4_3.yaml generate ising --col_count 3 --row_count 4",
                 "",
+                None,
             ),
         ],
         any_order=True,
@@ -462,10 +469,12 @@ batches:
             call(
                 "pydcop --output ising.yaml generate ising --col_count 3 --row_count 3",
                 "~/tmp/ising/row3_col3/",
+                None,
             ),
             call(
                 "pydcop --output ising.yaml generate ising --col_count 3 --row_count 4",
                 "~/tmp/ising/row4_col3/",
+                None,
             ),
         ],
         any_order=True,
@@ -502,10 +511,14 @@ batches:
     run_mock.assert_has_calls(
         [
             call(
-                "pydcop solve --algo dsa " + dir_path + "/pb1.yaml", "~/tmp/ising/dsa/"
+                "pydcop solve --algo dsa " + dir_path + "/pb1.yaml",
+                "~/tmp/ising/dsa/",
+                None,
             ),
             call(
-                "pydcop solve --algo dsa " + dir_path + "/pb2.yaml", "~/tmp/ising/dsa/"
+                "pydcop solve --algo dsa " + dir_path + "/pb2.yaml",
+                "~/tmp/ising/dsa/",
+                None,
             ),
         ],
         any_order=True,
