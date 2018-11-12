@@ -74,7 +74,7 @@ import shutil
 import re
 import os
 
-from subprocess import check_output, STDOUT, CalledProcessError
+from subprocess import check_output, STDOUT, CalledProcessError, TimeoutExpired
 from typing import Dict, Tuple, Union, List
 
 import itertools
@@ -394,7 +394,19 @@ def run_batch(
             jid = job_id(context, command_option_combination)
             if jid not in context["jobs"]:
                 log_cmd(cli_command, command_dir)
-                run_cli_command(cli_command, command_dir)
+                timeout = global_options["timeout"] if "timeout" in global_options else None
+                timeout= int(timeout) + 20
+                try:
+                    run_cli_command(cli_command, command_dir, timeout)
+                except TimeoutExpired as te:
+                    global progress_file
+                    if progress_file:
+                        with open(progress_file, encoding="utf-8", mode="a") as f:
+                            f.write(f"TIMEOUT: {jid} \n")
+                            f.write(f"JID: {jid} \n")
+                            now_time = datetime.datetime.time(datetime.datetime.now())
+                            f.write(f"END: {now_time} \n\n")
+
                 register_job(jid)
             else:
                 logger.warning(f"Skipping already registered job {id}")
@@ -404,13 +416,18 @@ def register_job(jid):
     global progress_file
     if progress_file:
         with open(progress_file, encoding="utf-8", mode="a") as f:
-            f.write(f"JID: {jid} \n\n")
+            f.write(f"JID: {jid} \n")
+            now_time = datetime.datetime.time(datetime.datetime.now())
+            f.write(f"END: {now_time} \n\n")
+
 
 
 def log_cmd(cmd_str, command_dir):
     global progress_file
     if progress_file:
         with open(progress_file, encoding="utf-8", mode="a") as f:
+            now_time = datetime.datetime.time(datetime.datetime.now())
+            f.write(f"START: {now_time} \n")
             f.write(f"CD: {command_dir} \n")
             f.write(f"CMD: {cmd_str} \n")
 
@@ -422,11 +439,15 @@ def job_id(context: dict, combination: dict):
         return f"{context['set']}__{context['iteration']}_{combination}"
 
 
-def run_cli_command(cli_command: str, command_dir: str):
+def run_cli_command(cli_command: str, command_dir: str, timeout):
     with cd_and_create(command_dir):
         try:
             check_output(
-                cli_command, stderr=STDOUT, shell=True, universal_newlines=True
+                cli_command,
+                stderr=STDOUT,
+                shell=True,
+                universal_newlines=True,
+                timeout=timeout,
             )
         except CalledProcessError as cpe:
             # Dump output for diagnosis
