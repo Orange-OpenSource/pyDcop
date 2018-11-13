@@ -109,7 +109,7 @@ AgentName = Node
 
 # Give a little more priority to replication message (compared to dcop
 # algorithm messages) as we must end replication before next event.
-MSG_REPLICATION = 18
+MSG_REPLICATION = 20
 
 
 class UCSReplicateMessage(Message):
