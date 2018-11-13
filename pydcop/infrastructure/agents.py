@@ -45,6 +45,7 @@ import logging
 import sys
 import threading
 import traceback
+import random
 from functools import partial
 from importlib import import_module
 from threading import Thread
@@ -707,6 +708,7 @@ class Agent(object):
         # messages are delivered even to computations which have reached their
         # stop condition. It's up the the algorithm to decide if it wants to
         # handle the message.
+
         dest = self.computation(dest_name)
         dest.on_message(sender_name, msg, t)
 
@@ -767,7 +769,7 @@ class Agent(object):
 
     def remove_periodic_action(self, handle):
         """
-        Remove a periodoc action
+        Remove a periodic action
 
         Parameters
         ----------
@@ -1223,7 +1225,7 @@ class ResilientAgent(Agent):
                           candidate_var, computation)
 
             # add the computation on this agents and register the neighbors
-            self.add_computation(computation)
+            self.add_computation(computation, publish=True)
             self._repair_computations[computation.name] = \
                 RepairComputationRegistration(computation, 'ready', comp)
             for neighbor_comp in node.neighbors:
@@ -1303,7 +1305,7 @@ class ResilientAgent(Agent):
                              'definition , %r', repair_comp.candidate,
                              comp_def)
             comp = build_computation(comp_def)
-            self.add_computation(comp)
+            self.add_computation(comp, publish=True)
         else:
             self.logger.info('Reparation: computation %s NOT selected on '
                              '%s', repair_comp.candidate, self.name)
