@@ -78,6 +78,7 @@ implementation of DSA.
 
 
 """
+import logging
 import random
 from typing import Tuple, Any, List, Dict
 
@@ -145,20 +146,23 @@ class ADsaComputation(VariableComputation):
                 c.name: find_optimum(c, self.mode) for c in self.constraints
             }
 
+        self._start_handle = None
+        self._tick_handle = None
+
     def on_start(self):
         delay = random.random() * self.period
         self._start_handle = self.add_periodic_action(delay, self.delayed_start)
-        self.logger.debug("Add start delayed action ")
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug("Add start delayed action ")
 
     def on_stop(self):
-        if hasattr(self, "_tick_handle"):
+        if self._tick_handle:
             self.remove_periodic_action(self._tick_handle)
         else:
             self.logger.error(
                 f"Stopping a adsa computation {self.variable} that never really started ! "
                 "no _tick_handle"
             )
-            
 
     def on_pause(self, paused: bool):
         if not paused:
@@ -166,21 +170,28 @@ class ADsaComputation(VariableComputation):
             # as A-DSA is asynchronous and periodic
             self._paused_messages_post.clear()
             self._paused_messages_recv.clear()
-            self.logger.debug(f"Dropping all message from pause on {self.name}")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Dropping all message from pause on {self.name}")
 
     def delayed_start(self):
         self.remove_periodic_action(self._start_handle)
-        self.logger.debug("Remove start delayed action %s ", self._start_handle)
-        # self._start_handle = None
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug("Remove start delayed action %s ", self._start_handle)
+        self._start_handle = None
+
         self._tick_handle = self.add_periodic_action(self.period, self.tick)
         self.random_value_selection()
-        self.logger.debug("ADSA starts: randomly select value %s", self.current_value)
+        if self.logger.isEnabledFor(logging.INFO):
+            self.logger.info(
+                "ADSA starts: randomly select value %s", self.current_value
+            )
         self.post_to_all_neighbors(ADsaMessage(self.current_value))
 
     @register("adsa_value")
-    def _on_value_msg(self, variable_name, msg: ADsaMessage, t):
+    def _on_value_msg(self, variable_name, msg: ADsaMessage, _):
         self.current_assignment[variable_name] = msg.value
-        self.logger.debug("Receiving value %s from %s", msg.value, variable_name)
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug("Receiving value %s from %s", msg.value, variable_name)
 
     def tick(self):
         if self.is_paused:
@@ -188,33 +199,40 @@ class ADsaComputation(VariableComputation):
         # Check if we have a value for all our neighbors
         if len(self.current_assignment) == len(self.neighbors):
 
-            self.logger.debug(
-                "Full neighbors assignment on periodic action %s : %s ",
-                self.cycle_count,
-                self.current_assignment,
-            )
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    "Full neighbors assignment on periodic action %s : %s ",
+                    self.cycle_count,
+                    self.current_assignment,
+                )
 
             assignment = self.current_assignment.copy()
-            assignment[self.variable.name] = self.current_value
             args_best, best_cost = self.find_best_values(assignment)
+
+            # if self.current_value is not None:
+            assignment[self.variable.name] = self.current_value
             current_cost = assignment_cost(assignment, self.constraints)
             delta = abs(current_cost - best_cost)
-            self.logger.debug(
-                f"Current value {self.current_value}, cost {current_cost}, "
-                f"best cost {best_cost} "
-                f"delta {delta}"
-            )
-
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    f"Current value {self.current_value}, cost {current_cost}, "
+                    f"best cost {best_cost} "
+                    f"delta {delta}"
+                )
             if self.variant == "A":
                 self.variant_a(delta, best_cost, args_best)
             elif self.variant == "B":
                 self.variant_b(delta, best_cost, args_best)
             elif self.variant == "C":
                 self.variant_c(delta, best_cost, args_best)
+
         else:
-            self.logger.debug(
-                "Still waiting for neighbors values %s ", set(self.current_assignment)
-            )
+            n = len(self.neighbors)
+            c = len(self.current_assignment)
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    f"Still waiting for neighbors values {n-c} out of {n} "
+                )
 
         # In order to be more resilient to message loss, we send our value even
         # if it did not change.
@@ -225,10 +243,12 @@ class ADsaComputation(VariableComputation):
         DSA-A value change : only if gain is strictly positive.
         """
         if delta > 0:
-            self.logger.debug("Variant A, attempt probabilistic change")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug("Variant A, attempt probabilistic change")
             self.probabilistic_change(best_cost, best_values)
         else:
-            self.logger.debug("Variant A, no reason to change")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug("Variant A, no reason to change")
 
     def variant_b(self, delta, best_cost, best_values):
         """
@@ -236,11 +256,13 @@ class ADsaComputation(VariableComputation):
         constraints are still violated (i.e. not at their optimal value).
         """
         if delta > 0:
-            self.logger.debug("Variant B, attempt probabilistic change")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug("Variant B, attempt probabilistic change")
             self.probabilistic_change(best_cost, best_values)
 
         elif delta == 0 and self.exists_violated_constraint():
-            self.logger.debug("Variant B, attempt probabilistic change")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug("Variant B, attempt probabilistic change")
             if len(best_values) > 1:
                 try:
                     best_values.remove(self.current_value)
@@ -248,14 +270,16 @@ class ADsaComputation(VariableComputation):
                     pass
             self.probabilistic_change(best_cost, best_values)
         else:
-            self.logger.debug("Variant B, no reason to change")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug("Variant B, no reason to change")
 
     def variant_c(self, delta, best_cost, best_values):
         """
         DSA-B value change : if gain is <= 0.
         """
         if delta > 0:
-            self.logger.debug("Variant C, attempt probabilistic change")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug("Variant C, attempt probabilistic change")
             self.probabilistic_change(best_cost, best_values)
 
         elif delta == 0:
@@ -266,7 +290,8 @@ class ADsaComputation(VariableComputation):
                     pass
             self.probabilistic_change(best_cost, best_values)
         else:
-            self.logger.debug("Variant C, no reason to change")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug("Variant C, no reason to change")
 
     def probabilistic_change(self, best_cost, best_values):
         """
@@ -274,11 +299,13 @@ class ADsaComputation(VariableComputation):
         """
         if self.probability > random.random():
             self.value_selection(random.choice(best_values), best_cost)
-            self.logger.info(
-                f"Selecting new value {self.current_value} with cost {self.current_cost}"
-            )
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info(
+                    f"Selecting new value {self.current_value} with cost {self.current_cost}"
+                )
         else:
-            self.logger.info("No probabilistic value change")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.info("No probabilistic value change")
 
     def find_best_values(self, assignment: Dict[Any, float]) -> Tuple[List[Any], float]:
         """
