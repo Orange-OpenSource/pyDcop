@@ -404,9 +404,9 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
             requested pause state for the computation.
         """
         if self._is_paused != is_paused:
+            self._is_paused = is_paused
             self.on_pause(is_paused)
 
-        self._is_paused = is_paused
         if not is_paused:
 
             waiting_msg_count = 0
