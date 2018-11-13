@@ -1333,7 +1333,7 @@ class ResilientAgent(Agent):
                                  '%s : %s ', self.name,
                                  selected_computations)
                 for selected in selected_computations:
-                    self.computation(selected).on_start()
+                    self.computation(selected).start()
                     self.computation(selected).pause()
 
             # Remove / undeploy repair comp once repaired
