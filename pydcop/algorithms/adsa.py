@@ -159,6 +159,15 @@ class ADsaComputation(VariableComputation):
                 "no _tick_handle"
             )
             
+
+    def on_pause(self, paused: bool):
+        if not paused:
+            # when resuming (i.e. leaving pause) we can simply drop any pending message
+            # as A-DSA is asynchronous and periodic
+            self._paused_messages_post.clear()
+            self._paused_messages_recv.clear()
+            self.logger.debug(f"Dropping all message from pause on {self.name}")
+
     def delayed_start(self):
         self.remove_periodic_action(self._start_handle)
         self.logger.debug("Remove start delayed action %s ", self._start_handle)
