@@ -403,6 +403,9 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         is_paused: bool
             requested pause state for the computation.
         """
+        if self._is_paused != is_paused:
+            self.on_pause(is_paused)
+
         self._is_paused = is_paused
         if not is_paused:
 
@@ -448,6 +451,12 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         Called when pausing or resuming the computation.
 
         This method is meant to be overwritten in subclasses.
+
+        Parameters
+        ----------
+        paused: boolean
+            the new pause status. This method is only called is the status has changed
+
         """
         pass
 
@@ -630,7 +639,7 @@ class DcopComputation(MessagePassingComputation):
 
         self.algo_name = self.__class__.__module__.split(".")[-1]
         self.logger = logging.getLogger(
-            'pydcop.algo.' + self.algo_name + '.' + name)
+            f"pydcop.algo.{self.algo_name}.{name}")
 
         self.computation_def = comp_def
         self.__cycle_count__ = 0
