@@ -183,6 +183,8 @@ class ADsaComputation(VariableComputation):
         self.logger.debug("Receiving value %s from %s", msg.value, variable_name)
 
     def tick(self):
+        if self.is_paused:
+            return
         # Check if we have a value for all our neighbors
         if len(self.current_assignment) == len(self.neighbors):
 
