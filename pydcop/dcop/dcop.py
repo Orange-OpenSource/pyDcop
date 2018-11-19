@@ -357,7 +357,7 @@ def solution_cost(relations, variables, assignment, infinity):
 
     for v in variables:
 
-        if hasattr(v, 'cost_for_val') and v.name in assignment and \
+        if v.name in assignment and \
                 assignment[v.name] is not None:
             cost_for_val = v.cost_for_val(assignment[v.name])
             if cost_for_val != infinity:

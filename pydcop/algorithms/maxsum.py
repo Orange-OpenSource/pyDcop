@@ -564,7 +564,7 @@ class VariableAlgo(VariableComputation):
 
         # self._v = variable.clone()
         # Add noise to the variable, on top of cost if needed
-        if hasattr(variable, "cost_for_val"):
+        if variable.has_cost:
             self._v = VariableNoisyCostFunc(
                 variable.name,
                 variable.domain,

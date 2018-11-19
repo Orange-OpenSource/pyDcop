@@ -347,11 +347,10 @@ class MgmComputation(VariableComputation):
                     concerned_vars.update(c.dimensions)
 
                 for v in concerned_vars:
-                    if hasattr(v, "cost_for_val"):
-                        if v.name == self.name:
-                            cost += v.cost_for_val(self.current_value)
-                        else:
-                            cost += v.cost_for_val(self._neighbors_values[v.name])
+                    if v.name == self.name:
+                        cost += v.cost_for_val(self.current_value)
+                    else:
+                        cost += v.cost_for_val(self._neighbors_values[v.name])
 
                 self.value_selection(self.current_value, cost)
 
@@ -449,11 +448,10 @@ class MgmComputation(VariableComputation):
         )
         # Add the cost for each variable value if any
         for var in concerned_vars:
-            if hasattr(var, "cost_for_val"):
-                if var.name == self.name:
-                    rel_val += var.cost_for_val(self.current_value)
-                else:
-                    rel_val += var.cost_for_val(self._neighbors_values[var.name])
+            if var.name == self.name:
+                rel_val += var.cost_for_val(self.current_value)
+            else:
+                rel_val += var.cost_for_val(self._neighbors_values[var.name])
 
         return var_val, rel_val
 

@@ -229,6 +229,8 @@ class ADsaComputation(VariableComputation):
         else:
             n = len(self.neighbors)
             c = len(self.current_assignment)
+
+            print(f" {self.name} Still waiting for neighbors values {n-c} out of {n} ")
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(
                     f"Still waiting for neighbors values {n-c} out of {n} "
@@ -338,8 +340,7 @@ class ADsaComputation(VariableComputation):
             cost = assignment_cost(assignment, self.constraints)
 
             # Take into account variable cost, if any
-            if hasattr(self.variable, "cost_for_val"):
-                cost += self.variable.cost_for_val(value)
+            cost += self.variable.cost_for_val(value)
 
             if cost == best_cost:
                 arg_best.append(value)

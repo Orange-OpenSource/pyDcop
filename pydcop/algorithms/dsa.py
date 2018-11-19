@@ -411,8 +411,7 @@ class DsaComputation(VariableComputation):
             cost = assignment_cost(assignment, self.constraints)
 
             # Take into account variable cost, if any
-            if hasattr(self.variable, "cost_for_val"):
-                cost += self.variable.cost_for_val(value)
+            cost += self.variable.cost_for_val(value)
 
             if cost == best_cost:
                 arg_best.append(value)

@@ -138,7 +138,7 @@ class Domain(Sized, SimpleRepr, Iterable[Any]):
         """
         Find a domain value with the same str representation
 
-        This is usefull when reading value from a file.
+        This is useful when reading value from a file.
 
         Parameters
         ----------
@@ -194,6 +194,8 @@ class Variable(SimpleRepr):
 
     """
 
+    has_cost = False
+
     def __init__(
         self, name: str, domain: Union[Domain, Iterable[Any]], initial_value=None
     ) -> None:
@@ -225,6 +227,9 @@ class Variable(SimpleRepr):
     @property
     def initial_value(self):
         return self._initial_value
+
+    def cost_for_val(self, val) -> float:
+        return 0
 
     def __str__(self):
         return "Variable({})".format(self.name)
@@ -403,6 +408,8 @@ def create_binary_variables(
 
 
 class VariableWithCostDict(Variable):
+    has_cost = True
+
     def __init__(
         self,
         name: str,
@@ -455,6 +462,8 @@ class VariableWithCostDict(Variable):
 
 
 class VariableWithCostFunc(Variable):
+    has_cost = True
+
     def __init__(
         self,
         name: str,
@@ -536,6 +545,8 @@ class VariableWithCostFunc(Variable):
 
 
 class VariableNoisyCostFunc(VariableWithCostFunc):
+    has_cost = True
+
     def __init__(
         self,
         name: str,
