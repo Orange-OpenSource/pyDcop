@@ -49,6 +49,9 @@ batches:
 
   conf1:
     command: solve
+
+    # where the command will be run
+    # created if needed
     current_dir: ~/tmp/{algo}
 
     command_options:
