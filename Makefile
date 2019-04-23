@@ -2,7 +2,10 @@
 all: test integ
 
 test:
-	pytest tests
+	pytest ./tests/unit
+	pytest --doctest-modules ./pydcop
+	pytest ./tests/dcop_cli
+	pytest ./tests/api
 
 test_cli:
 	pytest ./tests/dcop_cli
@@ -10,7 +13,6 @@ test_cli:
 test_unit:
 	pytest ./tests/unit
 	pytest --doctest-modules ./pydcop
-	pytest ./tests/api
 
 
 test_api:
