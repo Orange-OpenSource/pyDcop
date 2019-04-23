@@ -202,6 +202,12 @@ class GraphColoring10(unittest.TestCase):
         result = run_solve('mgm', 'adhoc', 'graph_coloring_10_4_15_0.1.yml', 2)
         self.check_results(result)
 
+    def test_dpop_oneagent(self):
+        results = run_solve('dpop', 'oneagent', 'graph_coloring_10_4_15_0.1.yml', 3)
+        self.assertEqual(results['status'], 'FINISHED')
+
+        assignment = results['assignment']
+        self.assertEqual(results['cost'], 0)
 
 class GraphColoringCsp(unittest.TestCase):
 
