@@ -1,0 +1,82 @@
+name: graph coloring
+objective: min
+
+domains:
+  colors:
+    values: [R, G]
+    type: 'color'
+
+
+variables:
+  v0:
+    domain: colors
+  v1:
+    domain: colors
+  v2:
+    domain: colors
+  v3:
+    domain: colors
+  v4:
+    domain: colors
+  v5:
+    domain: colors
+  v6:
+    domain: colors
+  v7:
+    domain: colors
+  v8:
+    domain: colors
+  v9:
+    domain: colors
+
+constraints:
+  c0:
+    function: 10000 if v0 == v1 else 0
+    type: intention
+  c1:
+    function: 10000 if v0 == v4 else 0
+    type: intention
+  c10:
+    function: 10000 if v6 == v9 else 0
+    type: intention
+  c11:
+    function: 10000 if v7 == v9 else 0
+    type: intention
+  c2:
+    function: 10000 if v0 == v5 else 0
+    type: intention
+  c3:
+    function: 10000 if v1 == v2 else 0
+    type: intention
+  c4:
+    function: 10000 if v2 == v5 else 0
+    type: intention
+  c5:
+    function: 10000 if v2 == v6 else 0
+    type: intention
+  c6:
+    function: 10000 if v3 == v8 else 0
+    type: intention
+  c7:
+    function: 10000 if v3 == v4 else 0
+    type: intention
+  c8:
+    function: 10000 if v4 == v5 else 0
+    type: intention
+  c9:
+    function: 10000 if v4 == v7 else 0
+    type: intention
+
+agents:
+  a1:
+    capacity: 100
+  a2:
+    capacity: 100
+  a3:
+    capacity: 100
+
+distribution_hints:
+  must_host:
+    a1: [v1]
+    a2: [v2]
+    a3: [v3]
