@@ -1429,9 +1429,12 @@ def generate_assignment_as_dict(variables: List[Variable]):
                 yield ass
 
 
-def assignment_cost(assignment: Dict[str, Any],
-                    constraints: Iterable['Constraint'],
-                    consider_variable_cost=False):
+def assignment_cost(
+    assignment: Dict[str, Any],
+    constraints: Iterable["Constraint"],
+    consider_variable_cost=False,
+    **kwargs
+):
     """
     Compute the cost of an assignment over a set of constraints.
 
@@ -1441,6 +1444,12 @@ def assignment_cost(assignment: Dict[str, Any],
         The assignment given as a dict of variable_name : value
     constraints: Iterable['Constraint']
         a list of constraints
+    consider_variable_cost: boolean
+        if we should take into account the cost embedded in the
+        variable (if any)
+    **kwargs: dict
+        allows passing extra variable values, is only used when a variable value
+        is missing from  `assignment`.
 
     Raises
     ------
@@ -1452,7 +1461,7 @@ def assignment_cost(assignment: Dict[str, Any],
     The sum of the costs of the constraints for this assignment.
 
     """
-    # NOTE: this method is performance-cirtcal and has been profiled and tuned,
+    # NOTE: this method is performance-critical and has been profiled and tuned,
     # make sure to do it again if you need to change it !!
     cost = 0
     cost_vars = None
@@ -1466,7 +1475,11 @@ def assignment_cost(assignment: Dict[str, Any],
                 if v_name not in cost_vars:
                     cost += v.cost_for_val(assignment[v_name])
                     cost_vars.add(v_name)
-            filtered_ass[v_name] = assignment[v_name]
+            try:
+                filtered_ass[v_name] = assignment[v_name]
+            except KeyError:
+                filtered_ass[v_name] = kwargs[v_name]
+
         cost += c(**filtered_ass)
 
     return cost
