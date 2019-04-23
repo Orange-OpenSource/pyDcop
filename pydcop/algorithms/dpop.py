@@ -46,17 +46,23 @@ TODO
 from random import choice
 from typing import Iterable
 
-from pydcop.infrastructure.computations import Message, VariableComputation, \
-    register
+from pydcop.infrastructure.computations import Message, VariableComputation, register
 from pydcop.dcop.objects import Variable
-from pydcop.dcop.relations import NAryMatrixRelation, RelationProtocol, \
-    Constraint, get_data_type_max, get_data_type_min, generate_assignment, \
-    generate_assignment_as_dict, filter_assignment_dict, find_arg_optimal, \
-    DEFAULT_TYPE
-from pydcop.algorithms import ALGO_STOP, ALGO_CONTINUE, \
-    ComputationDef
+from pydcop.dcop.relations import (
+    NAryMatrixRelation,
+    RelationProtocol,
+    Constraint,
+    get_data_type_max,
+    get_data_type_min,
+    generate_assignment,
+    generate_assignment_as_dict,
+    filter_assignment_dict,
+    find_arg_optimal,
+    DEFAULT_TYPE,
+)
+from pydcop.algorithms import ALGO_STOP, ALGO_CONTINUE, ComputationDef
 
-GRAPH_TYPE = 'pseudotree'
+GRAPH_TYPE = "pseudotree"
 
 
 def build_computation(comp_def: ComputationDef):
@@ -64,16 +70,16 @@ def build_computation(comp_def: ComputationDef):
     parent = None
     children = []
     for l in comp_def.node.links:
-        if l.type == 'parent' and l.source == comp_def.node.name:
+        if l.type == "parent" and l.source == comp_def.node.name:
             parent = l.target
-        if l.type == 'children' and l.source == comp_def.node.name:
+        if l.type == "children" and l.source == comp_def.node.name:
             children.append(l.target)
 
     constraints = [r for r in comp_def.node.constraints]
 
-    computation = DpopAlgo(comp_def.node.variable, parent,
-                           children, constraints,
-                           comp_def=comp_def)
+    computation = DpopAlgo(
+        comp_def.node.variable, parent, children, constraints, comp_def=comp_def
+    )
     return computation
 
 
@@ -87,7 +93,7 @@ class DpopMessage(Message):
         # UTIL : multi-dimensional matrices
         # VALUE :
 
-        if self.type == 'UTIL':
+        if self.type == "UTIL":
             # UTIL messages are multi-dimensional matrices
             shape = self.content.shape
             size = 1
@@ -95,13 +101,13 @@ class DpopMessage(Message):
                 size *= s
             return size
 
-        elif self.type == 'VALUE':
+        elif self.type == "VALUE":
             # VALUE message are a value assignment for each var in the
             # separator of the sender
             return len(self.content[0]) * 2
 
     def __str__(self):
-        return 'DpopMessage({}, {})'.format(self._msg_type, self._content)
+        return "DpopMessage({}, {})".format(self._msg_type, self._content)
 
 
 def join_utils(u1: Constraint, u2: Constraint) -> Constraint:
@@ -130,7 +136,7 @@ def join_utils(u1: Constraint, u2: Constraint) -> Constraint:
         if d2 not in dims:
             dims.append(d2)
 
-    u_j = NAryMatrixRelation(dims, name='joined_utils')
+    u_j = NAryMatrixRelation(dims, name="joined_utils")
     for ass in generate_assignment_as_dict(dims):
 
         # FIXME use dict for assignement
@@ -144,7 +150,7 @@ def join_utils(u1: Constraint, u2: Constraint) -> Constraint:
     return u_j
 
 
-def projection(a_rel, a_var, mode='max'):
+def projection(a_rel, a_var, mode="max"):
     """
 
     The project of a relation a_rel along the variable a_var is the
@@ -176,23 +182,23 @@ def projection(a_rel, a_var, mode='max'):
         # for each assignment, look for the max value when iterating over
         # aVar domain
 
-        if mode == 'min':
+        if mode == "min":
             best_val = get_data_type_max(DEFAULT_TYPE)
         else:
             best_val = get_data_type_min(DEFAULT_TYPE)
 
         for val in a_var.domain:
-            full_assignment = _add_var_to_assignment(partial_assignment,
-                                                     a_rel.dimensions, a_var,
-                                                     val)
+            full_assignment = _add_var_to_assignment(
+                partial_assignment, a_rel.dimensions, a_var, val
+            )
 
             current_val = a_rel.get_value_for_assignment(full_assignment)
-            if (mode == 'max' and best_val < current_val) or \
-               (mode == 'min' and best_val > current_val):
+            if (mode == "max" and best_val < current_val) or (
+                mode == "min" and best_val > current_val
+            ):
                 best_val = current_val
 
-        proj_rel = proj_rel.set_value_for_assignment(partial_assignment,
-                                                     best_val)
+        proj_rel = proj_rel.set_value_for_assignment(partial_assignment, best_val)
 
     return proj_rel
 
@@ -215,16 +221,13 @@ def _add_var_to_assignment(partial_assignt, ass_vars, new_var, new_value):
 
     """
 
-    if len(partial_assignt)+1 != len(ass_vars):
-        raise ValueError('Length of partial assignment and variables do not '
-                         'match.')
+    if len(partial_assignt) + 1 != len(ass_vars):
+        raise ValueError("Length of partial assignment and variables do not " "match.")
     full_assignment = partial_assignt[:]
     for i in range(len(ass_vars)):
         if ass_vars[i] == new_var:
             full_assignment.insert(i, new_value)
     return full_assignment
-
-
 
 
 class DpopAlgo(VariableComputation):
@@ -247,10 +250,16 @@ class DpopAlgo(VariableComputation):
       to say, our separator) .
 
     """
-    def __init__(self, variable: Variable, parent: str,
-                 children: Iterable[str],
-                 constraints: Iterable[RelationProtocol],
-                 msg_sender=None, comp_def=None):
+
+    def __init__(
+        self,
+        variable: Variable,
+        parent: str,
+        children: Iterable[str],
+        constraints: Iterable[RelationProtocol],
+        msg_sender=None,
+        comp_def=None,
+    ):
         """
 
         In DPOP:
@@ -291,7 +300,7 @@ class DpopAlgo(VariableComputation):
         """
         super().__init__(variable, comp_def)
 
-        assert comp_def.algo.algo == 'dpop'
+        assert comp_def.algo.algo == "dpop"
 
         self._msg_sender = msg_sender
         self._mode = comp_def.algo.mode
@@ -299,15 +308,16 @@ class DpopAlgo(VariableComputation):
         self._children = children
         self._constraints = constraints
 
-        if hasattr(self._variable, 'cost_for_val'):
+        if hasattr(self._variable, "cost_for_val"):
             costs = []
             for d in self._variable.domain:
                 costs.append(self._variable.cost_for_val(d))
-            self._joined_utils = NAryMatrixRelation([self._variable], costs,
-                                                    name='joined_utils')
+            self._joined_utils = NAryMatrixRelation(
+                [self._variable], costs, name="joined_utils"
+            )
 
         else:
-            self._joined_utils = NAryMatrixRelation([], name='joined_utils')
+            self._joined_utils = NAryMatrixRelation([], name="joined_utils")
 
         self._children_separator = {}
 
@@ -345,10 +355,14 @@ class DpopAlgo(VariableComputation):
             # Note: as a leaf, our separator is the union of our parents and
             # pseudo-parents
             util = self._compute_utils_msg()
-            self.logger.info('Leaf %s init message %s -> %s  : %s',
-                             self._variable.name, self._variable.name,
-                             self._parent, util)
-            msg = DpopMessage('UTIL', util)
+            self.logger.info(
+                "Leaf %s init message %s -> %s  : %s",
+                self._variable.name,
+                self._variable.name,
+                self._parent,
+                util,
+            )
+            msg = DpopMessage("UTIL", util)
             self.post_msg(self._parent, msg)
             msg_count += 1
             msg_size += msg.size
@@ -361,7 +375,8 @@ class DpopAlgo(VariableComputation):
                     self._joined_utils = join_utils(self._joined_utils, r)
 
                 values, current_cost = find_arg_optimal(
-                    self._variable, self._joined_utils, self._mode)
+                    self._variable, self._joined_utils, self._mode
+                )
 
                 self.select_value_and_finish(values[0], float(current_cost))
             else:
@@ -396,13 +411,11 @@ class DpopAlgo(VariableComputation):
         self.value_selection(value, cost)
         self.stop()
         self.finished()
-        self.logger.info('Value selected at %s : %s - %s', self.name,
-                         value, cost)
+        self.logger.info("Value selected at %s : %s - %s", self.name, value, cost)
 
     @register("UTIL")
     def _on_util_message(self, variable_name, recv_msg, t):
-        self.logger.debug('Util message from %s : %r ',
-                          variable_name, recv_msg.content)
+        self.logger.debug("Util message from %s : %r ", variable_name, recv_msg.content)
         utils = recv_msg.content
         msg_count, msg_size = 0, 0
 
@@ -411,8 +424,12 @@ class DpopAlgo(VariableComputation):
         try:
             self._waited_children.remove(variable_name)
         except ValueError as e:
-            self.logger.error('Unexpected UTIL message from %s on %s : %r ',
-                              variable_name, self.name, recv_msg)
+            self.logger.error(
+                "Unexpected UTIL message from %s on %s : %r ",
+                variable_name,
+                self.name,
+                recv_msg,
+            )
             raise e
         # keep a reference of the separator of this children, we need it when
         # computing the value message
@@ -430,30 +447,34 @@ class DpopAlgo(VariableComputation):
                     self._joined_utils = join_utils(self._joined_utils, r)
 
                 values, current_cost = find_arg_optimal(
-                    self._variable, self._joined_utils, self._mode)
+                    self._variable, self._joined_utils, self._mode
+                )
                 selected_value = values[0]
 
-                self.logger.info('ROOT: On UNTIL message from %s, send value '
-                                 'msg to childrens %s ',
-                                  variable_name, self._children)
+                self.logger.info(
+                    "ROOT: On UNTIL message from %s, send value "
+                    "msg to childrens %s ",
+                    variable_name,
+                    self._children,
+                )
                 for c in self._children:
-                    msg = DpopMessage('VALUE', ([self._variable],
-                                                [selected_value]))
+                    msg = DpopMessage("VALUE", ([self._variable], [selected_value]))
                     self.post_msg(c, msg)
                     msg_count += 1
                     msg_size += msg.size
 
-                self.select_value_and_finish(selected_value,
-                                             float(current_cost))
+                self.select_value_and_finish(selected_value, float(current_cost))
             else:
                 # We have received the Utils msg from all our children, we can
                 # now compute our own utils relation by joining the accumulated
                 # util with the relations with our parent and pseudo_parents.
                 util = self._compute_utils_msg()
-                msg = DpopMessage('UTIL', util)
-                self.logger.info('On UTIL message from %s, send UTILS msg '
-                                 'to parent %s ',
-                                  variable_name, self._children)
+                msg = DpopMessage("UTIL", util)
+                self.logger.info(
+                    "On UTIL message from %s, send UTILS msg " "to parent %s ",
+                    variable_name,
+                    self._children,
+                )
                 self.post_msg(self._parent, msg)
                 msg_count += 1
                 msg_size += msg.size
@@ -470,8 +491,11 @@ class DpopAlgo(VariableComputation):
 
     @register("VALUE")
     def _on_value_message(self, variable_name, recv_msg, t):
-        self.logger.debug('{}: on value message from {} : "{}"'
-                          .format(self.name, variable_name, recv_msg))
+        self.logger.debug(
+            '{}: on value message from {} : "{}"'.format(
+                self.name, variable_name, recv_msg
+            )
+        )
 
         value = recv_msg.content
         msg_count, msg_size = 0, 0
@@ -479,14 +503,14 @@ class DpopAlgo(VariableComputation):
         # Value msg contains the optimal assignment for all variables in our
         # separator : sep_vars, sep_values = value
         value_dict = {k.name: v for k, v in zip(*value)}
-        self.logger.debug('Slicing relation on %s', value_dict)
+        self.logger.debug("Slicing relation on %s", value_dict)
 
         # as the value msg contains values for all variables in our
         # separator, slicing the util on these variables produces a relation
         # with a single dimension, our own variable.
         rel = self._joined_utils.slice(value_dict)
 
-        self.logger.debug('Relation after slicing %s', rel)
+        self.logger.debug("Relation after slicing %s", rel)
 
         values, current_cost = find_arg_optimal(self._variable, rel, self._mode)
         selected_value = values[0]
@@ -505,7 +529,7 @@ class DpopAlgo(VariableComputation):
                     # we want an intersection, we can ignore the variable if
                     # not in value_dict
                     pass
-            msg = DpopMessage('VALUE', (variables_msg, values_msg))
+            msg = DpopMessage("VALUE", (variables_msg, values_msg))
             msg_count += 1
             msg_size += msg.size
             self.post_msg(c, msg)
