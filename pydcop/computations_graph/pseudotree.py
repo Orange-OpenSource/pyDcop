@@ -294,7 +294,7 @@ def _generate_dfs_tree(variables, relations, root=None):
     """
     Generate a DFS tree for these variables connected by these relations.
     If the 'root' is argument is not None, it is used as the root of the
-    tree, otherwise a random root is picked from the set of variables
+    tree, otherwise the node with the highest number of neighbors is used as root.
 
 
     :param variables:
@@ -481,7 +481,7 @@ def build_computation_graph(dcop: DCOP,
     else:
         if constraints is None or variables is None:
             raise ValueError('Constraints AND variables parameters must be '
-                             'provided wgen not building the graph from a dcop')
+                             'provided when not building the graph from a dcop')
         variables = list(variables)
         constraints = list(constraints)
 
