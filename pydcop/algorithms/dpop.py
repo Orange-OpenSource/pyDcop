@@ -31,8 +31,12 @@
 
 """
 
-DPOP algorithm
---------------
+DPOP: Dynamic Programming Optimization Protocol
+-----------------------------------------------
+
+Dynamic Programming Optimization Protocol  is an optimal,
+inference-based, dcop algorithm implementing a dynamic programming procedure
+in a distributed way :cite:`petcu_distributed_2004`.
 
 TODO
 
@@ -225,7 +229,7 @@ def _add_var_to_assignment(partial_assignt, ass_vars, new_var, new_value):
 
 class DpopAlgo(VariableComputation):
     """
-    Dynamic programming Optimization Protocol
+    DPOP: Dynamic Programming Optimization Protocol
 
     This class represents the DPOP algorithm.
 
@@ -243,34 +247,38 @@ class DpopAlgo(VariableComputation):
       to say, our separator) .
 
     """
-
     def __init__(self, variable: Variable, parent: str,
                  children: Iterable[str],
                  constraints: Iterable[RelationProtocol],
                  msg_sender=None, comp_def=None):
         """
 
-        In DPOP,
-        * a relation is managed by a single agent (i.e. algorithm object in
-        our case)
-        * a relation must always be managed by the lowest node in the DFS
-        tree that the relation depends on (which is especially important for
-        non-binary relation).
+        In DPOP:
+        * A computation represents, and select a value for, one variable.
+        * A constraint is managed (i.e. referenced) by a single computation object:
+          this means that, when building the computations, each constraint must only be
+          passed as argument to a single computation.
+        * A constraint must always be managed by the lowest node in the DFS
+          tree that the relation depends on (which is especially important for
+          non-binary relation). The pseudo-tree building mechanism already
+          takes care of this.
 
 
         :param variable: The Variable object managed by this algorithm
 
         :param parent: the parent for this node. A node has at most one parent
         but may have 0-n pseudo-parents. Pseudo parent are not given
-        explicitly but can be deduced from the relation set with add_relation.
+        explicitly but can be deduced from the constraints and children
+        (if the union of the constraints' scopes contains a variable that is not a
+        children, it must necessarily be a pseudo-parent).
         If the variable shares a constraints with its parent (which is the
         most common case), it must be present in the relation arg.
 
-        :param children: the children variables of the variable arguemnt,
+        :param children: the children variables of the variable argument,
         in the DFS tree
 
-        :param constraints: relations managed by this computation. These
-        relation will be used when calculating costs. It must
+        :param constraints: constraints managed by this computation. These
+        relations will be used when calculating costs. It must
         depends on the variable arg. Unary relation are also supported.
         Remember that a relation must always be managed by the lowest node in
         the DFS tree that the relation depends on (which is especially
