@@ -577,6 +577,7 @@ class VariableAlgo(VariableComputation):
                 variable.domain,
                 cost_func=lambda x: 0,
                 initial_value=variable.initial_value,
+                noise_level=0.0001
             )
 
         self.var_with_cost = True
