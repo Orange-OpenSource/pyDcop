@@ -62,7 +62,7 @@ class RelationProtocol(object):
 
     @property
     def name(self) -> str:
-        raise NotImplemented('name not implemented')
+        raise NotImplemented("name not implemented")
 
     @property
     def dimensions(self) -> List[Variable]:
@@ -70,7 +70,7 @@ class RelationProtocol(object):
         The Dimensions of a relation is the list of variables it depends on.
         :return: a list of Variables objects this Relation depends on.
         """
-        raise NotImplemented('dimensions not implemented')
+        raise NotImplemented("dimensions not implemented")
 
     @property
     def arity(self) -> int:
@@ -78,7 +78,7 @@ class RelationProtocol(object):
         The arity of the relation is the number of variables it depends on.
         :return:
         """
-        raise NotImplemented('arity not implemented')
+        raise NotImplemented("arity not implemented")
 
     @property
     def shape(self) -> Tuple:
@@ -88,24 +88,24 @@ class RelationProtocol(object):
 
         :return a tuple representing the shape of the relation
         """
-        raise NotImplemented('shape not implemented')
+        raise NotImplemented("shape not implemented")
 
-    def slice(self, partial_assignment: Dict[str, object]) \
-            -> 'RelationProtocol':
+    def slice(self, partial_assignment: Dict[str, object]) -> "RelationProtocol":
         """
         Slice operation on a relation.
 
         :param partial_assignment: a dict {var_name: value} containing the
         name and value of all variable to be sliced out of the relation.
 
-        :return: A new relation with a lower (or equal) arity, depending on 
-        the same variable(s) than the original relation, minus the sliced 
+        :return: A new relation with a lower (or equal) arity, depending on
+        the same variable(s) than the original relation, minus the sliced
         variables.
         """
-        raise NotImplemented('slice not implemented')
+        raise NotImplemented("slice not implemented")
 
-    def set_value_for_assignment(self, assignment: Dict[str, Any],
-                                 relation_value) -> 'RelationProtocol':
+    def set_value_for_assignment(
+        self, assignment: Dict[str, Any], relation_value
+    ) -> "RelationProtocol":
         """
         Return a new relation with the same name and the same value for
         every possible assignment except `assignment`, which maps to
@@ -122,7 +122,7 @@ class RelationProtocol(object):
         :return a new Relation object
         """
 
-        raise NotImplemented('set_value_for_assignment not implemented')
+        raise NotImplemented("set_value_for_assignment not implemented")
 
     def get_value_for_assignment(self, assignment):
         """
@@ -133,7 +133,7 @@ class RelationProtocol(object):
 
         :return the value of the relation for this assignment.
         """
-        raise NotImplemented('get_value_for_assignment not implemented')
+        raise NotImplemented("get_value_for_assignment not implemented")
 
     def __call__(self, *args, **kwargs):
         """
@@ -146,7 +146,7 @@ class RelationProtocol(object):
         value of the variable of the relation, in the same order as returned
         by the `dimensions` property.
 
-        For example, instead of: ``r1.get_value_for_assignment([2, 3])`` one 
+        For example, instead of: ``r1.get_value_for_assignment([2, 3])`` one
         can write: ``r1(2, 3)``
 
         When using keyword arguments the order does not matter, there must be
@@ -154,7 +154,7 @@ class RelationProtocol(object):
         the keyword is the name of the variable.
 
         """
-        raise NotImplemented('slice not implemented')
+        raise NotImplemented("slice not implemented")
 
 
 Constraint = RelationProtocol
@@ -164,6 +164,7 @@ class AbstractBaseRelation(RelationProtocol):
     """
     This class is meant to be used as a base when implementing a Relation.
     """
+
     def __init__(self, name: str) -> None:
         self._name = name
         self._variables = []  # type: List[Variable]
@@ -185,7 +186,7 @@ class AbstractBaseRelation(RelationProtocol):
         return tuple([len(v.domain) for v in self._variables])
 
     def __str__(self):
-        return 'Relation: {}  on {} '.format(self._name, self._variables)
+        return "Relation: {}  on {} ".format(self._name, self._variables)
 
 
 class ZeroAryRelation(AbstractBaseRelation, SimpleRepr):
@@ -198,36 +199,36 @@ class ZeroAryRelation(AbstractBaseRelation, SimpleRepr):
         self._variables = []
         self._value = value
 
-    def slice(self, partial_assignment: Dict[str, object]) \
-            -> RelationProtocol:
+    def slice(self, partial_assignment: Dict[str, object]) -> RelationProtocol:
         if not partial_assignment:
             return self
         else:
-            raise ValueError('ZeroAryRelation can only be sliced with an '
-                             'empty partial assignement')
+            raise ValueError(
+                "ZeroAryRelation can only be sliced with an "
+                "empty partial assignement"
+            )
 
-    def set_value_for_assignment(self, assignment, relation_value) \
-            -> 'ZeroAryRelation':
+    def set_value_for_assignment(self, assignment, relation_value) -> "ZeroAryRelation":
         if len(assignment) != 0:
-            raise ValueError('ZeroAryRelation only accept empty assignment')
+            raise ValueError("ZeroAryRelation only accept empty assignment")
 
         return ZeroAryRelation(self.name, relation_value)
 
     def get_value_for_assignment(self, assignment):
         if len(assignment) != 0:
-            raise ValueError('ZeroAryRelation only accept empty assignment')
+            raise ValueError("ZeroAryRelation only accept empty assignment")
         return self._value
 
     def __call__(self, *args, **kwargs):
         if len(args) == 0 and len(kwargs) == 0:
             return self._value
-        raise ValueError('ZeroAryRelation only accept empty assignment')
+        raise ValueError("ZeroAryRelation only accept empty assignment")
 
     def __str__(self):
-        return 'ZeroAryRelation({})'.format(self.name)
+        return "ZeroAryRelation({})".format(self.name)
 
     def __repr__(self):
-        return 'ZeroAryRelation({}, {})'.format(self.name, self._value)
+        return "ZeroAryRelation({}, {})".format(self.name, self._value)
 
     def __eq__(self, other):
         if type(other) != ZeroAryRelation:
@@ -261,10 +262,12 @@ class UnaryFunctionRelation(AbstractBaseRelation, SimpleRepr):
 
     """
 
-    def __init__(self, name: str, variable: Variable,
-                 rel_function: Union[ExpressionFunction,
-                                     Callable[[Any], Union[float, int]]]) \
-        -> None:
+    def __init__(
+        self,
+        name: str,
+        variable: Variable,
+        rel_function: Union[ExpressionFunction, Callable[[Any], Union[float, int]]],
+    ) -> None:
         super().__init__(name)
         self._variable = variable
         self._variables = [variable]
@@ -279,65 +282,68 @@ class UnaryFunctionRelation(AbstractBaseRelation, SimpleRepr):
         """
         if isinstance(self._rel_function, ExpressionFunction):
             return self._rel_function.expression
-        raise AttributeError('The function ' + str(self._name) +
-                             'has no expression !')
+        raise AttributeError("The function " + str(self._name) + "has no expression !")
 
     @property
     def function(self) -> Callable[[Any], Union[float, int]]:
         return self._rel_function
 
-    def slice(self, partial_assignment: Dict[str, object]) \
-            -> RelationProtocol:
+    def slice(self, partial_assignment: Dict[str, object]) -> RelationProtocol:
         if not partial_assignment:
             return self
         elif len(partial_assignment) == 1:
-            v_name, =  partial_assignment.keys()
+            v_name, = partial_assignment.keys()
             if v_name != self._variable.name:
-                raise ValueError('Unknown variable when slicing UnaryRelation')
+                raise ValueError("Unknown variable when slicing UnaryRelation")
 
-            name = self._name + '_' + v_name
-            return ZeroAryRelation(name,
-                                   self._rel_function(
-                                       partial_assignment[v_name]))
+            name = self._name + "_" + v_name
+            return ZeroAryRelation(name, self._rel_function(partial_assignment[v_name]))
 
-        raise ValueError('Too many variables when slicing UnaryRelation')
+        raise ValueError("Too many variables when slicing UnaryRelation")
 
     def get_value_for_assignment(self, assignment) -> Union[float, int]:
 
         if isinstance(assignment, list):
             if len(assignment) == 1:
                 return self._rel_function(assignment[0])
-            raise ValueError('Need exactly one argument to get a value from an'
-                             ' UnaryRelation')
+            raise ValueError(
+                "Need exactly one argument to get a value from an" " UnaryRelation"
+            )
         elif isinstance(assignment, dict):
             return self._rel_function(assignment[self._variable.name])
 
-        raise ValueError('Assignment must be a list or a dict.')
+        raise ValueError("Assignment must be a list or a dict.")
 
     def set_value_for_assignment(self, assignment, relation_value):
-        raise NotImplementedError('Cannot set value on unary factor defined '
-                                  'with a function')
+        raise NotImplementedError(
+            "Cannot set value on unary factor defined " "with a function"
+        )
 
     def __call__(self, *args, **kwargs):
         if len(args) == 1:
             return self._rel_function(args[0])
         elif len(kwargs) == 1:
             return self._rel_function(kwargs[self._variable.name])
-        raise ValueError('Need exactly one argument to get a value from an '
-                         'UnaryRelation')
+        raise ValueError(
+            "Need exactly one argument to get a value from an " "UnaryRelation"
+        )
 
     def __str__(self):
-        return 'UnaryFunctionRelation({})'.format(self._name)
+        return "UnaryFunctionRelation({})".format(self._name)
 
     def __repr__(self):
-        return 'UnaryFunctionRelation' \
-               '({}, {}, {})'.format(self._name, self._variable, self._rel_function)
+        return "UnaryFunctionRelation" "({}, {}, {})".format(
+            self._name, self._variable, self._rel_function
+        )
 
     def __eq__(self, other):
         if type(other) != UnaryFunctionRelation:
             return False
-        if self.name == other.name and self._variable == other.dimensions[0] and \
-                self._rel_function == other.function:
+        if (
+            self.name == other.name
+            and self._variable == other.dimensions[0]
+            and self._rel_function == other.function
+        ):
             return True
         return False
 
@@ -361,51 +367,54 @@ class UnaryBooleanRelation(AbstractBaseRelation, SimpleRepr):
         self._var = var
         self._variables = [var]
 
-    def slice(self, partial_assignment: Dict[str, object]) \
-            -> RelationProtocol:
+    def slice(self, partial_assignment: Dict[str, object]) -> RelationProtocol:
         if not partial_assignment:
             return self
         elif len(partial_assignment) == 1:
-            v_name, =  partial_assignment.keys()
+            v_name, = partial_assignment.keys()
             if v_name != self._var.name:
-                raise ValueError('Unknown variable when slicing '
-                                 'UnaryBooleanRelation')
+                raise ValueError(
+                    "Unknown variable when slicing " "UnaryBooleanRelation"
+                )
 
             val = True if partial_assignment[v_name] else False
-            name = self._name + '_' + v_name
+            name = self._name + "_" + v_name
             return ZeroAryRelation(name, val)
 
-        raise ValueError('Invalid slice argument on UnaryBooleanRelation')
+        raise ValueError("Invalid slice argument on UnaryBooleanRelation")
 
     def get_value_for_assignment(self, assignment):
 
         if isinstance(assignment, list):
             if len(assignment) == 1:
                 return True if assignment[0] else False
-            raise ValueError('Need exactly one argument to get a value from an'
-                             ' UnaryRelation')
+            raise ValueError(
+                "Need exactly one argument to get a value from an" " UnaryRelation"
+            )
         elif isinstance(assignment, dict):
             return True if assignment[self._var.name] else False
 
-        raise ValueError('Assignment must be a list or a dict.')
+        raise ValueError("Assignment must be a list or a dict.")
 
     def set_value_for_assignment(self, assignment, relation_value):
-        raise NotImplementedError('Cannot set value on unary factor defined '
-                                  'with a function')
+        raise NotImplementedError(
+            "Cannot set value on unary factor defined " "with a function"
+        )
 
     def __call__(self, *args, **kwargs):
         if len(args) == 1:
             return True if args[0] else False
         elif len(kwargs) == 1:
             return True if kwargs[self._var.name] else False
-        raise ValueError('Need exactly one argument to get a value from an '
-                         'UnaryRelation')
+        raise ValueError(
+            "Need exactly one argument to get a value from an " "UnaryRelation"
+        )
 
     def __str__(self):
-        return 'UnaryFunctionRelation({})'.format(self._name)
+        return "UnaryFunctionRelation({})".format(self._name)
 
     def __repr__(self):
-        return 'UnaryFunctionRelation({}, {})'.format(self._name, self._var)
+        return "UnaryFunctionRelation({}, {})".format(self._name, self._var)
 
     def __eq__(self, other):
         if type(other) != UnaryBooleanRelation:
@@ -440,9 +449,13 @@ class NAryFunctionRelation(AbstractBaseRelation, SimpleRepr):
     `ExpressionFunction` for the relation function.
     """
 
-    def __init__(self, f: Callable, variables: Iterable[Variable],
-                 name: str=None,
-                 f_kwargs=False) -> None:
+    def __init__(
+        self,
+        f: Callable,
+        variables: Iterable[Variable],
+        name: str = None,
+        f_kwargs=False,
+    ) -> None:
         """
         A Relation defined from a python function.
 
@@ -503,46 +516,51 @@ class NAryFunctionRelation(AbstractBaseRelation, SimpleRepr):
         :return: If the function has been build from a python
         string, the string if you need to serialize the relation later.
         """
-        if hasattr(self._f, 'expression'):
+        if hasattr(self._f, "expression"):
             return self._f.expression
-        raise AttributeError('The function ' + str(self._name) +
-                             'has no expression !')
+        raise AttributeError("The function " + str(self._name) + "has no expression !")
 
     @property
     def function(self):
         return self._f
 
-    def slice(self, partial_assignment: Dict[str, object]) \
-            -> RelationProtocol:
+    def slice(self, partial_assignment: Dict[str, object]) -> RelationProtocol:
         if not partial_assignment:
             return self
         elif len(partial_assignment) > len(self._variables):
-            raise ValueError('Too many many variables when slicing relation '
-                             '{} : {}'.format(self._name,
-                                              partial_assignment))
+            raise ValueError(
+                "Too many many variables when slicing relation "
+                "{} : {}".format(self._name, partial_assignment)
+            )
         else:
             # Check we're only slicing on existing variables
             _var_names = [v.name for v in self._variables]
             for v in partial_assignment:
                 if v not in _var_names:
-                    raise ValueError('Unknown variable "{}" when slicing '
-                                     'relation {}'.format(v, self._name))
+                    raise ValueError(
+                        'Unknown variable "{}" when slicing '
+                        "relation {}".format(v, self._name)
+                    )
 
-            remaining_vars = [v for v in self._variables if
-                              v.name not in partial_assignment]
-            slicing_dict = {self._var_mapping[vn]: partial_assignment[vn]
-                            for vn in partial_assignment}
-            if hasattr(self._f, 'partial'):
+            remaining_vars = [
+                v for v in self._variables if v.name not in partial_assignment
+            ]
+            slicing_dict = {
+                self._var_mapping[vn]: partial_assignment[vn]
+                for vn in partial_assignment
+            }
+            if hasattr(self._f, "partial"):
                 slice_f = self._f.partial(**slicing_dict)
             else:
                 slice_f = functools.partial(self._f, **slicing_dict)
 
-            return NAryFunctionRelation(slice_f, remaining_vars,
-                                        name=self.name)
+            return NAryFunctionRelation(slice_f, remaining_vars, name=self.name)
 
     def set_value_for_assignment(self, assignment, relation_value):
-        raise NotImplementedError('set_value_for_assignment is not '
-                                  'implemented for function-defined relations')
+        raise NotImplementedError(
+            "set_value_for_assignment is not "
+            "implemented for function-defined relations"
+        )
 
     def get_value_for_assignment(self, assignment):
 
@@ -561,7 +579,7 @@ class NAryFunctionRelation(AbstractBaseRelation, SimpleRepr):
             return self._f(**args_dict)
 
         else:
-            raise ValueError('Assignment must be list or dict')
+            raise ValueError("Assignment must be list or dict")
 
     def __call__(self, *args, **kwargs):
         if not kwargs:
@@ -572,17 +590,19 @@ class NAryFunctionRelation(AbstractBaseRelation, SimpleRepr):
             return self.get_value_for_assignment(kwargs)
 
     def __repr__(self):
-        return 'NAryFunctionRelation({}, {})'.format(self.name,
-                                                     self._variables)
+        return "NAryFunctionRelation({}, {})".format(self.name, self._variables)
 
     def __str__(self):
-        return 'NAryFunctionRelation({})'.format(self._name)
+        return "NAryFunctionRelation({})".format(self._name)
 
     def __eq__(self, other):
         if type(other) != NAryFunctionRelation:
             return False
-        if self.name == other.name and other.dimensions == self.dimensions \
-           and self._f == other.function:
+        if (
+            self.name == other.name
+            and other.dimensions == self.dimensions
+            and self._f == other.function
+        ):
             return True
         return False
 
@@ -614,6 +634,7 @@ class AsNAryFunctionRelation(object):
     different even if their function is exactly the same.
 
     """
+
     def __init__(self, *args) -> None:
         self.vars = list(args)
 
@@ -666,8 +687,9 @@ class NAryMatrixRelation(AbstractBaseRelation, SimpleRepr):
 
     """
 
-    def __init__(self, variables: Iterable[Variable], matrix=None,
-                 name: str=None) -> None:
+    def __init__(
+        self, variables: Iterable[Variable], matrix=None, name: str = None
+    ) -> None:
         super().__init__(name)
         self._variables = list(variables)
         shape = tuple([len(v.domain) for v in variables])
@@ -679,23 +701,24 @@ class NAryMatrixRelation(AbstractBaseRelation, SimpleRepr):
             if not isinstance(matrix, np.array.__class__):
                 matrix = np.array(matrix)
             if shape != matrix.shape:
-                raise AttributeError('Invalid dimension when building util '
-                                     'from matrix')
+                raise AttributeError(
+                    "Invalid dimension when building util " "from matrix"
+                )
             self._m = matrix
 
-    def slice(self, partial_assignment: Dict[str, object],
-              ignore_extra_vars=False) \
-            -> 'NAryMatrixRelation':
+    def slice(
+        self, partial_assignment: Dict[str, object], ignore_extra_vars=False
+    ) -> "NAryMatrixRelation":
         if not partial_assignment:
             return self
         sliced_vars, sliced_values = zip(*partial_assignment.items())
-        slice_vars, s = self._slice_matrix(sliced_vars, sliced_values,
-                                           ignore_extra_vars=ignore_extra_vars)
+        slice_vars, s = self._slice_matrix(
+            sliced_vars, sliced_values, ignore_extra_vars=ignore_extra_vars
+        )
         u = NAryMatrixRelation(slice_vars, self._m[s], self.name)
         return u
 
-    def _slice_matrix(self, sliced_vars, sliced_values,
-                      ignore_extra_vars=False):
+    def _slice_matrix(self, sliced_vars, sliced_values, ignore_extra_vars=False):
 
         s_vars = list(sliced_vars)
         s_values = list(sliced_values)
@@ -705,8 +728,10 @@ class NAryMatrixRelation(AbstractBaseRelation, SimpleRepr):
             if v not in var_names:
                 if not ignore_extra_vars:
                     raise AttributeError(
-                        '{} is not in the dimensions of util : {}'
-                        .format(v, self._variables))
+                        "{} is not in the dimensions of util : {}".format(
+                            v, self._variables
+                        )
+                    )
                 else:
                     del s_vars[i]
                     del s_values[i]
@@ -742,11 +767,12 @@ class NAryMatrixRelation(AbstractBaseRelation, SimpleRepr):
             if self._m.shape == ():
                 return self._m
             else:
-                raise KeyError('Needs an assignement when requesting value '
-                               'in a n-ari relation, n!=0')
+                raise KeyError(
+                    "Needs an assignement when requesting value "
+                    "in a n-ari relation, n!=0"
+                )
         if isinstance(var_values, list):
-            assignt = {self._variables[i].name: val
-                       for i, val in enumerate(var_values)}
+            assignt = {self._variables[i].name: val for i, val in enumerate(var_values)}
             u = self.slice(assignt)
             return np.asscalar(u._m)
 
@@ -755,7 +781,7 @@ class NAryMatrixRelation(AbstractBaseRelation, SimpleRepr):
             return np.asscalar(u._m)
 
         else:
-            raise ValueError('Assignment must be dict or array')
+            raise ValueError("Assignment must be dict or array")
 
     def __call__(self, *args, **kwargs):
         """
@@ -775,8 +801,7 @@ class NAryMatrixRelation(AbstractBaseRelation, SimpleRepr):
         else:
             return self.get_value_for_assignment(kwargs)
 
-    def set_value_for_assignment(self, var_values, rel_value) \
-            -> 'NAryMatrixRelation':
+    def set_value_for_assignment(self, var_values, rel_value) -> "NAryMatrixRelation":
         """
         Set the value of the relation for an assignment.
 
@@ -792,8 +817,7 @@ class NAryMatrixRelation(AbstractBaseRelation, SimpleRepr):
         :param rel_value: the value of the relation.
         """
         if isinstance(var_values, list):
-            _, s = self._slice_matrix([v.name for v in self._variables],
-                                      var_values)
+            _, s = self._slice_matrix([v.name for v in self._variables], var_values)
             matrix = np.copy(self._m)
             matrix[s] = rel_value
             return NAryMatrixRelation(self._variables, matrix, name=self.name)
@@ -802,15 +826,14 @@ class NAryMatrixRelation(AbstractBaseRelation, SimpleRepr):
             values = []
             for v in self._variables:
                 values.append(var_values[v.name])
-            _, s = self._slice_matrix([v.name for v in self._variables],
-                                      values)
+            _, s = self._slice_matrix([v.name for v in self._variables], values)
             matrix = np.copy(self._m)
             matrix.itemset(s, rel_value)
             return NAryMatrixRelation(self._variables, matrix, name=self.name)
-        raise ValueError('Could not set value, must be list or dict')
+        raise ValueError("Could not set value, must be list or dict")
 
     @staticmethod
-    def from_func_relation(rel: RelationProtocol)-> 'NAryMatrixRelation':
+    def from_func_relation(rel: RelationProtocol) -> "NAryMatrixRelation":
         variables = rel.dimensions
         cost_matrix = NAryMatrixRelation(variables)
         # We also compute the min and max value of the constraint as it is to
@@ -820,23 +843,28 @@ class NAryMatrixRelation(AbstractBaseRelation, SimpleRepr):
 
         for asgt in generate_assignment_as_dict(variables):
             value = rel(asgt)
-            cost_matrix = cost_matrix.set_value_for_assignment(asgt,value)
+            cost_matrix = cost_matrix.set_value_for_assignment(asgt, value)
 
         return cost_matrix
 
     def __str__(self):
-        return 'NAryMatrixRelation({}, {})'.format(
-            self._name, [v.name for v in self._variables])
+        return "NAryMatrixRelation({}, {})".format(
+            self._name, [v.name for v in self._variables]
+        )
 
     def __repr__(self):
-        return 'NAryMatrixRelation({}, {}, {})'.format(
-            self.name, [v.name for v in self._variables], self._m)
+        return "NAryMatrixRelation({}, {}, {})".format(
+            self.name, [v.name for v in self._variables], self._m
+        )
 
     def __eq__(self, other):
         if type(other) != NAryMatrixRelation:
             return False
-        if self.name == other.name and self.dimensions == other.dimensions \
-            and np.all(self._m == other._m):
+        if (
+            self.name == other.name
+            and self.dimensions == other.dimensions
+            and np.all(self._m == other._m)
+        ):
             return True
         return False
 
@@ -859,15 +887,15 @@ class NeutralRelation(AbstractBaseRelation, SimpleRepr):
     the input variables.
     """
 
-    def __init__(self, variables: Iterable[Variable], name: str =None) -> None:
+    def __init__(self, variables: Iterable[Variable], name: str = None) -> None:
         super().__init__(name)
         self._variables = list(variables)
 
     def __str__(self):
-        return 'NeutralRelation({})'.format(self._name)
+        return "NeutralRelation({})".format(self._name)
 
     def __repr__(self):
-        return 'NeutralRelation({}, {}'.format(self._name, self._variables)
+        return "NeutralRelation({}, {}".format(self._name, self._variables)
 
     def __eq__(self, other):
         if type(other) != NeutralRelation:
@@ -876,10 +904,10 @@ class NeutralRelation(AbstractBaseRelation, SimpleRepr):
             return True
         return False
 
-    def slice(self, partial_assignment: Dict[str, object]) \
-            -> RelationProtocol:
-        remaining_vars = [v for v in self._variables
-                          if v.name not in partial_assignment]
+    def slice(self, partial_assignment: Dict[str, object]) -> RelationProtocol:
+        remaining_vars = [
+            v for v in self._variables if v.name not in partial_assignment
+        ]
         return NeutralRelation(remaining_vars)
 
     def get_value_for_assignment(self, assignment):
@@ -913,9 +941,13 @@ class ConditionalRelation(RelationProtocol, SimpleRepr):
 
     """
 
-    def __init__(self, condition: RelationProtocol,
-                 relation_if_true: RelationProtocol, name: str=None,
-                 return_neutral: bool=False) -> None:
+    def __init__(
+        self,
+        condition: RelationProtocol,
+        relation_if_true: RelationProtocol,
+        name: str = None,
+        return_neutral: bool = False,
+    ) -> None:
         """
         Create a new ConditionalRelation with the given condition and
         consequence.
@@ -966,15 +998,16 @@ class ConditionalRelation(RelationProtocol, SimpleRepr):
     def shape(self) -> Tuple:
         return tuple([len(v.domain) for v in self.dimensions])
 
-    def slice(self, partial_assignment: Dict[str, object]) \
-            -> RelationProtocol:
+    def slice(self, partial_assignment: Dict[str, object]) -> RelationProtocol:
 
         cond_var_names = [v.name for v in self._condition.dimensions]
         true_names = [v.name for v in self._relation_if_true.dimensions]
 
-        cond_args = {v_name: v_val for v_name, v_val in
-                     partial_assignment.items()
-                     if v_name in cond_var_names}
+        cond_args = {
+            v_name: v_val
+            for v_name, v_val in partial_assignment.items()
+            if v_name in cond_var_names
+        }
 
         if len(cond_args) == len(self._condition.dimensions):
             # We have all arguments to evaluate the condition, we can take it
@@ -982,27 +1015,31 @@ class ConditionalRelation(RelationProtocol, SimpleRepr):
             if self._condition(**cond_args):
                 if len(partial_assignment) > len(cond_args):
                     # We have some extra variables to slice the consequence on.
-                    slice_dict = {k: v for k, v in partial_assignment.items()
-                                  if k in true_names}
+                    slice_dict = {
+                        k: v for k, v in partial_assignment.items() if k in true_names
+                    }
                     return self._relation_if_true.slice(slice_dict)
                 else:
                     return self._relation_if_true
             else:
                 if self._return_neutral:
-                    remaining_vars = [v for v
-                                      in self._relation_if_true.dimensions
-                                      if v.name not in partial_assignment]
+                    remaining_vars = [
+                        v
+                        for v in self._relation_if_true.dimensions
+                        if v.name not in partial_assignment
+                    ]
                     return NeutralRelation(remaining_vars)
                 else:
-                    return ZeroAryRelation(self.name + '_zeroed', 0)
+                    return ZeroAryRelation(self.name + "_zeroed", 0)
         else:
             if cond_args:
                 sliced_cond = self._condition.slice(cond_args)
             else:
                 sliced_cond = self._condition
 
-            slice_dict = {k: v for k, v in partial_assignment.items()
-                          if k in true_names}
+            slice_dict = {
+                k: v for k, v in partial_assignment.items() if k in true_names
+            }
             if slice_dict:
                 sliced_rel = self._relation_if_true.slice(slice_dict)
             else:
@@ -1014,28 +1051,33 @@ class ConditionalRelation(RelationProtocol, SimpleRepr):
 
         if isinstance(assignment, list):
 
-            cond_args = {v.name: v_val for v, v_val in zip(self.dimensions,
-                                                           assignment)
-                         if v in self._condition.dimensions}
+            cond_args = {
+                v.name: v_val
+                for v, v_val in zip(self.dimensions, assignment)
+                if v in self._condition.dimensions
+            }
             if self._condition(**cond_args):
-                rel_args = {v.name: v_val for v, v_val in zip(self.dimensions,
-                                                              assignment)
-                            if v in self._relation_if_true.dimensions}
+                rel_args = {
+                    v.name: v_val
+                    for v, v_val in zip(self.dimensions, assignment)
+                    if v in self._relation_if_true.dimensions
+                }
                 return self._relation_if_true(**rel_args)
             else:
                 return 0
 
         elif isinstance(assignment, dict):
-            cond_args = {v.name: assignment[v.name] for v in
-                         self._condition.dimensions}
+            cond_args = {v.name: assignment[v.name] for v in self._condition.dimensions}
             if self._condition(**cond_args):
-                rel_args = {v.name: assignment[v.name] for v in
-                            self._relation_if_true.dimensions}
+                rel_args = {
+                    v.name: assignment[v.name]
+                    for v in self._relation_if_true.dimensions
+                }
                 return self._relation_if_true(**rel_args)
             else:
                 return 0
         else:
-            raise ValueError('Assignment must be list or dict')
+            raise ValueError("Assignment must be list or dict")
 
     def __call__(self, *args, **kwargs):
         if not kwargs:
@@ -1046,24 +1088,27 @@ class ConditionalRelation(RelationProtocol, SimpleRepr):
             return self.get_value_for_assignment(kwargs)
 
     def __str__(self):
-        return 'ConditionalRelation({})'.format(self.name)
+        return "ConditionalRelation({})".format(self.name)
 
     def __repr__(self):
-        return 'ConditionalRelation({} - {} on {} '. \
-            format(self._condition, self._relation_if_true, self.dimensions)
+        return "ConditionalRelation({} - {} on {} ".format(
+            self._condition, self._relation_if_true, self.dimensions
+        )
 
     def __eq__(self, other):
         if type(other) != ConditionalRelation:
             return False
-        if self.name == self.name and self.dimensions == other.dimensions \
-           and self.condition == other.condition \
-           and self.consequence == other.consequence:
+        if (
+            self.name == self.name
+            and self.dimensions == other.dimensions
+            and self.condition == other.condition
+            and self.consequence == other.consequence
+        ):
             return True
         return False
 
     def __hash__(self):
-        return hash((self.name, self.consequence,
-                     self.condition, self._return_neutral))
+        return hash((self.name, self.consequence, self.condition, self._return_neutral))
 
 
 def count_var_match(var_names, relation):
@@ -1120,8 +1165,7 @@ def assignment_matrix(variables: List[Variable], default_value=None):
     return current
 
 
-def random_assignment_matrix(variables: List[Variable], values: List,
-                             matrix=None):
+def random_assignment_matrix(variables: List[Variable], values: List, matrix=None):
     """
     Generate a matrix that defines a value for each possible assignment.
 
@@ -1142,16 +1186,16 @@ def random_assignment_matrix(variables: List[Variable], values: List,
             matrix[i] = random.choice(values)
     else:
         for i, _ in enumerate(variables[0].domain):
-            matrix[i] = random_assignment_matrix(variables[1:], values,
-                                                 matrix[i])
+            matrix[i] = random_assignment_matrix(variables[1:], values, matrix[i])
 
     return matrix
 
 
-def find_dependent_relations(variable: Variable,
-                             constraints: Iterable[Constraint],
-                             ext_var_assignment: Dict[str, Any]=None)\
-        -> Iterable[Constraint]:
+def find_dependent_relations(
+    variable: Variable,
+    constraints: Iterable[Constraint],
+    ext_var_assignment: Dict[str, Any] = None,
+) -> Iterable[Constraint]:
     """Find constraints that depends on a given variable.
 
     Find in `constraints` the constraints that have this variable in their
@@ -1177,8 +1221,7 @@ def find_dependent_relations(variable: Variable,
     for r in constraints:
         if variable in r.dimensions:
             if ext_var_assignment:
-                s = r.slice(
-                    filter_assignment_dict(ext_var_assignment, r.dimensions))
+                s = r.slice(filter_assignment_dict(ext_var_assignment, r.dimensions))
                 if len(s.dimensions) > 0:
                     dependent_relations.append(r)
             else:
@@ -1204,8 +1247,7 @@ def is_compatible(assignment1: Dict[str, Any], assignment2: Dict[str, Any]):
     return True
 
 
-def constraint_from_str(name: str, expression: str,
-                        all_variables: Iterable[Variable]):
+def constraint_from_str(name: str, expression: str, all_variables: Iterable[Variable]):
     """
     Generate a relation object from a string expression and a list of
     available variable objects.
@@ -1232,11 +1274,12 @@ def constraint_from_str(name: str, expression: str,
                 relation_variables.append(s)
                 found = True
         if not found:
-            raise Exception('Missing variable {} for string-based function '
-                            '"{}"'.format(v, expression))
+            raise Exception(
+                "Missing variable {} for string-based function "
+                '"{}"'.format(v, expression)
+            )
 
-    return NAryFunctionRelation(f_exp, relation_variables,
-                                name, f_kwargs=True)
+    return NAryFunctionRelation(f_exp, relation_variables, name, f_kwargs=True)
 
 
 # We keep relation_from_str as an alias for now, but constraint_from_str
@@ -1244,8 +1287,9 @@ def constraint_from_str(name: str, expression: str,
 relation_from_str = constraint_from_str
 
 
-def add_var_to_rel(name: str, original_relation: RelationProtocol,
-                   variable: Variable, f):
+def add_var_to_rel(
+    name: str, original_relation: RelationProtocol, variable: Variable, f
+):
     """
     Create a new relation by adding a variable to the domain of an existing
     relation.
@@ -1268,12 +1312,11 @@ def add_var_to_rel(name: str, original_relation: RelationProtocol,
 
     def new_rel_f(**kwargs):
 
-        args_for_original = {k: v for k, v in kwargs.items()
-                             if k != variable.name}
+        args_for_original = {k: v for k, v in kwargs.items() if k != variable.name}
         original_value = original_relation(**args_for_original)
 
         return f(kwargs[variable.name], original_value)
-    
+
     return NAryFunctionRelation(new_rel_f, variables, name=name, f_kwargs=True)
 
 
@@ -1303,9 +1346,9 @@ def find_optimum(constraint: Constraint, mode: str) -> float:
         rel_val = constraint(**filter_assignment_dict(asgt, constraint.dimensions))
         if optimum is None:
             optimum = rel_val
-        elif mode == 'max' and rel_val > optimum:
+        elif mode == "max" and rel_val > optimum:
             optimum = rel_val
-        elif mode == 'min' and rel_val < optimum:
+        elif mode == "min" and rel_val < optimum:
             optimum = rel_val
     return optimum
 
@@ -1462,23 +1505,25 @@ def find_arg_optimal(variable, relation, mode):
     the variable domain that gives the best (according to mode) value for
     this relation.
     """
-    if mode == 'min':
+    if mode == "min":
         best_rel_val = get_data_type_max(DEFAULT_TYPE)
-    elif mode == 'max':
+    elif mode == "max":
         best_rel_val = get_data_type_min(DEFAULT_TYPE)
     else:
-        raise ValueError('Invalid optimization mode: ' + mode)
+        raise ValueError("Invalid optimization mode: " + mode)
 
-    if hasattr(relation, 'dimensions'):
+    if hasattr(relation, "dimensions"):
         if len(relation.dimensions) != 1 or relation.dimensions[0] != variable:
-            raise ValueError('For find_arg_optimal, the relation must depend '
-                             'only on the given variable : {} {}'
-                             .format(relation, variable))
+            raise ValueError(
+                "For find_arg_optimal, the relation must depend "
+                "only on the given variable : {} {}".format(relation, variable)
+            )
     var_val = list()
     for v in variable.domain:
         current_rel_val = relation(v)
-        if (mode == 'max' and best_rel_val < current_rel_val) or \
-                (mode == 'min' and best_rel_val > current_rel_val):
+        if (mode == "max" and best_rel_val < current_rel_val) or (
+            mode == "min" and best_rel_val > current_rel_val
+        ):
             best_rel_val = current_rel_val
             var_val = [v]
         elif current_rel_val == best_rel_val:

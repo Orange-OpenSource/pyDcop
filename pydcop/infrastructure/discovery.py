@@ -1031,7 +1031,7 @@ class Discovery(object):
             return list(c for c in self._computations_data
                         if not _is_technical(c))
 
-    def computation_agent(self, computation: ComputationName)-> str:
+    def computation_agent(self, computation: ComputationName)-> AgentName:
         """
         The agent hosting a computation
 
@@ -1141,6 +1141,7 @@ class Discovery(object):
                 self.logger.debug('fire computation_added call back for %s : '
                                   '%s', computation, cb)
                 cb('computation_added', computation, agent)
+
             # Remove all one-shot callback for this computation
             self._computation_cbs[computation][:] = \
                 [(cb, oneshot)

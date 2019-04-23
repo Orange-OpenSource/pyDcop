@@ -250,12 +250,12 @@ class InProcessCommunicationLayer(CommunicationLayer):
         try:
             address = self.discovery.agent_address(dest_agent)
             address.receive_msg(src_agent, dest_agent, msg)
+
+
         except UnknownAgent:
             logger.warning(
-                "Sending message from %s to unknown agent %s : %s ",
-                src_agent,
-                dest_agent,
-                msg,
+                f"Sending message from {src_agent} to unknown agent {dest_agent} :"
+                f" {msg} "
             )
             return self._on_send_error(
                 src_agent, dest_agent, msg, on_error, UnknownAgent
