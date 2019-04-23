@@ -35,7 +35,13 @@ import numpy as np
 import pytest
 
 import pydcop.dcop.objects
-from pydcop.dcop.objects import VariableDomain, Variable, ExternalVariable, Domain
+from pydcop.dcop.objects import (
+    VariableDomain,
+    Variable,
+    ExternalVariable,
+    Domain,
+    VariableWithCostFunc,
+)
 from pydcop.dcop.relations import (
     NAryFunctionRelation,
     is_compatible,
@@ -1666,6 +1672,31 @@ def test_assignment_cost_two_constraints_two_vars():
     assert assignment_cost({"v1": 2, "v2": 5}, [c1, c2]) == 17
 
 
+def test_assignment_cost_two_constraints_two_vars_one_extra():
+    domain = VariableDomain("d", "test", list(range(10)))
+    v1 = Variable("v1", domain)
+    v2 = Variable("v2", domain)
+    c1 = constraint_from_str("c1", "v1+v2", [v1, v2])
+    c2 = constraint_from_str("c2", "v1*v2", [v1, v2])
+
+    assert assignment_cost({"v1": 2}, [c1, c2],  v2=5) == 17
+
+
+def test_assignment_cost_two_constraints_two_costed_vars():
+    domain = VariableDomain("d", "test", list(range(10)))
+    v1 = VariableWithCostFunc("v1", domain, cost_func=lambda x: 0.1 * x)
+    v2 = VariableWithCostFunc("v2", domain, cost_func=lambda x: 0.2 * x)
+    c1 = constraint_from_str("c1", "v1+v2", [v1, v2])
+    c2 = constraint_from_str("c2", "v1*v2", [v1, v2])
+
+    # We can select if we want to consider variable costs
+    assert assignment_cost({"v1": 2, "v2": 5}, [c1, c2]) == 17
+    assert (
+        assignment_cost({"v1": 2, "v2": 5}, [c1, c2], consider_variable_cost=True)
+        == 18.2
+    )
+
+
 def test_assignment_cost_missing_vars():
     domain = VariableDomain("d", "test", list(range(10)))
     v1 = Variable("v1", domain)
@@ -1701,7 +1732,11 @@ def test_bench_compute_cost(benchmark):
     c4 = constraint_from_str("c4", "x3 - x2 -7", all_vars)
 
     def to_bench():
-        assignment_cost({"x1": 3, "x2": 4, "x3": 1, "x4": 2}, [c1, c2, c3, c4])
+        assignment_cost(
+            {"x1": 3, "x2": 4, "x3": 1, "x4": 2},
+            [c1, c2, c3, c4],
+            consider_variable_cost=True,
+        )
 
     benchmark(to_bench)
 
