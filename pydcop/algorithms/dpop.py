@@ -38,8 +38,18 @@ Dynamic Programming Optimization Protocol  is an optimal,
 inference-based, dcop algorithm implementing a dynamic programming procedure
 in a distributed way :cite:`petcu_distributed_2004`.
 
-TODO
+DPOP works on a Pseudo-tree, which can be built using the
+:ref:`distribute<pydcop_commands_distribute>` command
+(and is automatically built when using the :ref:`solve<pydcop_commands_solve>` command).
 
+This algorithm has no parameter.
+
+
+Example
+^^^^^^^
+::
+
+    pydcop -algo dpop graph_coloring_eq.yaml
 
 
 """
@@ -50,7 +60,6 @@ from pydcop.infrastructure.computations import Message, VariableComputation, reg
 from pydcop.dcop.objects import Variable
 from pydcop.dcop.relations import (
     NAryMatrixRelation,
-    RelationProtocol,
     Constraint,
     get_data_type_max,
     get_data_type_min,
@@ -134,11 +143,17 @@ def join_utils(u1: Constraint, u2: Constraint) -> Constraint:
     For more details, see the definition of the join operator in Petcu Phd
     Thesis.
 
-    :param u1: n-ary relation
-    :param u2: n-ary relation
-    :return: a new relation
+    Parameters
+    ----------
+    u1: Constraint
+        n-ary relation
+    u2: Constraint
+        n-ary relation
+
+    Returns
+    -------
+    a new Constraint
     """
-    #
     dims = u1.dimensions[:]
     for d2 in u2.dimensions:
         if d2 not in dims:
@@ -146,9 +161,6 @@ def join_utils(u1: Constraint, u2: Constraint) -> Constraint:
 
     u_j = NAryMatrixRelation(dims, name="joined_utils")
     for ass in generate_assignment_as_dict(dims):
-
-        # FIXME use dict for assignement
-        # for Get AND sett value
 
         u1_ass = filter_assignment_dict(ass, u1.dimensions)
         u2_ass = filter_assignment_dict(ass, u2.dimensions)
@@ -158,9 +170,8 @@ def join_utils(u1: Constraint, u2: Constraint) -> Constraint:
     return u_j
 
 
-def projection(a_rel, a_var, mode="max"):
+def projection(a_rel: Constraint, a_var: Variable, mode="max") -> Constraint:
     """
-
     The project of a relation a_rel along the variable a_var is the
     optimization of the matrix along the axis of this variable.
 
@@ -172,11 +183,19 @@ def projection(a_rel, a_var, mode="max"):
 
     Also see definition in Petcu 2007
 
-    :param a_rel: the projected relation
-    :param a_var: the variable over which to project
-    :param mode: 'max (default) for maximization, 'min' for minimization.
+    Parameters
+    ----------
+    a_rel: Constraint
+        the projected relation
+    a_var: Variable
+        the variable over which to project
+    mode: mode as str
+        'max (default) for maximization, 'min' for minimization.
 
-    :return: the new relation resulting from the projection
+    Returns
+    -------
+    Constraint:
+        the new relation resulting from the projection
     """
 
     remaining_vars = a_rel.dimensions.copy()
@@ -211,27 +230,33 @@ def projection(a_rel, a_var, mode="max"):
     return proj_rel
 
 
-def _add_var_to_assignment(partial_assignt, ass_vars, new_var, new_value):
+def _add_var_to_assignment(partial_assignment, ass_vars, new_var, new_value):
     """
     Add a value for a variable in an assignment.
     The given partial assignment is not modified and a new assignment is
     returned, augmented with the value for the new variable, in the right
     position according to `ass_vars`.
 
-    :param partial_assignt: a partial assignment represented as a list of
-    values, the order of the values maps the order of the corresponding
-    variables in `ass_vars`
-    :param ass_vars: a list of variables corresponding to the list to the
-    variables whose values are given by `partial_assignt`, augmented with one
-    extra variable 'new_var' whose value is given by `new_value`.
-    :param new_var: variable that must be added in the assignment
-    :param new_value: value to add in the assignement for the new variable
+    Parameters
+    ----------
+    partial_assignment: list
+        a partial assignment represented as a list of
+        values, the order of the values maps the order of the corresponding
+        variables in `ass_vars`
+    ass_vars: list
+        a list of variables corresponding to the list to the
+        variables whose values are given by `partial_assignment`, augmented with one
+        extra variable 'new_var' whose value is given by `new_value`.
+    new_var: str (variable name)
+        variable that must be added in the assignment
+    new_value: value
+        value to add in the assignment for the new variable
 
     """
 
-    if len(partial_assignt) + 1 != len(ass_vars):
-        raise ValueError("Length of partial assignment and variables do not " "match.")
-    full_assignment = partial_assignt[:]
+    if len(partial_assignment) + 1 != len(ass_vars):
+        raise ValueError("Length of partial assignment and variables do not match.")
+    full_assignment = partial_assignment[:]
     for i in range(len(ass_vars)):
         if ass_vars[i] == new_var:
             full_assignment.insert(i, new_value)
@@ -242,12 +267,21 @@ class DpopAlgo(VariableComputation):
     """
     DPOP: Dynamic Programming Optimization Protocol
 
-    This class represents the DPOP algorithm.
-
     When running this algorithm, the DFS tree must be already defined and the
     children, parents and pseudo-parents must be known.
 
-    Two kind of messages:
+    In DPOP:
+    * A computation represents, and select a value for, one variable.
+    * A constraint is managed (i.e. referenced) by a single computation object:
+      this means that, when building the computations, each constraint must only be
+      passed as argument to a single computation.
+    * A constraint must always be managed by the lowest node in the DFS
+      tree that the relation depends on (which is especially important for
+      non-binary relation). The pseudo-tree building mechanism already
+      takes care of this.
+
+
+    DPOP computations support two kinds of messages:
     * UTIL message:
       sent from children to parent, contains a relation (as a
       multi-dimensional matrix) with one dimension for each variable in our
@@ -257,23 +291,14 @@ class DpopAlgo(VariableComputation):
       variables that were present in our UTIl message to our parent (that is
       to say, our separator) .
 
-    """
 
+    Parameters
+    ----------
+     variable: Variable
+        The Variable object managed by this algorithm
 
-        In DPOP:
-        * A computation represents, and select a value for, one variable.
-        * A constraint is managed (i.e. referenced) by a single computation object:
-          this means that, when building the computations, each constraint must only be
-          passed as argument to a single computation.
-        * A constraint must always be managed by the lowest node in the DFS
-          tree that the relation depends on (which is especially important for
-          non-binary relation). The pseudo-tree building mechanism already
-          takes care of this.
-
-
-        :param variable: The Variable object managed by this algorithm
-
-        :param parent: the parent for this node. A node has at most one parent
+     parent: variable name (str)
+        the parent for this node. A node has at most one parent
         but may have 0-n pseudo-parents. Pseudo parent are not given
         explicitly but can be deduced from the constraints and children
         (if the union of the constraints' scopes contains a variable that is not a
@@ -281,18 +306,21 @@ class DpopAlgo(VariableComputation):
         If the variable shares a constraints with its parent (which is the
         most common case), it must be present in the relation arg.
 
-        :param children: the children variables of the variable argument,
-        in the DFS tree
+     children: name of children variables (list of str)
+        the children variables of the variable argument, in the DFS tree
 
-        :param constraints: constraints managed by this computation. These
+     constraints: List of Constraints
+        constraints managed by this computation. These
         relations will be used when calculating costs. It must
         depends on the variable arg. Unary relation are also supported.
         Remember that a relation must always be managed by the lowest node in
         the DFS tree that the relation depends on (which is especially
         important for non-binary relation).
 
-
-        :param mode: type of optimization to perform, 'min' or 'max'
+    comp_def: ComputationDef
+        computation definition, gives the algorithm name (must be dpop) and the mode
+        (min or max)
+    """
 
     def __init__(
         self,
@@ -302,15 +330,14 @@ class DpopAlgo(VariableComputation):
         constraints: Iterable[Constraint],
         comp_def=None,
     ):
-        """
-        """
+
         super().__init__(variable, comp_def)
 
         assert comp_def.algo.algo == "dpop"
 
         self._mode = comp_def.algo.mode
         self._parent = parent
-        self._children = children
+        self._children = list(children)
         self._constraints = constraints
 
         if hasattr(self._variable, "cost_for_val"):
@@ -334,7 +361,7 @@ class DpopAlgo(VariableComputation):
             # may get an util message from one of our children before
             # running on_start, if this child computation start faster of
             # before us
-            self._waited_children = self._children[:]
+            self._waited_children = list(self._children)
 
     def footprint(self):
         return computation_memory(self.computation_def.node)
@@ -415,7 +442,20 @@ class DpopAlgo(VariableComputation):
         self.logger.info("Value selected at %s : %s - %s", self.name, value, cost)
 
     @register("UTIL")
-    def _on_util_message(self, variable_name, recv_msg, t):
+    def _on_util_message(self, variable_name, recv_msg, t) -> None:
+        """
+        Message handler for UTIL messages.
+
+        Parameters
+        ----------
+        variable_name: str
+            name of the variable that sent the message
+        recv_msg: DpopMessage
+            received message
+        t: int
+            message timestamp
+
+        """
         self.logger.debug("Util message from %s : %r ", variable_name, recv_msg.content)
         utils = recv_msg.content
         msg_count, msg_size = 0, 0
@@ -491,7 +531,19 @@ class DpopAlgo(VariableComputation):
         return util
 
     @register("VALUE")
-    def _on_value_message(self, variable_name, recv_msg, t):
+    def _on_value_message(self, variable_name, recv_msg, t) -> None:
+        """
+        Message handler for VALUE messages.
+
+        Parameters
+        ----------
+        variable_name: str
+            name of the variable that sent the message
+        recv_msg: DpopMessage
+            received message
+        t: int
+            message timestamp
+        """
         self.logger.debug(
             '{}: on value message from {} : "{}"'.format(
                 self.name, variable_name, recv_msg
