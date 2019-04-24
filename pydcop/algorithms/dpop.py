@@ -83,6 +83,14 @@ def build_computation(comp_def: ComputationDef):
     return computation
 
 
+def computation_memory(*args):
+    raise NotImplementedError("DPOP has no computation memory implementation (yet)")
+
+
+def communication_load(*args):
+    raise NotImplementedError("DPOP has no communication_load implementation (yet)")
+
+
 class DpopMessage(Message):
     def __init__(self, msg_type, content):
         super(DpopMessage, self).__init__(msg_type, content)
