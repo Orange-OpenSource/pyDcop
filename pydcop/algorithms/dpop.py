@@ -347,10 +347,6 @@ class DpopAlgo(VariableComputation):
     def is_leaf(self):
         return len(self._children) == 0
 
-    @property
-    def is_stable(self):
-        return False
-
     def on_start(self):
         msg_count, msg_size = 0, 0
 
