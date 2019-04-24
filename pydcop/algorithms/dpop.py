@@ -251,16 +251,6 @@ class DpopAlgo(VariableComputation):
 
     """
 
-    def __init__(
-        self,
-        variable: Variable,
-        parent: str,
-        children: Iterable[str],
-        constraints: Iterable[RelationProtocol],
-        msg_sender=None,
-        comp_def=None,
-    ):
-        """
 
         In DPOP:
         * A computation represents, and select a value for, one variable.
@@ -293,16 +283,23 @@ class DpopAlgo(VariableComputation):
         the DFS tree that the relation depends on (which is especially
         important for non-binary relation).
 
-        :param msg_sender: the object that will be used to send messages to
-        neighbors, it must have a  post_msg(sender, target_name, name) method.
 
         :param mode: type of optimization to perform, 'min' or 'max'
+
+    def __init__(
+        self,
+        variable: Variable,
+        parent: str,
+        children: Iterable[str],
+        constraints: Iterable[Constraint],
+        comp_def=None,
+    ):
+        """
         """
         super().__init__(variable, comp_def)
 
         assert comp_def.algo.algo == "dpop"
 
-        self._msg_sender = msg_sender
         self._mode = comp_def.algo.mode
         self._parent = parent
         self._children = children
