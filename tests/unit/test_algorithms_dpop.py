@@ -315,13 +315,11 @@ class DummySender(object):
         self.value_dest_var = None
         self.value_msg_data = None
 
-    def __call__(self, sender_var, dest_var, msg, prio=None, on_error=None):
+    def __call__(self,sender_var, dest_var, msg, prio=None, on_error=None):
         if msg.type == 'UTIL':
-            self.util_sender_var = sender_var
             self.util_dest_var = dest_var
             self.util_msg_data = msg.content
         elif msg.type == 'VALUE':
-            self.value_sender_var = sender_var
             self.value_dest_var = dest_var
             self.value_msg_data = msg.content
 
@@ -347,11 +345,12 @@ class AlgoExampleTwoVarsTestcase(unittest.TestCase):
         compdef.algo.mode = 'max'
         self.a0 = dpop.DpopAlgo(self.x0,
                                 parent=None, children=[self.x1.name],
-                                constraints=[],
-                                msg_sender=self.sender0, comp_def=compdef)
+                                constraints=[], comp_def=compdef)
         self.a1 = dpop.DpopAlgo(self.x1, parent=self.x0.name, children=[],
-                                constraints=[self.r0_1],
-                                msg_sender=self.sender1, comp_def=compdef)
+                                constraints=[self.r0_1], comp_def=compdef)
+
+        self.a0.message_sender = self.sender0
+        self.a1.message_sender = self.sender1
 
     def test_onstart_two_vars(self):
 
@@ -425,16 +424,17 @@ class AlgoExampleThreeVarsTestcase(unittest.TestCase):
         self.a0 = dpop.DpopAlgo(self.x0, parent=None,
                                 children=[self.x1.name, self.x2.name],
                                 constraints=[],
-                                msg_sender=self.sender0,
                                 comp_def=compdef)
         self.a1 = dpop.DpopAlgo(self.x1, parent=self.x0.name,
                                 children=[], constraints=[self.r0_1],
-                                msg_sender=self.sender1,
                                 comp_def=compdef)
         self.a2 = dpop.DpopAlgo(self.x2, parent=self.x0.name,
                                 children=[], constraints=[self.r0_2],
-                                msg_sender=self.sender2,
                                 comp_def=compdef)
+
+        self.a0.message_sender = self.sender0
+        self.a1.message_sender = self.sender1
+        self.a2.message_sender = self.sender2
 
     def test_on_start(self):
         # a0 is the root, must not send any message on start
