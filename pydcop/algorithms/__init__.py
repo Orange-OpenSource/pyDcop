@@ -528,7 +528,7 @@ def load_algorithm_module(algo_name: str):
     Dynamically load an algorithm module.
 
     This should be used instead of `importlib.import_module` as it adds
-    default implementations for some method, if they have not been defined
+    default implementations for some methods, if they have not been defined
     for the algorithm.
 
     Parameters
