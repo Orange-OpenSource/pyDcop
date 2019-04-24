@@ -48,7 +48,7 @@ def load_dist_from_file(filename: str) -> Distribution:
         return load_dist(content)
 
 def load_dist(dist_str: str) -> Distribution:
-    loaded = yaml.load(dist_str)
+    loaded = yaml.load(dist_str, Loader=yaml.FullLoader)
 
     if 'distribution' not in loaded:
         raise ValueError('Invalid distribution file')

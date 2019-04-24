@@ -91,7 +91,7 @@ def load_dcop_from_file(filenames: Union[str, Iterable[str]]):
 
 
 def load_dcop(dcop_str: str) -> DCOP:
-    loaded = yaml.load(dcop_str)
+    loaded = yaml.load(dcop_str, Loader=yaml.FullLoader)
 
     if "name" not in loaded:
         raise ValueError("Missing name in dcop string")
@@ -508,7 +508,7 @@ def load_scenario(scenario_str) -> Scenario:
     :param scenario_str:
     :return:
     """
-    loaded = yaml.load(scenario_str)
+    loaded = yaml.load(scenario_str, Loader=yaml.FullLoader)
     evts = []
     for evt in loaded["events"]:
         id_evt = evt["id"]

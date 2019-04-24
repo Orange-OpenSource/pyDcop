@@ -160,7 +160,7 @@ params:
   probability: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 """
 
-    params = yaml.load(params_yaml)
+    params = yaml.load(params_yaml, Loader=yaml.FullLoader)
 
     reg_params = regularize_parameters(params["params"])
     assert len(reg_params) == 3
@@ -188,7 +188,7 @@ command_options:
       probability: [0.5, 0.6]
 """
 
-    params = yaml.load(params_yaml)
+    params = yaml.load(params_yaml, Loader=yaml.FullLoader)
 
     reg_params = regularize_parameters(params["command_options"])
     assert len(reg_params) == 2
@@ -325,7 +325,7 @@ batches:
   batch1:
     command: test
     """
-    conf = yaml.load(definition)
+    conf = yaml.load(definition, Loader=yaml.FullLoader)
     run_batches(conf, simulate=False)
 
     assert mock_run_batch.call_count == 5
@@ -344,7 +344,7 @@ batches:
   batch1:
     command: test
     """
-        conf = yaml.load(definition)
+        conf = yaml.load(definition, Loader=yaml.FullLoader)
         run_batches(conf, simulate=False)
 
         assert mock_run_batch.call_count == 3
@@ -366,7 +366,7 @@ batches:
     global_options:
       output: ising_{iteration}.yaml  
     """
-    batches_def = yaml.load(definition)
+    batches_def = yaml.load(definition, Loader=yaml.FullLoader)
     batch_module.run_batches(batches_def, simulate=False)
 
     assert run_mock.call_count == 5
@@ -420,7 +420,7 @@ batches:
       output: ising_{iteration}_{row_count}_{col_count}.yaml  
     """
 
-    batches_def = yaml.load(definition)
+    batches_def = yaml.load(definition, Loader=yaml.FullLoader)
     batch_module.run_batches(batches_def, simulate=False)
 
     assert run_mock.call_count == 2
@@ -460,7 +460,7 @@ batches:
       output: ising.yaml  
     """
 
-    batches_def = yaml.load(definition)
+    batches_def = yaml.load(definition, Loader=yaml.FullLoader)
     batch_module.run_batches(batches_def, simulate=False)
 
     assert run_mock.call_count == 2
@@ -505,7 +505,7 @@ batches:
     tmpdir.join("pb1.yaml").write("")
     tmpdir.join("pb2.yaml").write("")
 
-    batches_def = yaml.load(definition)
+    batches_def = yaml.load(definition, Loader=yaml.FullLoader)
     batch_module.run_batches(batches_def, simulate=False)
 
     run_mock.assert_has_calls(

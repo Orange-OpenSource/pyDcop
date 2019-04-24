@@ -48,7 +48,7 @@ def load_replica_dist_from_file(filename: str) -> ReplicaDistribution:
         return load_replica_dist(content)
 
 def load_replica_dist(dist_str: str) -> ReplicaDistribution:
-    loaded = yaml.load(dist_str)
+    loaded = yaml.load(dist_str, Loader=yaml.FullLoader)
 
     if 'replica_dist' not in loaded:
         raise ValueError('Invalid replica distribution file')

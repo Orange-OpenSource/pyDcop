@@ -296,8 +296,8 @@ class TestVariableWithNoisyFunctionCost(unittest.TestCase):
 
         r = simple_repr(v)
 
-        self.assertEquals(r["name"], "v")
-        self.assertEquals(r["cost_func"]["expression"], "v / 2")
+        self.assertEqual(r["name"], "v")
+        self.assertEqual(r["cost_func"]["expression"], "v / 2")
 
     def test_from_repr_with_expression_function(self):
         domain = VariableDomain("d", "d", [1, 2, 3, 4])
@@ -312,7 +312,7 @@ class TestVariableWithNoisyFunctionCost(unittest.TestCase):
         c2 = v.cost_for_val(2)
         self.assertLessEqual(abs(c1 - c2), v.noise_level * 2)
 
-        self.assertEquals(v2, v)
+        self.assertEqual(v2, v)
 
     def test_hash(self):
         d1 = VariableDomain("d", "foo", [1, 2, 3])

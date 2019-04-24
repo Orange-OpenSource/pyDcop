@@ -180,4 +180,4 @@ def run_distribute(filename, distribution, graph=None, algo=None):
                                      algo_opt=algo_opt,
                                      file=filename)
     output = check_output(cmd, stderr=STDOUT, timeout=10, shell=True)
-    return yaml.load(output.decode(encoding='utf-8'))
+    return yaml.load(output.decode(encoding='utf-8'), Loader=yaml.FullLoader)

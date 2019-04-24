@@ -117,7 +117,7 @@ progress_file = None
 def run_cmd(args):
 
     with open(args.bench_file, mode="r", encoding="utf-8") as f:
-        bench_def = yaml.load(f)
+        bench_def = yaml.load(f, Loader=yaml.FullLoader)
 
     # Search for already run jobs in a 'progress' file, if any.
     # Any job listed in this file will not be re-executed.
