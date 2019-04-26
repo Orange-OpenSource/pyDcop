@@ -174,16 +174,16 @@ def join_utils(u1: Constraint, u2: Constraint) -> Constraint:
 
 def projection(a_rel: Constraint, a_var: Variable, mode="max") -> Constraint:
     """
-    The project of a relation a_rel along the variable a_var is the
+    The projection of a relation `a_rel` along the variable `a_var` is the
     optimization of the matrix along the axis of this variable.
 
     The result of `projection(a_rel, a_var)` is also a relation, with one less
     dimension than a_rel (the a_var dimension).
-    each possible instantiation of the variable other than a_var,
+    For each possible instantiation of the variable other than a_var,
     the optimal instantiation for a_var is chosen and the corresponding
     utility recorded in projection(a_rel, a_var)
 
-    Also see definition in Petcu 2007
+    Also see definition in Petcu 2007.
 
     Parameters
     ----------
@@ -206,28 +206,10 @@ def projection(a_rel: Constraint, a_var: Variable, mode="max") -> Constraint:
     # the new relation resulting from the projection
     proj_rel = NAryMatrixRelation(remaining_vars)
 
-    all_assignments = generate_assignment(remaining_vars)
-    for partial_assignment in all_assignments:
-        # for each assignment, look for the max value when iterating over
-        # aVar domain
+    for partial in generate_assignment_as_dict(remaining_vars):
 
-        if mode == "min":
-            best_val = get_data_type_max(DEFAULT_TYPE)
-        else:
-            best_val = get_data_type_min(DEFAULT_TYPE)
-
-        for val in a_var.domain:
-            full_assignment = _add_var_to_assignment(
-                partial_assignment, a_rel.dimensions, a_var, val
-            )
-
-            current_val = a_rel.get_value_for_assignment(full_assignment)
-            if (mode == "max" and best_val < current_val) or (
-                mode == "min" and best_val > current_val
-            ):
-                best_val = current_val
-
-        proj_rel = proj_rel.set_value_for_assignment(partial_assignment, best_val)
+        _, rel_val = find_arg_optimal(a_var, a_rel.slice(partial), mode)
+        proj_rel = proj_rel.set_value_for_assignment(partial, rel_val)
 
     return proj_rel
 
