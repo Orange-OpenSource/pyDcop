@@ -253,62 +253,6 @@ class ProjectionTestCase(unittest.TestCase):
         self.assertEqual(p.get_value_for_assignment(['2']), 16)
 
 
-class AddVarToAssignmentTestCase(unittest.TestCase):
-
-    def test_add_var_to_assignment_oneVar(self):
-        x1 = Variable('x1', ['a1', 'a2', 'a3'])
-
-        # Add the var x1 with value 'a3' to an empty assignment
-        assignt = []
-        assignt = dpop._add_var_to_assignment(assignt, [x1], x1, 'a3')
-
-        self.assertEqual(len(assignt), 1)
-
-    def test_add_var_to_assignment_twoVar(self):
-        x1 = Variable('x1', ['a1', 'a2', 'a3'])
-        x2 = Variable('x2', ['b1', 'b2'])
-
-        # Add the var x1 with value 'a3' to an empty assignment
-        assignt = ['b2']
-        assignt = dpop._add_var_to_assignment(assignt, [x1, x2], x1, 'a3')
-
-        self.assertEqual(len(assignt), 2)
-        self.assertListEqual(assignt, ['a3', 'b2'])
-
-    def test_add_var_to_assignment_ThreeVars_middle(self):
-        x1 = Variable('x1', ['a1', 'a2', 'a3'])
-        x2 = Variable('x2', ['b1', 'b2'])
-        x3 = Variable('x3', ['c1', 'c2'])
-
-        assignt = ['a1', 'c2']
-        assignt = dpop._add_var_to_assignment(assignt, [x1, x2, x3], x2, 'b2')
-
-        self.assertEqual(len(assignt), 3)
-        self.assertListEqual(assignt, ['a1', 'b2', 'c2'])
-
-    def test_add_var_to_assignment_ThreeVars_start(self):
-        x1 = Variable('x1', ['a1', 'a2', 'a3'])
-        x2 = Variable('x2', ['b1', 'b2'])
-        x3 = Variable('x3', ['c1', 'c2'])
-
-        assignt = ['b1', 'c2']
-        assignt = dpop._add_var_to_assignment(assignt, [x1, x2, x3], x1, 'a2')
-
-        self.assertEqual(len(assignt), 3)
-        self.assertListEqual(assignt, ['a2', 'b1', 'c2'])
-
-    def test_add_var_to_assignment_ThreeVars_end(self):
-        x1 = Variable('x1', ['a1', 'a2', 'a3'])
-        x2 = Variable('x2', ['b1', 'b2'])
-        x3 = Variable('x3', ['c1', 'c2'])
-
-        assignt = ['a1', 'b2']
-        assignt = dpop._add_var_to_assignment(assignt, [x1, x2, x3], x3, 'c2')
-
-        self.assertEqual(len(assignt), 3)
-        self.assertListEqual(assignt, ['a1', 'b2', 'c2'])
-
-
 class DummySender(object):
 
     def __init__(self):

@@ -61,13 +61,9 @@ from pydcop.dcop.objects import Variable
 from pydcop.dcop.relations import (
     NAryMatrixRelation,
     Constraint,
-    get_data_type_max,
-    get_data_type_min,
-    generate_assignment,
     generate_assignment_as_dict,
     filter_assignment_dict,
     find_arg_optimal,
-    DEFAULT_TYPE,
 )
 from pydcop.algorithms import ALGO_STOP, ALGO_CONTINUE, ComputationDef
 
@@ -212,39 +208,6 @@ def projection(a_rel: Constraint, a_var: Variable, mode="max") -> Constraint:
         proj_rel = proj_rel.set_value_for_assignment(partial, rel_val)
 
     return proj_rel
-
-
-def _add_var_to_assignment(partial_assignment, ass_vars, new_var, new_value):
-    """
-    Add a value for a variable in an assignment.
-    The given partial assignment is not modified and a new assignment is
-    returned, augmented with the value for the new variable, in the right
-    position according to `ass_vars`.
-
-    Parameters
-    ----------
-    partial_assignment: list
-        a partial assignment represented as a list of
-        values, the order of the values maps the order of the corresponding
-        variables in `ass_vars`
-    ass_vars: list
-        a list of variables corresponding to the list to the
-        variables whose values are given by `partial_assignment`, augmented with one
-        extra variable 'new_var' whose value is given by `new_value`.
-    new_var: str (variable name)
-        variable that must be added in the assignment
-    new_value: value
-        value to add in the assignment for the new variable
-
-    """
-
-    if len(partial_assignment) + 1 != len(ass_vars):
-        raise ValueError("Length of partial assignment and variables do not match.")
-    full_assignment = partial_assignment[:]
-    for i in range(len(ass_vars)):
-        if ass_vars[i] == new_var:
-            full_assignment.insert(i, new_value)
-    return full_assignment
 
 
 class DpopAlgo(VariableComputation):
