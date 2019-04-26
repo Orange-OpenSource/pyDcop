@@ -107,6 +107,7 @@ class RelationProtocol(object):
         self, assignment: Dict[str, Any], relation_value
     ) -> "RelationProtocol":
         """
+
         Return a new relation with the same name and the same value for
         every possible assignment except `assignment`, which maps to
         `relation_value`.
@@ -126,12 +127,26 @@ class RelationProtocol(object):
 
     def get_value_for_assignment(self, assignment):
         """
-        :param assignment a full assignment for the relation, containing one
-        value for each of the variable this relation depends on. It must be
-        either a list of values, in the same order as the dimensions of the
-        relation, or a dict { var_name: value}
+        Get constraint value for an assignment.
 
-        :return the value of the relation for this assignment.
+        Notes
+        -----
+        Relying on dimension order (i.e. passing the assignment as a list)
+        is fragile and discouraged, use dict or keyword arguments whenever
+        possible instead !
+
+
+        Parameters
+        ----------
+        assignment: a list of value
+            a full assignment for the relation, containing one
+            value for each of the variable this relation depends on. It must be
+            either a list of values, in the same order as the dimensions of the
+            relation, or a dict { var_name: value}
+
+        Returns
+        -------
+        the value of the relation for this assignment.
         """
         raise NotImplemented("get_value_for_assignment not implemented")
 
