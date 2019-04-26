@@ -62,7 +62,7 @@ from pydcop.dcop.relations import (
     NAryMatrixRelation,
     Constraint,
     find_arg_optimal,
-    join_utils, projection)
+    join, projection)
 from pydcop.algorithms import ALGO_STOP, ALGO_CONTINUE, ComputationDef
 
 GRAPH_TYPE = "pseudotree"
@@ -258,7 +258,7 @@ class DpopAlgo(VariableComputation):
             #  can select our own value alone:
             if self._constraints:
                 for r in self._constraints:
-                    self._joined_utils = join_utils(self._joined_utils, r)
+                    self._joined_utils = join(self._joined_utils, r)
 
                 values, current_cost = find_arg_optimal(
                     self._variable, self._joined_utils, self._mode
@@ -319,7 +319,7 @@ class DpopAlgo(VariableComputation):
         msg_count, msg_size = 0, 0
 
         # accumulate util messages until we got the UTIL from all our children
-        self._joined_utils = join_utils(self._joined_utils, utils)
+        self._joined_utils = join(self._joined_utils, utils)
         try:
             self._waited_children.remove(variable_name)
         except ValueError as e:
@@ -343,7 +343,7 @@ class DpopAlgo(VariableComputation):
                 # The root obviously has no parent nor pseudo parent, yet it
                 # may have unary relations (with it-self!)
                 for r in self._constraints:
-                    self._joined_utils = join_utils(self._joined_utils, r)
+                    self._joined_utils = join(self._joined_utils, r)
 
                 values, current_cost = find_arg_optimal(
                     self._variable, self._joined_utils, self._mode
@@ -381,7 +381,7 @@ class DpopAlgo(VariableComputation):
     def _compute_utils_msg(self):
 
         for r in self._constraints:
-            self._joined_utils = join_utils(self._joined_utils, r)
+            self._joined_utils = join(self._joined_utils, r)
 
         # use projection to eliminate self out of the message to our parent
         util = projection(self._joined_utils, self._variable, self._mode)

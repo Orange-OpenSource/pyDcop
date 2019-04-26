@@ -1764,7 +1764,7 @@ class JoinRelationsTestCase:
         u1 = NAryMatrixRelation([x1])
         u2 = NAryMatrixRelation([x1])
 
-        u_j = pydcop.dcop.relations.join_utils(u1, u2)
+        u_j = pydcop.dcop.relations.join(u1, u2)
 
         assert u_j.arity == 1
 
@@ -1775,7 +1775,7 @@ class JoinRelationsTestCase:
         x2 = Variable("x2", ["1", "2"])
         u2 = NAryMatrixRelation([x2])
 
-        u_j = pydcop.dcop.relations.join_utils(u1, u2)
+        u_j = pydcop.dcop.relations.join(u1, u2)
 
         assert u_j.arity == 2
 
@@ -1787,7 +1787,7 @@ class JoinRelationsTestCase:
         x3 = Variable("x3", ["z", "y"])
         u2 = NAryMatrixRelation([x2, x3])
 
-        u_j = pydcop.dcop.relations.join_utils(u1, u2)
+        u_j = pydcop.dcop.relations.join(u1, u2)
 
         assert u_j.arity == 3
 
@@ -1801,7 +1801,7 @@ class JoinRelationsTestCase:
 
         assert u1.get_value_for_assignment(["b"]) == 2
 
-        u_j = pydcop.dcop.relations.join_utils(u1, u2)
+        u_j = pydcop.dcop.relations.join(u1, u2)
 
         assert u_j.arity == 1
         assert u_j.get_value_for_assignment(["a"]) == 2
@@ -1815,7 +1815,7 @@ class JoinRelationsTestCase:
         x2 = Variable("x2", ["1", "2"])
         u2 = NAryMatrixRelation([x2], np.array([1, 3], np.int8))
 
-        u_j = pydcop.dcop.relations.join_utils(u1, u2)
+        u_j = pydcop.dcop.relations.join(u1, u2)
 
         assert u_j.arity == 2
 
@@ -1833,7 +1833,7 @@ class JoinRelationsTestCase:
         x3 = Variable("x3", ["z", "y"])
         u2 = NAryMatrixRelation([x2, x3], np.array([[1, 5], [3, 7]], np.int8))
 
-        u_j = pydcop.dcop.relations.join_utils(u1, u2)
+        u_j = pydcop.dcop.relations.join(u1, u2)
 
         assert u_j.arity == 3
         assert u_j.dimensions, [x1, x2, x3]
@@ -1851,7 +1851,7 @@ class JoinRelationsTestCase:
         )
         u2 = NAryMatrixRelation([])
 
-        u_j = pydcop.dcop.relations.join_utils(u1, u2)
+        u_j = pydcop.dcop.relations.join(u1, u2)
 
         assert u_j.arity == 2
         assert u_j.dimensions == [x1, x2]
@@ -1876,7 +1876,7 @@ class JoinRelationsTestCase:
         def u2(x, y):
             return x - y
 
-        j = pydcop.dcop.relations.join_utils(u1, u2)
+        j = pydcop.dcop.relations.join(u1, u2)
 
         assert j(1, 1) == 2
         assert j(1, 2) == 4

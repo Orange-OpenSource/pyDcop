@@ -1542,3 +1542,90 @@ def find_arg_optimal(variable, relation, mode):
         elif current_rel_val == best_rel_val:
             var_val.append(v)
     return var_val, best_rel_val
+
+
+def join(u1: Constraint, u2: Constraint) -> Constraint:
+    """
+    Build a new Constraint by joining the two Constraint u1 and u2.
+
+    The dimension of the new Constraint is the union of the dimensions of u1
+    and u2. For any complete assignment, the value of this new relation is the sum of
+    the values from u1 and u2 for the subset of this assignment that apply to
+    their respective dimension.
+
+    For more details, see the definition of the join operator in Petcu's Phd thesis.
+
+    Dimension order is important for some operations, variables for u1 are
+    listed first, followed by variables from u2 that where already used by u1
+    (in the order in which they appear in u2.dimension).
+    Note that relying on dimension order is fragile and discouraged,
+    use keyword arguments whenever possible instead !
+
+    Parameters
+    ----------
+    u1: Constraint
+        n-ary relation
+    u2: Constraint
+        n-ary relation
+
+    Returns
+    -------
+    Constraint:
+        a new Constraint
+    """
+    dims = u1.dimensions[:]
+    for d2 in u2.dimensions:
+        if d2 not in dims:
+            dims.append(d2)
+
+    u_j = NAryMatrixRelation(dims, name="joined_utils")
+    for ass in generate_assignment_as_dict(dims):
+
+        u1_ass = filter_assignment_dict(ass, u1.dimensions)
+        u2_ass = filter_assignment_dict(ass, u2.dimensions)
+        s = u1(**u1_ass) + u2(**u2_ass)
+        u_j = u_j.set_value_for_assignment(ass, s)
+
+    return u_j
+
+
+def projection(a_rel: Constraint, a_var: Variable, mode="max") -> Constraint:
+    """
+    The projection of a relation `a_rel` along the variable `a_var` is the
+    optimization of the matrix along the axis of this variable.
+
+    The result of `projection(a_rel, a_var)` is also a relation, with one less
+    dimension than a_rel (the a_var dimension).
+    For each possible instantiation of the variable other than a_var,
+    the optimal instantiation for a_var is chosen and the corresponding
+    utility recorded in projection(a_rel, a_var)
+
+    Also see definition in Petcu 2007.
+
+    Parameters
+    ----------
+    a_rel: Constraint
+        the projected relation
+    a_var: Variable
+        the variable over which to project
+    mode: mode as str
+        'max (default) for maximization, 'min' for minimization.
+
+    Returns
+    -------
+    Constraint:
+        the new relation resulting from the projection
+    """
+
+    remaining_vars = a_rel.dimensions.copy()
+    remaining_vars.remove(a_var)
+
+    # the new relation resulting from the projection
+    proj_rel = NAryMatrixRelation(remaining_vars)
+
+    for partial in generate_assignment_as_dict(remaining_vars):
+
+        _, rel_val = find_arg_optimal(a_var, a_rel.slice(partial), mode)
+        proj_rel = proj_rel.set_value_for_assignment(partial, rel_val)
+
+    return proj_rel

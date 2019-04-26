@@ -260,7 +260,7 @@ class TestSmartLightSample:
 
         assert scene_rel(3, 6, 0, 5)== 10000
 
-        joined = pydcop.dcop.relations.join_utils(scene_rel, cost_l3)
+        joined = pydcop.dcop.relations.join(scene_rel, cost_l3)
 
         assert joined(9, 6, 0, 5)== 0
 
