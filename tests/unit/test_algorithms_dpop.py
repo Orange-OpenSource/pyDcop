@@ -35,6 +35,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
+import pydcop.dcop.relations
 from pydcop.algorithms import dpop
 from pydcop.algorithms.dpop import DpopMessage
 from pydcop.dcop.objects import Variable
@@ -48,210 +49,6 @@ def test_communicatino_load():
 @pytest.mark.skip
 def test_computation_memory():
     dpop.computation_memory()
-
-class JoinRelationsTestCase(unittest.TestCase):
-
-    def test_arity_bothsamevar(self):
-        x1 = Variable('x1', ['a', 'b', 'c'])
-        u1 = NAryMatrixRelation([x1])
-        u2 = NAryMatrixRelation([x1])
-
-        u_j = dpop.join_utils(u1, u2)
-
-        self.assertEqual(u_j.arity, 1)
-
-    def test_arity_2diffvar(self):
-        x1 = Variable('x1', ['a', 'b', 'c'])
-        u1 = NAryMatrixRelation([x1])
-
-        x2 = Variable('x2', ['1', '2'])
-        u2 = NAryMatrixRelation([x2])
-
-        u_j = dpop.join_utils(u1, u2)
-
-        self.assertEqual(u_j.arity, 2)
-
-    def test_arity_3diffvar(self):
-        x1 = Variable('x1', ['a', 'b', 'c'])
-        x2 = Variable('x2', ['1', '2'])
-        u1 = NAryMatrixRelation([x1, x2])
-
-        x3 = Variable('x3', ['z', 'y'])
-        u2 = NAryMatrixRelation([x2, x3])
-
-        u_j = dpop.join_utils(u1, u2)
-
-        self.assertEqual(u_j.arity, 3)
-
-    def test_join_bothsamevar(self):
-        x1 = Variable('x1', ['a', 'b', 'c'])
-        u1 = NAryMatrixRelation([x1], np.array([1, 2, 3], np.int8))
-        u2 = NAryMatrixRelation([x1], np.array([1, 2, 3], np.int8))
-
-        # x1 = Variable('x1', ['a', 'b', 'c'])
-        # u1 = dpop.NAryRelation([x1], np.array([1, 2, 3], np.int8))
-
-        self.assertEqual(u1.get_value_for_assignment(['b']), 2)
-
-        u_j = dpop.join_utils(u1, u2)
-
-        self.assertEqual(u_j.arity, 1)
-        self.assertEqual(u_j.get_value_for_assignment(['a']), 2)
-        self.assertEqual(u_j.get_value_for_assignment(['b']), 4)
-        self.assertEqual(u_j.get_value_for_assignment(['c']), 6)
-
-    def test_join_2diffvar(self):
-        x1 = Variable('x1', ['a', 'b', 'c'])
-        u1 = NAryMatrixRelation([x1], np.array([2, 4, 8], np.int8))
-
-        x2 = Variable('x2', ['1', '2'])
-        u2 = NAryMatrixRelation([x2], np.array([1, 3], np.int8))
-
-        u_j = dpop.join_utils(u1, u2)
-
-        self.assertEqual(u_j.arity, 2)
-
-        self.assertEqual(u_j.get_value_for_assignment(['a', '1']), 3)
-        self.assertEqual(u_j.get_value_for_assignment(['c', '2']), 11)
-        self.assertEqual(u_j.get_value_for_assignment(['b', '1']), 5)
-
-    def test_join_3diffvar(self):
-        x1 = Variable('x1', ['a', 'b', 'c'])
-        x2 = Variable('x2', ['1', '2'])
-        u1 = NAryMatrixRelation([x1, x2], np.array([[2, 16],
-                                                    [4, 32],
-                                                    [8, 64]], np.int8))
-
-        x3 = Variable('x3', ['z', 'y'])
-        u2 = NAryMatrixRelation([x2, x3], np.array([[1, 5], [3, 7]], np.int8))
-
-        u_j = dpop.join_utils(u1, u2)
-
-        self.assertEqual(u_j.arity, 3)
-        self.assertEqual(u_j.dimensions, [x1, x2, x3])
-
-        self.assertEqual(u_j.get_value_for_assignment(['a', '1', 'z']), 3)
-        self.assertEqual(u_j.get_value_for_assignment(['b', '2', 'y']), 39)
-
-    def test_join_with_no_var_rel(self):
-        # join a relation with a relation with no dimension
-
-        x1 = Variable('x1', ['a', 'b', 'c'])
-        x2 = Variable('x2', ['1', '2'])
-        u1 = NAryMatrixRelation([x1, x2], np.array([[2, 16],
-                                                    [4, 32],
-                                                    [8, 64]], np.int8))
-        u2 = NAryMatrixRelation([])
-
-        u_j = dpop.join_utils(u1, u2)
-
-        self.assertEqual(u_j.arity, 2)
-        self.assertEqual(u_j.dimensions, [x1, x2])
-
-        self.assertEqual(u_j.get_value_for_assignment(['a', '1']), 2)
-        self.assertEqual(u_j.get_value_for_assignment(['b', '2']), 32)
-        assert u_j(x1='a', x2='1') ==  2
-        assert u_j(x1='b', x2='2') == 32
-
-    def test_join_different_order(self):
-        # Test joining 2 relations that do not declare their variable in the
-        # same order
-
-        x1 = Variable('x1', [0, 1, 2])
-        x2 = Variable('x2', [0, 1, 2])
-
-        @AsNAryFunctionRelation(x1, x2)
-        def u1(x, y):
-            return x+y
-
-        @AsNAryFunctionRelation(x2, x1)
-        def u2(x, y):
-            return x - y
-
-        j = dpop.join_utils(u1, u2)
-
-        self.assertEqual(j(1, 1), 2)
-        self.assertEqual(j(1, 2), 4)
-        self.assertEqual(j(x1=1, x2=1), 2)
-        self.assertEqual(j(x1=1, x2=2), 4)
-
-
-class ProjectionTestCase(unittest.TestCase):
-
-    def test_projection_oneVarRel(self):
-
-        # u1 is a relation with a single variable :
-        x1 = Variable('x1', ['a', 'b', 'c'])
-        u1 = NAryMatrixRelation([x1], np.array([2, 4, 8], np.int8))
-
-        # take the projection of u1 along x1
-        p = dpop.projection(u1, x1)
-
-        # the dimension must be one less than the dimension of u1
-        self.assertEqual(p.arity, 0)
-
-        # this means that p is actually a signle value, corresponding to the
-        # max of u1
-        self.assertEqual(p.get_value_for_assignment(), 8)
-
-    def test_projection_min_oneVarRel(self):
-        # u1 is a relation with a single variable :
-        x1 = Variable('x1', ['a', 'b', 'c'])
-        u1 = NAryMatrixRelation([x1], np.array([2, 4, 8], np.int8))
-
-        # take the projection of u1 along x1
-        p = dpop.projection(u1, x1, mode='min')
-
-        # the dimension must be one less than the dimension of u1
-        self.assertEqual(p.arity, 0)
-
-        # this means that p is actually a signle value, corresponding to the
-        # max of u1
-        self.assertEqual(p.get_value_for_assignment(), 2)
-
-    def test_projection_twoVarsRel(self):
-
-        x1 = Variable('x1', ['a', 'b', 'c'])
-        x2 = Variable('x2', ['1', '2'])
-        u1 = NAryMatrixRelation([x1, x2], np.array([[2, 16],
-                                                    [4, 32],
-                                                    [8, 64]], np.int8))
-
-        # take the projection of u1 along x1
-        p = dpop.projection(u1, x1)
-
-        # the dimension must be one less than the dimension of u1, it should
-        # contain only x2
-        self.assertEqual(p.arity, 1)
-        self.assertListEqual(p.dimensions, [x2])
-
-        # the max of u1 when setting x2<-1 is 8
-        self.assertEqual(p.get_value_for_assignment(['1']), 8)
-
-        # the max of u1 when setting x2<-2 is 64
-        self.assertEqual(p.get_value_for_assignment(['2']), 64)
-
-    def test_projection_min_twoVarsRel(self):
-        x1 = Variable('x1', ['a', 'b', 'c'])
-        x2 = Variable('x2', ['1', '2'])
-        u1 = NAryMatrixRelation([x1, x2], np.array([[2, 16],
-                                                    [4, 32],
-                                                    [8, 64]], np.int8))
-
-        # take the projection of u1 along x1
-        p = dpop.projection(u1, x1, mode='min')
-
-        # the dimension must be one less than the dimension of u1, it should
-        # contain only x2
-        self.assertEqual(p.arity, 1)
-        self.assertListEqual(p.dimensions, [x2])
-
-        # the min of u1 when setting x2<-1 is 2
-        self.assertEqual(p.get_value_for_assignment(['1']), 2)
-
-        # the min of u1 when setting x2<-2 is 16
-        self.assertEqual(p.get_value_for_assignment(['2']), 16)
-
 
 class DummySender(object):
 
@@ -463,12 +260,12 @@ class SmartLigtSampleTests(unittest.TestCase):
 
         self.assertEqual(scene_rel(3, 6, 0, 5), 10000)
 
-        joined = dpop.join_utils(scene_rel, cost_l3)
+        joined = pydcop.dcop.relations.join_utils(scene_rel, cost_l3)
 
         self.assertEqual(joined(9, 6, 0, 5), 0)
 
         self.assertEqual(joined(3, 6, 0, 5), 10000)
 
-        util = dpop.projection(joined, l3, 'min')
+        util = pydcop.dcop.relations.projection(joined, l3, 'min')
 
         # print(util)
