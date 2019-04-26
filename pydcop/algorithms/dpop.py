@@ -129,19 +129,20 @@ class DpopMessage(Message):
 
 def join_utils(u1: Constraint, u2: Constraint) -> Constraint:
     """
-    Build a new relation by joining the two relations u1 and u2.
+    Build a new Constraint by joining the two Constraint u1 and u2.
 
-    The dimension of the new relation is the union of the dimensions of u1
-    and u2. As order is important for most operation, variables for u1 are
-    listed first, followed by variables from u2 that where already used by u1
-    (in the order in which they appear in u2.dimension).
-
-    For any complete assignment, the value of this new relation is the sum of
+    The dimension of the new Constraint is the union of the dimensions of u1
+    and u2. For any complete assignment, the value of this new relation is the sum of
     the values from u1 and u2 for the subset of this assignment that apply to
     their respective dimension.
 
-    For more details, see the definition of the join operator in Petcu Phd
-    Thesis.
+    For more details, see the definition of the join operator in Petcu's Phd thesis.
+
+    Dimension order is important for some operations, variables for u1 are
+    listed first, followed by variables from u2 that where already used by u1
+    (in the order in which they appear in u2.dimension).
+    Note that relying on dimension order is fragile and discouraged,
+    use keyword arguments whenever possible instead !
 
     Parameters
     ----------
@@ -152,7 +153,8 @@ def join_utils(u1: Constraint, u2: Constraint) -> Constraint:
 
     Returns
     -------
-    a new Constraint
+    Constraint:
+        a new Constraint
     """
     dims = u1.dimensions[:]
     for d2 in u2.dimensions:

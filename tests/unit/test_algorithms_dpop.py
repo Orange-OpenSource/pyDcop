@@ -150,6 +150,8 @@ class JoinRelationsTestCase(unittest.TestCase):
 
         self.assertEqual(u_j.get_value_for_assignment(['a', '1']), 2)
         self.assertEqual(u_j.get_value_for_assignment(['b', '2']), 32)
+        assert u_j(x1='a', x2='1') ==  2
+        assert u_j(x1='b', x2='2') == 32
 
     def test_join_different_order(self):
         # Test joining 2 relations that do not declare their variable in the
@@ -170,6 +172,8 @@ class JoinRelationsTestCase(unittest.TestCase):
 
         self.assertEqual(j(1, 1), 2)
         self.assertEqual(j(1, 2), 4)
+        self.assertEqual(j(x1=1, x2=1), 2)
+        self.assertEqual(j(x1=1, x2=2), 4)
 
 
 class ProjectionTestCase(unittest.TestCase):
