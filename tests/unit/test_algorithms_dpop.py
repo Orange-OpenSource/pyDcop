@@ -69,14 +69,14 @@ class DummySender(object):
             self.value_msg_data = msg.content
 
 
-class AlgoExampleTwoVarsTestcase(unittest.TestCase):
+class TestAlgoExampleTwoVars:
     """
     Test case with a very simplistic setup with only two vars and one relation
      a0 -> a1
 
     """
 
-    def setUp(self):
+    def setup_method(self):
         self.x0 = Variable('x0', ['a', 'b'])
         self.x1 = Variable('x1', ['a', 'b'])
 
@@ -101,15 +101,15 @@ class AlgoExampleTwoVarsTestcase(unittest.TestCase):
 
         # a0 is the root, must not send any message on start
         self.a0.on_start()
-        self.assertEqual(self.sender0.util_msg_data, None)
-        self.assertEqual(self.sender0.value_msg_data, None)
+        assert self.sender0.util_msg_data is None
+        assert self.sender0.value_msg_data is None
 
         # a1 is the leaf, sends a util message
         self.a1.on_start()
         print(self.sender1.util_msg_data)
 
-        self.assertEqual(self.sender1.util_msg_data('a'), 2)
-        self.assertEqual(self.sender1.util_msg_data('b'), 4)
+        assert self.sender1.util_msg_data('a') == 2
+        assert self.sender1.util_msg_data('b') == 4
 
     def test_on_util_root_two_vars(self):
 
@@ -126,8 +126,8 @@ class AlgoExampleTwoVarsTestcase(unittest.TestCase):
         # a0 id the root, when receiving UTIL message it must compute its own
         #  optimal value and send a value message
         msg = DpopMessage('VALUE', ([self.x0], ['b']))
-        self.assertEqual(self.sender0.value_msg_data, msg.content)
-        self.assertEqual(self.a0.current_value, 'b')
+        assert self.sender0.value_msg_data == msg.content
+        assert self.a0.current_value == 'b'
 
     def test_value_leaf_two_vars(self):
 
@@ -136,10 +136,10 @@ class AlgoExampleTwoVarsTestcase(unittest.TestCase):
 
         msg = DpopMessage('VALUE', ([self.x0], ['b']))
         self.a1._on_value_message(self.a0, msg, 0)
-        self.assertEqual(self.a1.current_value, 'a')
+        assert self.a1.current_value ==  'a'
 
 
-class AlgoExampleThreeVarsTestcase(unittest.TestCase):
+class TestAlgoExampleThreeVars:
     """
     Test case with a very simplistic setup with only two vars and one relation
      a0 -> a1
@@ -147,7 +147,7 @@ class AlgoExampleThreeVarsTestcase(unittest.TestCase):
 
     """
 
-    def setUp(self):
+    def setup_method(self, method):
         self.x0 = Variable('x0', ['a', 'b'])
         self.x1 = Variable('x1', ['a', 'b'])
         self.x2 = Variable('x2', ['a', 'b'])
@@ -184,21 +184,21 @@ class AlgoExampleThreeVarsTestcase(unittest.TestCase):
     def test_on_start(self):
         # a0 is the root, must not send any message on start
         self.a0.on_start()
-        self.assertEqual(self.sender0.util_msg_data, None)
-        self.assertEqual(self.sender0.value_msg_data, None)
+        assert self.sender0.util_msg_data is None
+        assert self.sender0.value_msg_data is None
 
         # a1 is a leaf, sends a util message
         self.a1.on_start()
         print(self.sender1.util_msg_data)
 
-        self.assertEqual(self.sender1.util_msg_data('a'), 2)
-        self.assertEqual(self.sender1.util_msg_data('b'), 3)
+        assert self.sender1.util_msg_data('a') == 2
+        assert self.sender1.util_msg_data('b') == 3
 
         self.a2.on_start()
         print(self.sender2.util_msg_data)
 
-        self.assertEqual(self.sender2.util_msg_data('a'), 5)
-        self.assertEqual(self.sender2.util_msg_data('b'), 3)
+        assert self.sender2.util_msg_data('a') == 5
+        assert self.sender2.util_msg_data('b') == 3
 
     def test_on_util_root_two_vars(self):
         # Testing that the root select the correct variable when receiving
@@ -212,8 +212,8 @@ class AlgoExampleThreeVarsTestcase(unittest.TestCase):
         self.a0._on_util_message(self.x1.name, msg, 0)
 
         # root only received one message, it should not send any message yet
-        self.assertEqual(self.sender0.value_msg_data, None)
-        self.assertEqual(self.sender0.util_msg_data, None)
+        assert self.sender0.value_msg_data == None
+        assert self.sender0.util_msg_data == None
 
         u2_0 = NAryMatrixRelation([self.x0], np.array([5, 3]))
         msg = DpopMessage('UTIL', u2_0)
@@ -221,8 +221,8 @@ class AlgoExampleThreeVarsTestcase(unittest.TestCase):
 
         # a0 is the root, it has received UTIL message from all its children:
         #  it must compute its own optimal value
-        self.assertEqual(self.sender0.value_msg_data, ([self.x0], ['a']))
-        self.assertEqual(self.a0.current_value, 'a')
+        assert self.sender0.value_msg_data, ([self.x0], ['a'])
+        assert self.a0.current_value ==  'a'
 
     def test_value_leaf_two_vars(self):
         self.a0.on_start()
@@ -231,14 +231,14 @@ class AlgoExampleThreeVarsTestcase(unittest.TestCase):
 
         msg = DpopMessage('VALUE', ([self.x0], ['a']))
         self.a1._on_value_message(self.a0, msg, 0)
-        self.assertEqual(self.a1.current_value, 'b')
+        assert self.a1.current_value == 'b'
 
         msg = DpopMessage('VALUE', ([self.x0], ['a']))
         self.a2._on_value_message(self.a0, msg, 0)
-        self.assertEqual(self.a2.current_value, 'a')
+        assert self.a2.current_value == 'a'
 
 
-class SmartLigtSampleTests(unittest.TestCase):
+class TestSmartLightSample:
 
     def test_4variables(self):
         l1 = Variable('l1', list(range(10)))
@@ -256,15 +256,15 @@ class SmartLigtSampleTests(unittest.TestCase):
         def cost_l3(l3_):
             return l3_
 
-        self.assertEqual(scene_rel(9, 6, 0, 5), 0)
+        assert scene_rel(9, 6, 0, 5)== 0
 
-        self.assertEqual(scene_rel(3, 6, 0, 5), 10000)
+        assert scene_rel(3, 6, 0, 5)== 10000
 
         joined = pydcop.dcop.relations.join_utils(scene_rel, cost_l3)
 
-        self.assertEqual(joined(9, 6, 0, 5), 0)
+        assert joined(9, 6, 0, 5)== 0
 
-        self.assertEqual(joined(3, 6, 0, 5), 10000)
+        assert joined(3, 6, 0, 5)== 10000
 
         util = pydcop.dcop.relations.projection(joined, l3, 'min')
 
