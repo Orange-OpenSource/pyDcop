@@ -774,11 +774,11 @@ class NAryMatrixRelation(AbstractBaseRelation, SimpleRepr):
         if isinstance(var_values, list):
             assignt = {self._variables[i].name: val for i, val in enumerate(var_values)}
             u = self.slice(assignt)
-            return np.asscalar(u._m)
+            return u._m.item()
 
         elif isinstance(var_values, dict):
             u = self.slice(var_values)
-            return np.asscalar(u._m)
+            return u._m.item()
 
         else:
             raise ValueError("Assignment must be dict or array")
