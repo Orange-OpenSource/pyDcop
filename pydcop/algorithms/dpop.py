@@ -118,7 +118,7 @@ class DpopMessage(Message):
             return len(self.content[0]) * 2
 
     def __str__(self):
-        return "DpopMessage({}, {})".format(self._msg_type, self._content)
+        return f"DpopMessage({self._msg_type}, {self._content})"
 
 
 class DpopAlgo(VariableComputation):
@@ -242,11 +242,7 @@ class DpopAlgo(VariableComputation):
             # pseudo-parents
             util = self._compute_utils_msg()
             self.logger.info(
-                "Leaf %s init message %s -> %s  : %s",
-                self._variable.name,
-                self._variable.name,
-                self._parent,
-                util,
+                f"Leaf {self._variable.name} init message {self._variable.name} -> {self._parent} : {util}"
             )
             msg = DpopMessage("UTIL", util)
             self.post_msg(self._parent, msg)
@@ -297,7 +293,7 @@ class DpopAlgo(VariableComputation):
         self.value_selection(value, cost)
         self.stop()
         self.finished()
-        self.logger.info("Value selected at %s : %s - %s", self.name, value, cost)
+        self.logger.info(f"Value selected at {self.name} : {value} - {cost}")
 
     @register("UTIL")
     def _on_util_message(self, variable_name, recv_msg, t) -> None:
@@ -314,7 +310,7 @@ class DpopAlgo(VariableComputation):
             message timestamp
 
         """
-        self.logger.debug("Util message from %s : %r ", variable_name, recv_msg.content)
+        self.logger.debug(f"UTIL from {variable_name} : {recv_msg.content} at {t}")
         utils = recv_msg.content
         msg_count, msg_size = 0, 0
 
@@ -324,10 +320,7 @@ class DpopAlgo(VariableComputation):
             self._waited_children.remove(variable_name)
         except ValueError as e:
             self.logger.error(
-                "Unexpected UTIL message from %s on %s : %r ",
-                variable_name,
-                self.name,
-                recv_msg,
+                f"Unexpected UTIL message from {variable_name} on {self.name} : {recv_msg} "
             )
             raise e
         # keep a reference of the separator of this children, we need it when
@@ -351,10 +344,7 @@ class DpopAlgo(VariableComputation):
                 selected_value = values[0]
 
                 self.logger.info(
-                    "ROOT: On UNTIL message from %s, send value "
-                    "msg to childrens %s ",
-                    variable_name,
-                    self._children,
+                    f"ROOT: On UTIL from {variable_name}, send VALUE to childrens {self._children} "
                 )
                 for c in self._children:
                     msg = DpopMessage("VALUE", ([self._variable], [selected_value]))
@@ -403,9 +393,7 @@ class DpopAlgo(VariableComputation):
             message timestamp
         """
         self.logger.debug(
-            '{}: on value message from {} : "{}"'.format(
-                self.name, variable_name, recv_msg
-            )
+            f"{self.name}: on value message from {variable_name} : '{recv_msg}' at {t}"
         )
 
         value = recv_msg.content
@@ -414,14 +402,14 @@ class DpopAlgo(VariableComputation):
         # Value msg contains the optimal assignment for all variables in our
         # separator : sep_vars, sep_values = value
         value_dict = {k.name: v for k, v in zip(*value)}
-        self.logger.debug("Slicing relation on %s", value_dict)
+        self.logger.debug(f"Slicing relation on {value_dict}")
 
         # as the value msg contains values for all variables in our
         # separator, slicing the util on these variables produces a relation
         # with a single dimension, our own variable.
         rel = self._joined_utils.slice(value_dict)
 
-        self.logger.debug("Relation after slicing %s", rel)
+        self.logger.debug(f"Relation after slicing {rel}")
 
         values, current_cost = find_arg_optimal(self._variable, rel, self._mode)
         selected_value = values[0]
