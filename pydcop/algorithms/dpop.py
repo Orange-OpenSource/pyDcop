@@ -356,9 +356,7 @@ class DpopAlgo(VariableComputation):
                 util = self._compute_utils_msg()
                 msg = DpopMessage("UTIL", util)
                 self.logger.info(
-                    "On UTIL message from %s, send UTILS msg " "to parent %s ",
-                    variable_name,
-                    self._children,
+                    f"On UTIL from {variable_name}, send UTIL to parent {self._parent} "
                 )
                 self.post_msg(self._parent, msg)
 
