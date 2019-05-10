@@ -62,7 +62,9 @@ from pydcop.dcop.relations import (
     NAryMatrixRelation,
     Constraint,
     find_arg_optimal,
-    join, projection)
+    join,
+    projection,
+)
 from pydcop.algorithms import ALGO_STOP, ALGO_CONTINUE, ComputationDef
 
 GRAPH_TYPE = "pseudotree"
