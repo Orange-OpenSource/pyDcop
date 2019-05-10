@@ -863,14 +863,13 @@ class NAryMatrixRelation(AbstractBaseRelation, SimpleRepr):
         return cost_matrix
 
     def __str__(self):
-        return "NAryMatrixRelation({}, {})".format(
-            self._name, [v.name for v in self._variables]
-        )
+        if self._name:
+            return f"NAryMatrixRelation({self._name}, {[v.name for v in self._variables]}, {self._m})"
+        else:
+            return f"NAryMatrixRelation({[v.name for v in self._variables]}, {self._m})"
 
     def __repr__(self):
-        return "NAryMatrixRelation({}, {}, {})".format(
-            self.name, [v.name for v in self._variables], self._m
-        )
+        return f"NAryMatrixRelation({self.name}, {[v.name for v in self._variables]}, {self._m})"
 
     def __eq__(self, other):
         if type(other) != NAryMatrixRelation:
