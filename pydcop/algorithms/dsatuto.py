@@ -121,7 +121,7 @@ class DsaTutoComputation(VariableComputation):
         )
 
         if current_cost - min_cost > 0 and 0.5 > random.random():
-            self.value_selection()
+            self.value_selection(arg_min)
             self.logger.debug(f"Select new value {arg_min} for better cost {min_cost} ")
         else:
             self.logger.debug(f"Do not change value {self.current_value}")
