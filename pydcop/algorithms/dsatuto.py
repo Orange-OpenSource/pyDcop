@@ -50,11 +50,14 @@ from numpy import random
 
 from pydcop.algorithms import ComputationDef
 from pydcop.dcop.relations import assignment_cost
-from pydcop.infrastructure.computations import VariableComputation, \
-    message_type, register
+from pydcop.infrastructure.computations import (
+    VariableComputation,
+    message_type,
+    register,
+)
 
 # Type of computations graph that must be used with dsa
-GRAPH_TYPE = 'constraints_hypergraph'
+GRAPH_TYPE = "constraints_hypergraph"
 
 DsaMessage = message_type("dsa_value", ["value"])
 
@@ -73,11 +76,11 @@ class DsaTutoComputation(VariableComputation):
         the definition of the computation, given as a ComputationDef instance.
 
     """
-    def __init__(self, computation_definition: ComputationDef):
-        super().__init__(computation_definition.node.variable,
-                         computation_definition)
 
-        assert computation_definition.algo.algo == 'dsatuto'
+    def __init__(self, computation_definition: ComputationDef):
+        super().__init__(computation_definition.node.variable, computation_definition)
+
+        assert computation_definition.algo.algo == "dsatuto"
 
         self.constraints = computation_definition.node.constraints
         self.current_cycle = {}
@@ -85,8 +88,7 @@ class DsaTutoComputation(VariableComputation):
 
     def on_start(self):
         self.random_value_selection()
-        self.logger.debug(
-            "Random value selected at startup : %s ", self.current_value)
+        self.logger.debug(f"Random value selected at startup : {self.current_value}")
         self.post_to_all_neighbors(DsaMessage(self.current_value))
 
         if self.is_cycle_complete():
@@ -94,7 +96,7 @@ class DsaTutoComputation(VariableComputation):
 
     @register("dsa_value")
     def on_value_msg(self, variable_name, recv_msg, t):
-        self.logger.debug('Receiving %s from %s', recv_msg, variable_name)
+        self.logger.debug(f"Receiving {recv_msg} from {variable_name}")
 
         if variable_name not in self.current_cycle:
             self.current_cycle[variable_name] = recv_msg.value
@@ -106,25 +108,23 @@ class DsaTutoComputation(VariableComputation):
 
     def evaluate_cycle(self):
 
-        self.logger.debug('Full neighbors assignment for cycle %s : %s ',
-                          self.cycle_count, self.current_cycle)
+        self.logger.debug(
+            f"Full neighbors assignment for cycle {self.cycle_count} : {self.current_cycle}"
+        )
 
         self.current_cycle[self.variable.name] = self.current_value
         current_cost = assignment_cost(self.current_cycle, self.constraints)
         arg_min, min_cost = self.compute_best_value()
 
         self.logger.debug(
-            "Evaluate cycle %s: current cost %s - best cost %s",
-            self.cycle_count, current_cost, min_cost)
+            f"Evaluate cycle {self.cycle_count}: current cost {current_cost} - best cost {min_cost}"
+        )
 
         if current_cost - min_cost > 0 and 0.5 > random.random():
-            self.value_selection(arg_min)
-            self.logger.debug(
-                "Select new value %s for better cost %s ",
-                self.cycle_count, min_cost)
+            self.value_selection()
+            self.logger.debug(f"Select new value {arg_min} for better cost {min_cost} ")
         else:
-            self.logger.debug(
-                "Do not change value %s ", self.current_value)
+            self.logger.debug(f"Do not change value {self.current_value}")
 
         self.new_cycle()
         self.current_cycle, self.next_cycle = self.next_cycle, {}
@@ -136,12 +136,13 @@ class DsaTutoComputation(VariableComputation):
 
     def compute_best_value(self) -> Tuple[Any, float]:
 
-        arg_min, min_cost = None, float('inf')
+        arg_min, min_cost = None, float("inf")
         for value in self.variable.domain:
             self.current_cycle[self.variable.name] = value
             cost = assignment_cost(self.current_cycle, self.constraints)
             if cost < min_cost:
                 min_cost, arg_min = cost, value
-        self.logger.debug('Best cost %s - %s with constraints %s',
-                          min_cost, arg_min, self.constraints)
+        self.logger.debug(
+            f"Best cost {min_cost} - {arg_min} with constraints {self.constraints}"
+        )
         return arg_min, min_cost
