@@ -1447,7 +1447,7 @@ def assignment_cost(
     assignment: Dict[str, Any],
     constraints: Iterable["Constraint"],
     consider_variable_cost=False,
-    **kwargs
+    **kwargs,
 ):
     """
     Compute the cost of an assignment over a set of constraints.
