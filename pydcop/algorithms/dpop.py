@@ -233,7 +233,6 @@ class DpopAlgo(VariableComputation):
         return len(self._children) == 0
 
     def on_start(self):
-        msg_count, msg_size = 0, 0
 
         if self.is_leaf and not self.is_root:
             # If we are a leaf in the DFS Tree we can immediately compute
@@ -246,8 +245,6 @@ class DpopAlgo(VariableComputation):
             )
             msg = DpopMessage("UTIL", util)
             self.post_msg(self._parent, msg)
-            msg_count += 1
-            msg_size += msg.size
 
         elif self.is_leaf:
             # we are both root and leaf : means we are a isolated variable we
@@ -312,7 +309,6 @@ class DpopAlgo(VariableComputation):
         """
         self.logger.debug(f"UTIL from {variable_name} : {recv_msg.content} at {t}")
         utils = recv_msg.content
-        msg_count, msg_size = 0, 0
 
         # accumulate util messages until we got the UTIL from all our children
         self._joined_utils = join(self._joined_utils, utils)
@@ -349,8 +345,6 @@ class DpopAlgo(VariableComputation):
                 for c in self._children:
                     msg = DpopMessage("VALUE", ([self._variable], [selected_value]))
                     self.post_msg(c, msg)
-                    msg_count += 1
-                    msg_size += msg.size
 
                 self.select_value_and_finish(selected_value, float(current_cost))
             else:
@@ -365,8 +359,6 @@ class DpopAlgo(VariableComputation):
                     self._children,
                 )
                 self.post_msg(self._parent, msg)
-                msg_count += 1
-                msg_size += msg.size
 
     def _compute_utils_msg(self):
 
@@ -397,7 +389,6 @@ class DpopAlgo(VariableComputation):
         )
 
         value = recv_msg.content
-        msg_count, msg_size = 0, 0
 
         # Value msg contains the optimal assignment for all variables in our
         # separator : sep_vars, sep_values = value
@@ -429,8 +420,6 @@ class DpopAlgo(VariableComputation):
                     # not in value_dict
                     pass
             msg = DpopMessage("VALUE", (variables_msg, values_msg))
-            msg_count += 1
-            msg_size += msg.size
             self.post_msg(c, msg)
 
         self.select_value_and_finish(selected_value, float(current_cost))
