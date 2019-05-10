@@ -610,6 +610,7 @@ class Agent(object):
         self.logger.debug('on_start for {}'.format(self.name))
 
         if self._ui_port:
+            event_bus.enabled = True
             self._ui_server = UiServer(self, self._ui_port)
             self.add_computation(self._ui_server, publish=False)
             self._ui_server.start()
