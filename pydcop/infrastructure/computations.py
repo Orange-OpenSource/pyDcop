@@ -289,7 +289,9 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         The name of the computation.
 
     """
-    def __init__(self, name: str):
+
+    def __init__(self, name: str, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._name = name
         self._msg_handlers = {}
         # Default logger for computation, will generally be overwritten by
