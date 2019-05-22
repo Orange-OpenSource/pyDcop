@@ -40,14 +40,13 @@ your own DCOP algorithm.
 import logging
 from functools import wraps
 from importlib import import_module
-from typing import List, Tuple, Any, Callable
+from typing import List, Tuple, Any, Callable, Dict, Optional
 
 from numpy import random
 
 from pydcop.algorithms import ComputationDef, load_algorithm_module
 from pydcop.dcop.objects import Variable
-from pydcop.utils.simple_repr import SimpleRepr, SimpleReprException, \
-    simple_repr
+from pydcop.utils.simple_repr import SimpleRepr, SimpleReprException, simple_repr
 from pydcop.infrastructure.Events import event_bus
 
 
@@ -620,6 +619,193 @@ class register(object):
 
         wrapper.msg_type = self.msg_type
         return wrapper
+
+
+class SynchronizationMsg(Message):
+    def __init__(self):
+        super().__init__("cycle_sync")
+        # cycle_id is set by the `SynchronousComputationMixin` when sending the message.
+        self.cycle_id = None
+
+    def __repr__(self):
+        return f"SynchronizationMsg()"
+
+class SynchronousComputationMixin:
+    """
+    This mixin can be used with `MessagePassingComputation` classes (and classes
+    deriving from it) and implements synchronicity for these computation.
+
+    A computations that uses the `SynchronousComputationMixin` is a synchronous
+    computation that respects the synchronous network model (see Distributed
+    Algorithms); these computations operate in rounds: at each round i,
+    a computation collects messages sent at i-1 and send messages that will be
+    received at i+1.
+
+    Due to method resolution order, the mixin MUST be declared first in the list
+    of classes your are deriving from:
+
+    >   class MyComp( SynchronousComputationMixin,  MessagePassingComputation):
+    >       ...
+
+    A synchronous computation must not handle its message directly on the message
+    handler registered with @register, instead it must handle them when the
+    on_new_cycle is called.
+    However, this decorator must still be used in order to declare the message
+    types supported by the computation, but the bodu of the method should be empty:
+
+    >   class C( SynchronousComputationMixin,  MessagePassingComputation):
+            ...
+            @register("foo")
+            def on_foo_msg(self, s, m , t):
+                pass
+
+
+    Note : the class this mixin is applied to MUST have a `neighbors` property that
+    returns a list containing the name of its neighbors (see `DcopComputation` for
+    example).
+
+    """
+
+    def __init__(self, name, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+        self._current_cycle = 0
+        self._cycle_messages = {}
+        self._next_cycle_messages = {}
+        self.cycle_message_sent = []
+        # Handlers are declared at the class level in MessagePassingComputation
+        # But to count cycles we must operate at the class level. For this reason
+        # we override the class-level `_decorated_handlers` map with an instance-level
+        # one.
+        self._decorated_handlers = {"cycle_sync": self._sync_message_handler}
+
+        for msg_type, handler in self.__class__._decorated_handlers.items():
+            self._decorated_handlers[msg_type] = self._sync_message_handler
+
+    def _sync_message_handler(self, _, sender, msg, t):
+        if sender not in self.neighbors:
+            raise ComputationException(
+                f"Invalid message: received a message from {sender}, which is "
+                f"not in the neighbors list: {self.neighbors}"
+            )
+
+        # We might have a difference of at most one cycle with our neighbors,
+        # meaning we might receive messages for cycle i+1 while we are still
+        # at cycle i, waiting for messages from other neighbors. In that case,
+        # we simply store these messages for the next cycle.
+        # If the difference is more that one cycle, there's a bug !
+        if msg.cycle_id == self._current_cycle:
+
+            if sender in self._cycle_messages:
+                # We could allow several messages from a single neighbor
+                # in a cycle, but that's more complicated
+                # (would require grouping them for example) and I don't see this
+                # as very useful. For now, simply forbid it.
+                raise ComputationException(
+                    f"Invalid message, {self.name} received two messages "
+                    f"from {sender} for cycle {self._current_cycle}. "
+                    f"In a synchronized computation, a neighbor can only send "
+                    f"a single message in a cycle."
+                )
+
+            self._cycle_messages[sender] = (msg, t)
+
+            # Check if end of cycle, Call on cycle.
+            if len(self._cycle_messages) == len(self.neighbors):
+                self._switch_cycle()
+        elif msg.cycle_id == self._current_cycle + 1:
+            self._next_cycle_messages[sender] = (msg, t)
+        else:
+            raise ComputationException(
+                f"Invalid message for computation {self.name}, "
+                f"current cycle is {self._current_cycle} "
+                f"but received message for cycle {msg.cycle_id} "
+                f"from {sender}"
+            )
+
+    @property
+    def current_cycle(self):
+        return self._current_cycle
+
+    def post_msg(self, target: str, msg, prio: int = None, on_error=None):
+        # We need to add the current cycle_id to all messages, in order for the neighbor
+        # to be able to check that the message is for the current or next cycle.
+        self.logger.debug(f"Sending msg for cycle {self._current_cycle} {self.name} -> {target} : {msg}")
+        msg.cycle_id = self._current_cycle
+        super(SynchronousComputationMixin, self).post_msg(target, msg, prio, on_error)
+        self.cycle_message_sent.append(target)
+
+    def _switch_cycle(self):
+        self.logger.debug(f"Running cycle {self._current_cycle}")
+        self._current_cycle += 1
+        algo_message = {
+            k: (msg, t)
+            for k, (msg, t) in self._cycle_messages.items()
+            if not isinstance(msg, SynchronizationMsg)
+        }
+        self.cycle_message_sent= []
+        messages = self.on_new_cycle(algo_message, self._current_cycle - 1)
+
+        # For synchronization, we need to send messages to _all_ neighbors, even this
+        # implemented algorithms does not require some (or in many cases most) of these
+        # message.
+        remaining_neighbors = list(self.neighbors)
+        if messages is not None:
+            for target, message in messages:
+                # message.cycle_id = self._current_cycle
+                self.post_msg(target, message)
+                remaining_neighbors.remove(target)
+
+
+        # Now send a cycle synchronization message to all neighbors to which we did not
+        # already send a algo-level message.
+        for neighbor in remaining_neighbors:
+            # Some messages might also have been sent using post_msg
+            if neighbor not in self.cycle_message_sent:
+                self.post_msg(neighbor, SynchronizationMsg())
+
+        self._cycle_messages = self._next_cycle_messages
+        self._next_cycle_messages = {}
+
+    @property
+    def cycle_count(self):
+        return self._current_cycle
+
+    def on_new_cycle(self, messages: Dict[str, Tuple], cycle_id) -> Optional[List]:
+        """
+        Called when switching to a new cycle.
+
+        This method must be overridden in derived classes, this is where you write the
+        logic of your synchronous algorithm. It is automatically called when
+        all messages have been received for the current cycle and should be handled.
+        When handling these messages, the computation will generally also send messages
+        to some of its neighbors; this can be achieved either by using `post_msg` or
+        by returning the list of messages that must be sent for this cycle. Notice that
+        these messages will be delivered in the next cycle.
+
+        Notes
+        -----
+        You are only allowed to send at most one message to any given neighbor in a
+        cycle. If you send several messages to the same neighbor, a ComputationException
+        will be raised by this neighbor in the next cycle, when receiving them.
+
+        Parameters
+        ----------
+        messages: dict
+            all the messages received for this cycle (i.e. that have been set by
+            neighbors during the previous cycle). The keys of the dict are the sender
+            of the message, the values are tuple (message, time).
+        cycle_id: int
+            id for this cycle
+
+        Returns
+        -------
+        messages: list of None
+            a list of tuples (target, message) with the messages to be sent to neighbors
+            for this cycle (which they will receive at the next cycle).
+
+        """
+        #
+        pass
 
 
 class DcopComputation(MessagePassingComputation):
