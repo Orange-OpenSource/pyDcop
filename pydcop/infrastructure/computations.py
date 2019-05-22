@@ -228,6 +228,14 @@ def message_type(msg_type: str, fields: List[str]):
     return msg_class
 
 
+class ComputationException(Exception):
+    """
+    Base class for exception from computations.
+    """
+
+    pass
+
+
 class ComputationMetaClass(type):
     """
     ComputationMetaClass is used to ensure that each subclass of
