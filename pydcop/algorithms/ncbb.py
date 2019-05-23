@@ -106,12 +106,31 @@ class NcbbAlgo(SynchronousComputationMixin, VariableComputation):
 
         # Set parent, children and constraints
         self._parent = None
+        self._pseudo_parents = []
         self._children = []
+        self._pseudo_children = []
         for l in computation_definition.node.links:
             if l.type == "parent" and l.source == computation_definition.node.name:
                 self._parent = l.target
             if l.type == "children" and l.source == computation_definition.node.name:
                 self._children.append(l.target)
+            if (
+                l.type == "pseudo_children"
+                and l.source == computation_definition.node.name
+            ):
+                self._pseudo_children.append(l.target)
+            if (
+                l.type == "pseudo_parent"
+                and l.source == computation_definition.node.name
+            ):
+                self._pseudo_parents.append(l.target)
+
+        # parent and pseudo-parents:
+        self._ancestors = list(self._pseudo_parents)
+        self._ancestors.append(self._parent)
+
+        # Children and pseudo-children:
+        self._descendants = self._pseudo_children + self._children
 
         # Raise an exception if we pass a non-binary constraint
         self._constraints = []
