@@ -64,9 +64,32 @@ def three_variables_pb():
     diff_x1_x2 = constraint_from_str("c1", "1 if x1 == x2 else 0", [x1, x2])
     diff_x1_x3 = constraint_from_str("c2", "1 if x1 == x3 else 0", [x1, x3])
     # build the pseudo-tree for this problem
-    constraints = [diff_x1_x2, diff_x1_x3]
     g = build_computation_graph(
         None, constraints=[diff_x1_x2, diff_x1_x3], variables=[x1, x2, x3]
+    )
+    return g
+
+
+@pytest.fixture
+def toy_pb():
+    # A toy problem with 5 variables and 5 constraints.
+    # The objective here is to have a problem that is simple enough to be solved
+    # manually and used in test, but that is representative enough to be meaningful.
+    # For example, it includes a loop to make sure we have pseudo parents
+    v_a = Variable("A", ["R", "B"])
+    v_b = Variable("B", ["R", "B"])
+    v_c = Variable("C", ["R", "B"])
+    v_d = Variable("D", ["R", "B"])
+    v_e = Variable("E", ["R", "B"])
+    c1 = constraint_from_str("c1", "1 if A == B else 0", [v_a, v_b])
+    c2 = constraint_from_str("c2", "1 if A == C else 0", [v_a, v_c])
+    c3 = constraint_from_str("c3", "1 if A == D else 0", [v_a, v_d])
+    c4 = constraint_from_str("c4", "1 if B == D else 0", [v_b, v_d])
+    c5 = constraint_from_str("c5", "1 if D == E else 0", [v_d, v_e])
+
+    # build the pseudo-tree for this problem
+    g = build_computation_graph(
+        None, constraints=[c1, c2, c3, c4, c5], variables=[v_a, v_b, v_c, v_d, v_e]
     )
     return g
 
@@ -80,6 +103,8 @@ def get_computation_instance(graph, name):
     algo_def = AlgorithmDef.build_with_default_param("ncbb")
     comp_def = ComputationDef(comp_node, algo_def)
     comp = NcbbAlgo(comp_def)
+    comp._msg_sender = MagicMock()
+
     return comp
 
 
@@ -123,4 +148,17 @@ def test_create_computation_three_variables(three_variables_pb):
     assert comp.name == "x2"
     assert not comp._children
     assert comp._parent == "x1"
+    assert comp._ancestors == ["x1"]
+
+
+def test_create_computations(toy_pb):
+    comp_a = get_computation_instance(toy_pb, "A")
+
+    assert comp_a.is_root
+    assert set(comp_a._descendants) == {"D", "B", "C"}
+
+    comp_d = get_computation_instance(toy_pb, "D")
+    assert not comp_d.is_root
+    assert comp_d._parent == "B"
+    assert set(comp_d._ancestors) == {"A", "B"}
 
