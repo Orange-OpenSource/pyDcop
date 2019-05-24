@@ -29,7 +29,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 """
 Pseudo tree computation graphs are DFS trees built from the constraint graph 
 where pseudo-parent and pseudo-children links are added to the tree.
@@ -42,8 +41,7 @@ from typing import Iterable
 from collections import defaultdict
 from typing import List
 
-from pydcop.computations_graph.objects import ComputationNode, \
-    ComputationGraph, Link
+from pydcop.computations_graph.objects import ComputationNode, ComputationGraph, Link
 from pydcop.dcop.objects import Variable
 from pydcop.dcop.dcop import DCOP
 from pydcop.dcop.relations import RelationProtocol, Constraint
@@ -57,7 +55,7 @@ class PseudoTreeLink(Link):
 
     """
 
-    def __init__(self, link_type: str, source: str, target: str)-> None:
+    def __init__(self, link_type: str, source: str, target: str) -> None:
         """
 
         Parameters
@@ -74,12 +72,12 @@ class PseudoTreeLink(Link):
             The target of the link, it must be the name of a PseudoTreeNode
             in the graph.
         """
-        if link_type not in ['children', 'pseudo_children', 'pseudo_parent',
-                             'parent']:
-            raise ValueError('Invalid link type in pseudo-tree '
-                             'graph: {}. Supported types are "children",'
-                             '"pseudo_children" and "pseudo_parent"'
-                             .format(link_type))
+        if link_type not in ["children", "pseudo_children", "pseudo_parent", "parent"]:
+            raise ValueError(
+                "Invalid link type in pseudo-tree "
+                'graph: {}. Supported types are "children",'
+                '"pseudo_children" and "pseudo_parent"'.format(link_type)
+            )
         super().__init__(link_type=link_type, nodes=[source, target])
         self._source = source
         self._target = target
@@ -107,20 +105,18 @@ class PseudoTreeLink(Link):
         return self._target
 
     def _simple_repr(self):
-        r = {'__module__': self.__module__,
-             '__qualname__': self.__class__.__qualname__,
-             'type': self.type,
-             'source': simple_repr(self.source),
-             'target': simple_repr(self.target)
-             }
+        r = {
+            "__module__": self.__module__,
+            "__qualname__": self.__class__.__qualname__,
+            "type": self.type,
+            "source": simple_repr(self.source),
+            "target": simple_repr(self.target),
+        }
         return r
 
     @classmethod
     def _from_repr(cls, r):
-        return PseudoTreeLink(
-            r['type'],
-            from_repr(r['source']),
-            from_repr(r['target']))
+        return PseudoTreeLink(r["type"], from_repr(r["source"]), from_repr(r["target"]))
 
 
 class PseudoTreeNode(ComputationNode):
@@ -142,12 +138,15 @@ class PseudoTreeNode(ComputationNode):
 
     """
 
-    def __init__(self, variable: Variable,
-                 constraints: Iterable[Constraint],
-                 links: Iterable[PseudoTreeLink],
-                 name: str =None)-> None:
+    def __init__(
+        self,
+        variable: Variable,
+        constraints: Iterable[Constraint],
+        links: Iterable[PseudoTreeLink],
+        name: str = None,
+    ) -> None:
         name = name if name is not None else variable.name
-        super().__init__(name, 'PseudoTreeComputation', links=links)
+        super().__init__(name, "PseudoTreeComputation", links=links)
         self._variable = variable
         self._constraints = tuple(constraints)
 
@@ -160,16 +159,15 @@ class PseudoTreeNode(ComputationNode):
         return self._constraints
 
     def __str__(self):
-        return 'PseudoTreeNode({},{})'.format(self._variable, self._constraints)
+        return "PseudoTreeNode({},{})".format(self._variable, self._constraints)
 
     def __repr__(self):
-        return 'PseudoTreeNode({},{})'.format(self._variable, self._constraints)
+        return "PseudoTreeNode({},{})".format(self._variable, self._constraints)
 
     def __eq__(self, other):
         if type(other) != PseudoTreeNode:
             return False
-        if self.variable == other.variable \
-                and self.constraints == other.constraints:
+        if self.variable == other.variable and self.constraints == other.constraints:
             return True
         return False
 
@@ -201,15 +199,9 @@ def get_dfs_relations(tree_node: PseudoTreeNode):
             parent = l.target
         if l.type == "children" and l.source == tree_node.name:
             children.append(l.target)
-        if (
-                l.type == "pseudo_children"
-                and l.source == tree_node.name
-        ):
+        if l.type == "pseudo_children" and l.source == tree_node.name:
             pseudo_children.append(l.target)
-        if (
-                l.type == "pseudo_parent"
-                and l.source == tree_node.name
-        ):
+        if l.type == "pseudo_parent" and l.source == tree_node.name:
             pseudo_parents.append(l.target)
 
     return parent, pseudo_parents, children, pseudo_children
@@ -257,11 +249,12 @@ class _BuildingNode(object):
 
         elif self.parent is None and not self.root:
             self.parent = sender
-            self.pseudo_parents = [n for n in self._neighbors if n in token
-                                   and n != sender]
+            self.pseudo_parents = [
+                n for n in self._neighbors if n in token and n != sender
+            ]
             self._neighbors.sort(
-                key=lambda x: x.count_neighbors_in_token(token),
-                reverse=True)
+                key=lambda x: x.count_neighbors_in_token(token), reverse=True
+            )
             self._propagate(token)
 
         else:
@@ -276,8 +269,9 @@ class _BuildingNode(object):
         # heuristic :
         # sort our neighbors based on the number of their neighbors are
         # already in the token
-        self._neighbors.sort(key=lambda x: x.count_neighbors_in_token(token),
-                             reverse=True)
+        self._neighbors.sort(
+            key=lambda x: x.count_neighbors_in_token(token), reverse=True
+        )
 
         for n in self._neighbors:
             if n not in self._visited:
@@ -300,10 +294,10 @@ class _BuildingNode(object):
         return len(self._neighbors)
 
     def __repr__(self):
-        return 'Node '+self.variable.name
+        return "Node " + self.variable.name
 
     def __str__(self):
-        return 'Node ' + self.variable.name
+        return "Node " + self.variable.name
 
 
 def _find_neighbors_relations(node, relations, nodes):
@@ -391,14 +385,15 @@ def tree_str_desc(root, indent_num=0):
     :param indent_num:
     :return:
     """
-    desc = ''
-    indent = ' '*indent_num
-    pp = ', '.join([p.variable.name for p in root.pseudo_parents])
-    pc = ', '.join([c.variable.name for c in root.pseudo_children])
-    desc += indent + '* ' + root.variable.name \
-        + ' - PP : [' + pp + '] - PC: [' + pc + ']\n'
+    desc = ""
+    indent = " " * indent_num
+    pp = ", ".join([p.variable.name for p in root.pseudo_parents])
+    pc = ", ".join([c.variable.name for c in root.pseudo_children])
+    desc += (
+        indent + "* " + root.variable.name + " - PP : [" + pp + "] - PC: [" + pc + "]\n"
+    )
     for n in root.children:
-        desc += tree_str_desc(n, indent_num=(indent_num+2))
+        desc += tree_str_desc(n, indent_num=(indent_num + 2))
     return desc
 
 
@@ -410,8 +405,8 @@ class ComputationPseudoTree(ComputationGraph):
 
     """
 
-    def __init__(self, roots: Iterable[_BuildingNode])-> None:
-        super().__init__('PseudoTree')
+    def __init__(self, roots: Iterable[_BuildingNode]) -> None:
+        super().__init__("PseudoTree")
         self._roots = list(roots)
 
         # build the list of links
@@ -421,20 +416,21 @@ class ComputationPseudoTree(ComputationGraph):
             for n in _visit_tree(root):
                 if n.parent is not None:
                     links[n.name].append(
-                        PseudoTreeLink('parent', n.name, n.parent.name))
+                        PseudoTreeLink("parent", n.name, n.parent.name)
+                    )
                 for c in n.children:
-                    links[n.name].append(
-                        PseudoTreeLink('children', n.name, c.name))
+                    links[n.name].append(PseudoTreeLink("children", n.name, c.name))
                 for c in n.pseudo_children:
                     links[n.name].append(
-                        PseudoTreeLink('pseudo_children', n.name, c.name))
+                        PseudoTreeLink("pseudo_children", n.name, c.name)
+                    )
                 for c in n.pseudo_parents:
                     links[n.name].append(
-                        PseudoTreeLink('pseudo_parent', n.name, c.name))
+                        PseudoTreeLink("pseudo_parent", n.name, c.name)
+                    )
 
             for n in _visit_tree(root):
-                _nodes[n.name] = PseudoTreeNode(n.variable, n.relations,
-                                                links[n.name])
+                _nodes[n.name] = PseudoTreeNode(n.variable, n.relations, links[n.name])
 
         self.nodes = list(_nodes.values())
 
@@ -469,10 +465,11 @@ def _filter_relation_to_lowest_node(dfs_root):
         n.relations = keep_rel
 
 
-def build_computation_graph(dcop: DCOP,
-                            variables: Iterable[Variable] = None,
-                            constraints: Iterable[Constraint] = None,
-                            )-> ComputationPseudoTree:
+def build_computation_graph(
+    dcop: DCOP,
+    variables: Iterable[Variable] = None,
+    constraints: Iterable[Constraint] = None,
+) -> ComputationPseudoTree:
     """
     Build a computation pseudo-tree graph for the DCOP.
 
@@ -512,14 +509,17 @@ def build_computation_graph(dcop: DCOP,
 
     if dcop is not None:
         if constraints or variables is not None:
-            raise ValueError('Cannot use both dcop and constraints / '
-                             'variables parameters')
+            raise ValueError(
+                "Cannot use both dcop and constraints / " "variables parameters"
+            )
         variables = list(dcop.variables.values())
         constraints = list(dcop.constraints.values())
     else:
         if constraints is None or variables is None:
-            raise ValueError('Constraints AND variables parameters must be '
-                             'provided when not building the graph from a dcop')
+            raise ValueError(
+                "Constraints AND variables parameters must be "
+                "provided when not building the graph from a dcop"
+            )
         variables = list(variables)
         constraints = list(constraints)
 
