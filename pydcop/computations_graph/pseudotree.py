@@ -177,6 +177,44 @@ class PseudoTreeNode(ComputationNode):
         return hash((self._variable, self._constraints))
 
 
+def get_dfs_relations(tree_node: PseudoTreeNode):
+    """
+    Utility function to get lists of descendants and ancestors.
+
+    Parameters
+    ----------
+    tree_node: PseudoTreeNode
+        a node in a dfs tree
+
+    Returns
+    -------
+    tuple:
+        a tuple (parent, pseudo_parents, children, pseudo_children)
+    """
+    parent = None
+    pseudo_parents = []
+    children = []
+    pseudo_children = []
+
+    for l in tree_node.links:
+        if l.type == "parent" and l.source == tree_node.name:
+            parent = l.target
+        if l.type == "children" and l.source == tree_node.name:
+            children.append(l.target)
+        if (
+                l.type == "pseudo_children"
+                and l.source == tree_node.name
+        ):
+            pseudo_children.append(l.target)
+        if (
+                l.type == "pseudo_parent"
+                and l.source == tree_node.name
+        ):
+            pseudo_parents.append(l.target)
+
+    return parent, pseudo_parents, children, pseudo_children
+
+
 class _BuildingNode(object):
     """
     This class is only used when building the pseudo tree and should never be
