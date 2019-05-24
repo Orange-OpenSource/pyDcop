@@ -84,11 +84,51 @@ def toy_pb():
     v_c = Variable("C", ["R", "B"])
     v_d = Variable("D", ["R", "B"])
     v_e = Variable("E", ["R", "B"])
-    c1 = constraint_from_str("c1", "1 if A == B else 0", [v_a, v_b])
-    c2 = constraint_from_str("c2", "1 if A == C else 0", [v_a, v_c])
-    c3 = constraint_from_str("c3", "1 if A == D else 0", [v_a, v_d])
-    c4 = constraint_from_str("c4", "1 if B == D else 0", [v_b, v_d])
-    c5 = constraint_from_str("c5", "1 if D == E else 0", [v_d, v_e])
+    c1 = constraint_from_str(
+        "c1",
+        "{('R', 'B'): 1, "
+        " ('R', 'R'): 5, "
+        " ('B', 'B'): 3, "
+        " ('B', 'R'): 2 "
+        "}[(A, B)]",
+        [v_a, v_b],
+    )
+    c2 = constraint_from_str(
+        "c1",
+        "{('R', 'B'): 2, "
+        " ('R', 'R'): 8, "
+        " ('B', 'B'): 5, "
+        " ('B', 'R'): 3 "
+        "}[(A, C)]",
+        [v_a, v_c],
+    )
+    c3 = constraint_from_str(
+        "c1",
+        "{('R', 'B'): 2, "
+        " ('R', 'R'): 4, "
+        " ('B', 'B'): 2, "
+        " ('B', 'R'): 0 "
+        "}[(A, D)]",
+        [v_a, v_d],
+    )
+    c4 = constraint_from_str(
+        "c1",
+        "{('R', 'B'): 0, "
+        " ('R', 'R'): 10, "
+        " ('B', 'B'): 2, "
+        " ('B', 'R'): 1 "
+        "}[(B, D)]",
+        [v_b, v_d],
+    )
+    c5 = constraint_from_str(
+        "c1",
+        "{('R', 'B'): 2, "
+        " ('R', 'R'): 4, "
+        " ('B', 'B'): 7, "
+        " ('B', 'R'): 1 "
+        "}[(E, E)]",
+        [v_d, v_e],
+    )
 
     # build the pseudo-tree for this problem
     g = build_computation_graph(
