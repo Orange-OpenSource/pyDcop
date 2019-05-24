@@ -27,13 +27,16 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+from unittest.mock import MagicMock
+
 import pytest
 
 from pydcop.algorithms import ComputationDef, AlgorithmDef
-from pydcop.algorithms.ncbb import NcbbAlgo
+from pydcop.algorithms.ncbb import NcbbAlgo, ValueMessage
 from pydcop.computations_graph.pseudotree import PseudoTreeNode, build_computation_graph
-from pydcop.dcop.objects import Variable
+from pydcop.dcop.objects import Variable, Domain
 from pydcop.dcop.relations import constraint_from_str
+from pydcop.infrastructure.computations import ComputationException
 
 
 @pytest.fixture
@@ -150,6 +153,26 @@ def test_create_computation_three_variables(three_variables_pb):
     assert comp._parent == "x1"
     assert comp._ancestors == ["x1"]
 
+def test_problem_with_non_binary_constraints_raises_exception():
+    d = Domain('values', '', [1, 0])
+    v1 = Variable('v1', d)
+    v2 = Variable('v2', d)
+    v3 = Variable('v3', d)
+    c1 = constraint_from_str("c1", "v1 + v2 + v3 <= 2", [v1, v2, v3])
+    g = build_computation_graph(
+        None, constraints=[c1], variables=[v1, v2, v3]
+    )
+    with pytest.raises(ComputationException) as comp_exc:
+        get_computation_instance(g, "v1")
+    assert  f" with arity {3}" in str(comp_exc)
+
+    with pytest.raises(ComputationException) as comp_exc:
+        get_computation_instance(g, "v3")
+    assert  f" with arity {3}" in str(comp_exc)
+
+    with pytest.raises(ComputationException) as comp_exc:
+        get_computation_instance(g, "v2")
+    assert  f" with arity {3}" in str(comp_exc)
 
 def test_create_computations(toy_pb):
     comp_a = get_computation_instance(toy_pb, "A")
