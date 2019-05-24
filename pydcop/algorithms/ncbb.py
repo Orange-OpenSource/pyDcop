@@ -58,6 +58,7 @@ NCBB is a synchronous algorithm and is composed of two phases:
 from typing import Optional, List
 
 from pydcop.algorithms import ComputationDef
+from pydcop.computations_graph.pseudotree import get_dfs_relations
 from pydcop.infrastructure.computations import (
     VariableComputation,
     SynchronousComputationMixin,
@@ -105,25 +106,9 @@ class NcbbAlgo(SynchronousComputationMixin, VariableComputation):
         self._mode = computation_definition.algo.mode
 
         # Set parent, children and constraints
-        self._parent = None
-        self._pseudo_parents = []
-        self._children = []
-        self._pseudo_children = []
-        for l in computation_definition.node.links:
-            if l.type == "parent" and l.source == computation_definition.node.name:
-                self._parent = l.target
-            if l.type == "children" and l.source == computation_definition.node.name:
-                self._children.append(l.target)
-            if (
-                l.type == "pseudo_children"
-                and l.source == computation_definition.node.name
-            ):
-                self._pseudo_children.append(l.target)
-            if (
-                l.type == "pseudo_parent"
-                and l.source == computation_definition.node.name
-            ):
-                self._pseudo_parents.append(l.target)
+        self._parent, self._pseudo_parents, self._children, self._pseudo_children = get_dfs_relations(
+            self.computation_def.node
+        )
 
         # parent and pseudo-parents:
         self._ancestors = list(self._pseudo_parents)
