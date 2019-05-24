@@ -73,6 +73,17 @@ class RelationProtocol(object):
         raise NotImplemented("dimensions not implemented")
 
     @property
+    def scope_names(self) ->List[str]:
+        """
+        The names of the variable in the scope of this constraint.
+
+        Returns
+        -------
+
+        """
+        return [v.name for v in self.dimensions]
+
+    @property
     def arity(self) -> int:
         """
         The arity of the relation is the number of variables it depends on.
@@ -1337,6 +1348,9 @@ def add_var_to_rel(
 def find_optimum(constraint: Constraint, mode: str) -> float:
     """
     Compute the optimum of the relation given the mode.
+
+    Warning: this method enumerate all possible assignments for this relation and will
+    be slow, only use it with low arity relation and small domains!
 
     Parameters
     ----------
