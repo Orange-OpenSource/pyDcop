@@ -44,7 +44,7 @@ from pydcop.dcop.relations import (
     UnaryFunctionRelation,
     constraint_from_str,
     assignment_cost,
-)
+    find_optimal, AsNAryFunctionRelation)
 from pydcop.utils.simple_repr import simple_repr, from_repr
 
 
@@ -218,6 +218,56 @@ class FindArgOptimalTestCase(unittest.TestCase):
         self.assertIn(4, values)
         self.assertIn(5, values)
         self.assertEqual(c, 2)
+
+
+################################################################################
+
+def test_find_optimal_single_unary_constraint():
+    v1 = Variable('a', [0, 1, 2, 3, 4])
+    c1 = UnaryFunctionRelation('c1', v1, lambda x: abs(x - 2))
+
+    vals, cost = find_optimal(v1, {}, [c1], "min")
+    assert vals == [2]
+    assert cost == 0
+
+
+def test_find_optimal_2_unary_constraints():
+    variable = Variable('a', [0, 1, 2, 3, 4])
+    c1 = UnaryFunctionRelation('c1', variable, lambda x: abs(x - 3))
+    c2 = UnaryFunctionRelation('c1', variable, lambda x: abs(x-1)*2)
+
+    val, sum_costs = find_optimal(variable, {}, [c1, c2], "min")
+    assert val == [1]
+    assert sum_costs == 2
+
+
+def test_find_optimal_one_binary_constraint():
+    v1 = Variable('v1', [0, 1, 2, 3, 4])
+    v2 = Variable('v2', [0, 1, 2, 3, 4])
+
+    @AsNAryFunctionRelation(v1, v2)
+    def c1(v1_, v2_):
+        return abs(v1_-v2_)
+
+    val, sum_costs = find_optimal(v1, {"v2": 1}, [c1], "min")
+    assert val == [1]
+    assert sum_costs == 0
+
+
+def test_find_optimal_several_best_values():
+    #  With this constraints definition, the value 0 and 3 returns the same
+    #  optimal cost of 0, find_best_values must return both values.
+
+    v1 = Variable('v1', [0, 1, 2, 3, 4])
+    v2 = Variable('v2', [0, 1, 2, 3, 4])
+
+    @AsNAryFunctionRelation(v1, v2)
+    def c1(v1_, v2_):
+        return abs((v2_ - v1_) % 3)
+
+    val, sum_costs = find_optimal(v1, {'v2': 3}, [c1], "min")
+    assert val == [0, 3]
+    assert sum_costs == 0
 
 
 ################################################################################
