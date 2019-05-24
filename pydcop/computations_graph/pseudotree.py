@@ -526,7 +526,6 @@ def build_computation_graph(dcop: DCOP,
     roots = []
     while len(variables) != 0:
         root = _generate_dfs_tree(variables, constraints)
-        _filter_relation_to_lowest_node(root)
         roots.append(root)
         # Remove variables that are part of the tree and build another tree
         # until there is no variable left.
