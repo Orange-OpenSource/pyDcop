@@ -314,3 +314,62 @@ def test_select_value_in_dfs_two_ancestors(toy_pb):
     # msg.cycle_id = 0
     # comp._msg_sender.assert_any_call("B", "D", msg, None, None)
 
+
+def test_cost_msg_from_leaf(toy_pb):
+
+    comp_c = get_computation_instance(toy_pb, "C")
+    comp_c.start()
+
+    comp_c.value_phase("A", "R")
+
+    assert comp_c.current_value == "B"
+
+    msg = CostMessage(2)
+    # Warning, the messages that are sent contains the cycle_id, if we don't add them
+    # the calls will not match, which is quite inconvenient...
+    msg.cycle_id = 0
+    comp_c._msg_sender.assert_any_call("C", "A", msg, None, None)
+
+
+def test_cost_msg_from_subtree_d(toy_pb):
+
+    comp_d = get_computation_instance(toy_pb, "D")
+    comp_d.start()
+
+    comp_d._upper_bound = 2
+    comp_d.cost_phase("E", 0)
+
+    assert comp_d._upper_bound == 2
+
+    msg = CostMessage(2)
+    # Warning, the messages that are sent contains the cycle_id, if we don't add them
+    # the calls will not match, which is quite inconvenient...
+    msg.cycle_id = 0
+    comp_d._msg_sender.assert_any_call("D", "B", msg, None, None)
+
+
+def test_cost_msg_from_subtree_b(toy_pb):
+
+    comp_b = get_computation_instance(toy_pb, "B")
+    comp_b.start()
+    comp_b._upper_bound = 1
+    comp_b.cost_phase("D", 2)
+
+    assert comp_b._upper_bound == 3
+
+    msg = CostMessage(3)
+    # Warning, the messages that are sent contains the cycle_id, if we don't add them
+    # the calls will not match, which is quite inconvenient...
+    msg.cycle_id = 0
+    comp_b._msg_sender.assert_any_call("B", "A", msg, None, None)
+
+
+def test_cost_msg_at_root(toy_pb):
+
+    comp_a = get_computation_instance(toy_pb, "A")
+    comp_a.start()
+    comp_a._upper_bound = 0
+    comp_a.cost_phase("B", 3)
+    comp_a.cost_phase("C", 0)
+
+    assert comp_a._upper_bound == 3

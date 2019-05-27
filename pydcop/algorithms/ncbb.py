@@ -93,6 +93,7 @@ StopMessage = message_type("stop", ["stop"])
 
 PHASES = {"INIT", "SEARCH"}
 
+
 class NcbbAlgo(SynchronousComputationMixin, VariableComputation):
     """
     Computation implementation for the NCBB algorithm.
@@ -219,9 +220,15 @@ class NcbbAlgo(SynchronousComputationMixin, VariableComputation):
 
             for sender, (message, t) in messages.items():
                 self.cost_phase(sender, message.value)
+
+        elif msg_type == "update_value":
+            # Receiving a value message from one of our ancestors
+            # FIXMEself._parents_values[sender] = value
             pass
+
         elif msg_type == "search":
             pass
+
         elif msg_type == "stop":
             pass
 
@@ -265,3 +272,37 @@ class NcbbAlgo(SynchronousComputationMixin, VariableComputation):
                 # for costs from our children.
                 for ancestor in self._ancestors:
                     self.post_msg(ancestor, CostMessage(cost))
+
+    def cost_phase(self, sender, cost):
+        # compute the upper-bound for the subtree rooted at this variable.
+
+        if sender not in self._children:
+            raise ComputationException(
+                f"Received cost at {self.name} from {sender}, "
+                f"which is not a children: {self._children}"
+            )
+
+        self._children_costs[sender] = cost
+        self._upper_bound += cost
+
+        if len(self._children_costs) == len(self._children):
+            # We have computed the upper-bound for our subtree.
+            if not self.is_root:
+                # Propagate costs up to parent.
+                self.post_msg(self._parent, CostMessage(self._upper_bound))
+                # And
+            else:
+                # If we are the root of the tree, we can now initiate the search phase.
+                self.search()
+
+            self.phase = "SEARCH"
+
+    def search(self):
+        pass
+
+    def agent_cost(self, assignment):
+        pass
+
+    def lower_bound(self, assignment, k):
+        # k ancestor index
+        pass
