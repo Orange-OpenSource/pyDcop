@@ -40,14 +40,13 @@ your own DCOP algorithm.
 import logging
 from functools import wraps
 from importlib import import_module
-from typing import List, Tuple, Any, Callable
+from typing import List, Tuple, Any, Callable, Dict, Optional
 
 from numpy import random
 
 from pydcop.algorithms import ComputationDef, load_algorithm_module
 from pydcop.dcop.objects import Variable
-from pydcop.utils.simple_repr import SimpleRepr, SimpleReprException, \
-    simple_repr
+from pydcop.utils.simple_repr import SimpleRepr, SimpleReprException, simple_repr
 from pydcop.infrastructure.Events import event_bus
 
 
@@ -109,10 +108,10 @@ class Message(SimpleRepr):
         return self._content
 
     def __str__(self):
-        return 'Message({})'.format(self.type)
+        return f"Message({self.type})"
 
     def __repr__(self):
-        return 'Message({}, {})'.format(self.type, self.content)
+        return f"Message({self.type}, {self.content})"
 
     def __eq__(self, other):
         if type(other) != type(self):
@@ -159,52 +158,52 @@ def message_type(msg_type: str, fields: List[str]):
     0
     """
 
-    def __init__(self,  *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         if args and kwargs:
-            raise ValueError('Use positional or keyword arguments, but not '
-                             'both')
+            raise ValueError("Use positional or keyword arguments, but not " "both")
         if args:
             if len(args) != len(fields):
-                raise ValueError('Wrong number of positional arguments')
+                raise ValueError("Wrong number of positional arguments")
             for f, a in zip(fields, args):
                 setattr(self, f, a)
 
         for k, v in kwargs.items():
             if k not in fields:
-                raise ValueError('Invalid field {} in {}'.format(k, msg_type))
+                raise ValueError("Invalid field {k} in {msg_type}")
             setattr(self, k, v)
         Message.__init__(self, msg_type, None)
 
     def to_str(self):
-        fs = ', '.join([f + ': ' + str(getattr(self, f)) for f in fields])
-        return msg_type + '(' + fs + ')'
+        fs = ", ".join([f + ": " + str(getattr(self, f)) for f in fields])
+        return msg_type + "(" + fs + ")"
 
     def _simple_repr(self):
 
         # Full name = module + qualifiedname (for inner classes)
-        r = {'__module__': self.__module__,
-             '__qualname__': 'message_type',
-             '__type__': self.__class__.__qualname__}
+        r = {
+            "__module__": self.__module__,
+            "__qualname__": "message_type",
+            "__type__": self.__class__.__qualname__,
+        }
         for arg in fields:
             try:
                 val = getattr(self, arg)
                 r[arg] = simple_repr(val)
             except AttributeError:
-                if hasattr(self, '_repr_mapping') and arg in \
-                        self._repr_mapping:
+                if hasattr(self, "_repr_mapping") and arg in self._repr_mapping:
                     try:
-                        r[arg] = self.__getattribute__(
-                            self._repr_mapping[arg])
+                        r[arg] = self.__getattribute__(self._repr_mapping[arg])
                     except AttributeError:
-                        SimpleReprException('Invalid repr_mapping in {}, '
-                                            'no attribute for {}'.
-                                            format(self,
-                                                   self._repr_mapping[arg]))
+                        SimpleReprException(
+                            f"Invalid repr_mapping in {self}, "
+                            "no attribute for {self._repr_mapping[arg]}"
+                        )
 
                 else:
-                    raise SimpleReprException('Could not build repr for {}, '
-                                              'no attribute for {}'.
-                                              format(self, arg))
+                    raise SimpleReprException(
+                        "Could not build repr for {self}, "
+                        "no attribute for {arg}"
+                    )
         return r
 
     def equals(self, other):
@@ -214,14 +213,26 @@ def message_type(msg_type: str, fields: List[str]):
             return False
         return True
 
-    msg_class = type(msg_type, (Message,),
-                     {'__init__': __init__,
-                      '__str__': to_str,
-                      '__repr__': to_str,
-                      '_simple_repr': _simple_repr,
-                      '__eq__': equals
-                      })
+    msg_class = type(
+        msg_type,
+        (Message,),
+        {
+            "__init__": __init__,
+            "__str__": to_str,
+            "__repr__": to_str,
+            "_simple_repr": _simple_repr,
+            "__eq__": equals,
+        },
+    )
     return msg_class
+
+
+class ComputationException(Exception):
+    """
+    Base class for exception from computations.
+    """
+
+    pass
 
 
 class ComputationMetaClass(type):
@@ -243,8 +254,8 @@ class ComputationMetaClass(type):
         for attr in attrs.values():
             # handlers registered using the decorator have a specific msg_type
             # attribute and must be added to the dict of handlers.
-            if hasattr(attr, 'msg_type'):
-                    cls._decorated_handlers[attr.msg_type] = attr
+            if hasattr(attr, "msg_type"):
+                cls._decorated_handlers[attr.msg_type] = attr
         return cls
 
 
@@ -277,13 +288,14 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         The name of the computation.
 
     """
-    def __init__(self, name: str):
+
+    def __init__(self, name: str, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._name = name
         self._msg_handlers = {}
         # Default logger for computation, will generally be overwritten by
         # sub-classes.
-        self.logger = logging.getLogger(
-            'pydcop.computation.' + self.__class__.__name__)
+        self.logger = logging.getLogger("pydcop.computation." + self.__class__.__name__)
 
         self._msg_sender = None
         self._periodic_action_handler = None
@@ -307,14 +319,14 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         return self._name
 
     @property
-    def is_running(self)-> bool:
+    def is_running(self) -> bool:
         """
         bool: True if the computation is currently running
         """
         return self._running
 
     @property
-    def is_paused(self)-> bool:
+    def is_paused(self) -> bool:
         return self._is_paused
 
     @property
@@ -322,10 +334,9 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         return self._msg_sender
 
     @message_sender.setter
-    def message_sender(
-            self, msg_sender: Callable[[str, str, Message, int], None]):
+    def message_sender(self, msg_sender: Callable[[str, str, Message, int], None]):
         if self._msg_sender is not None:
-            raise AttributeError('Can only set message sender once ')
+            raise AttributeError("Can only set message sender once ")
         self._msg_sender = msg_sender
 
     @property
@@ -333,9 +344,9 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         return self._periodic_action_handler
 
     @periodic_action_handler.setter
-    def periodic_action_handler(self, handler ):
+    def periodic_action_handler(self, handler):
         if self._periodic_action_handler is not None:
-            raise AttributeError('Can only set periodic_action_handler once')
+            raise AttributeError("Can only set periodic_action_handler once")
         self._periodic_action_handler = handler
 
     def finished(self):
@@ -370,8 +381,10 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
             # Instead, inject the message with a slightly higher
             # priority so that we handle them before new messages.
             self._msg_sender(src, self.name, msg, 19)
-        self.logger.debug('On startup, injecting %s pending '
-                          'messages received before start', pending_msg_count)
+        self.logger.debug(
+            "On startup, injecting %s pending " "messages received before start",
+            pending_msg_count,
+        )
 
     def stop(self):
         """
@@ -385,7 +398,7 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         self._running = False
         self.on_stop()
 
-    def pause(self, is_paused: bool=True):
+    def pause(self, is_paused: bool = True):
         """
         Pauses or resumes the computation.
 
@@ -414,8 +427,9 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
                 waiting_msg_count += 1
                 target, msg, prio, e = self._paused_messages_post.pop()
                 self.post_msg(target, msg, prio, e)
-            self.logger.debug('On resume, posting %s pending messages ',
-                              waiting_msg_count)
+            self.logger.debug(
+                "On resume, posting %s pending messages ", waiting_msg_count
+            )
 
             waiting_msg_count = 0
             while self._paused_messages_recv:
@@ -427,8 +441,10 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
                 # Instead, inject the message back with a slightly higher
                 # priority so that we handle them before new messages.
                 self._msg_sender(src, self.name, msg, 19)
-            self.logger.debug('On resume, re-injecting %s received pending '
-                              'messages ', waiting_msg_count)
+            self.logger.debug(
+                "On resume, re-injecting %s received pending " "messages ",
+                waiting_msg_count,
+            )
 
     def on_start(self):
         """
@@ -485,18 +501,21 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         if not self.is_paused and self._running:
             # Only handle messages if the computation has been started and is
             # not paused.
-            event_bus.send('computations.message_rcv.' + self.name,
-                           (self.name, msg.size))
+            event_bus.send(
+                "computations.message_rcv." + self.name, (self.name, msg.size)
+            )
             try:
                 self._decorated_handlers[msg.type](self, sender, msg, t)
             except KeyError:
                 self._msg_handlers[msg.type](sender, msg, t)
         else:
-            self.logger.debug(f"Storing message from {sender} {msg} . "
-                              f"paused {self.is_paused}, running {self._running}")
+            self.logger.debug(
+                f"Storing message from {sender} {msg} . "
+                f"paused {self.is_paused}, running {self._running}"
+            )
             self._paused_messages_recv.append((sender, msg, t))
 
-    def post_msg(self, target: str, msg, prio: int=None, on_error=None):
+    def post_msg(self, target: str, msg, prio: int = None, on_error=None):
         """
         Post a message.
 
@@ -519,8 +538,9 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
         """
         if not self.is_paused:
             self._msg_sender(self.name, target, msg, prio, on_error)
-            event_bus.send('computations.message_snd.' + self.name,
-                           (self.name, msg.size))
+            event_bus.send(
+                "computations.message_snd." + self.name, (self.name, msg.size)
+            )
         else:
             self._paused_messages_post.append((target, msg, prio, on_error))
 
@@ -544,14 +564,13 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
             if not self.is_paused:
                 cb()
 
-        return self.periodic_action_handler.set_periodic_action(period,
-                                                                call_action)
+        return self.periodic_action_handler.set_periodic_action(period, call_action)
 
     def remove_periodic_action(self, handle):
         self.periodic_action_handler.remove_periodic_action(handle)
 
     def __repr__(self):
-        return 'MessagePassingComputation({})'.format(self.name)
+        return "MessagePassingComputation({})".format(self.name)
 
 
 # noinspection PyPep8Naming
@@ -597,8 +616,196 @@ class register(object):
         @wraps(handler)
         def wrapper(*args, **kwargs):
             return handler(*args, **kwargs)
+
         wrapper.msg_type = self.msg_type
         return wrapper
+
+
+class SynchronizationMsg(Message):
+    def __init__(self):
+        super().__init__("cycle_sync")
+        # cycle_id is set by the `SynchronousComputationMixin` when sending the message.
+        self.cycle_id = None
+
+    def __repr__(self):
+        return f"SynchronizationMsg()"
+
+class SynchronousComputationMixin:
+    """
+    This mixin can be used with `MessagePassingComputation` classes (and classes
+    deriving from it) and implements synchronicity for these computation.
+
+    A computations that uses the `SynchronousComputationMixin` is a synchronous
+    computation that respects the synchronous network model (see Distributed
+    Algorithms); these computations operate in rounds: at each round i,
+    a computation collects messages sent at i-1 and send messages that will be
+    received at i+1.
+
+    Due to method resolution order, the mixin MUST be declared first in the list
+    of classes your are deriving from:
+
+    >   class MyComp( SynchronousComputationMixin,  MessagePassingComputation):
+    >       ...
+
+    A synchronous computation must not handle its message directly on the message
+    handler registered with @register, instead it must handle them when the
+    on_new_cycle is called.
+    However, this decorator must still be used in order to declare the message
+    types supported by the computation, but the bodu of the method should be empty:
+
+    >   class C( SynchronousComputationMixin,  MessagePassingComputation):
+            ...
+            @register("foo")
+            def on_foo_msg(self, s, m , t):
+                pass
+
+
+    Note : the class this mixin is applied to MUST have a `neighbors` property that
+    returns a list containing the name of its neighbors (see `DcopComputation` for
+    example).
+
+    """
+
+    def __init__(self, name, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+        self._current_cycle = 0
+        self._cycle_messages = {}
+        self._next_cycle_messages = {}
+        self.cycle_message_sent = []
+        # Handlers are declared at the class level in MessagePassingComputation
+        # But to count cycles we must operate at the class level. For this reason
+        # we override the class-level `_decorated_handlers` map with an instance-level
+        # one.
+        self._decorated_handlers = {"cycle_sync": self._sync_message_handler}
+
+        for msg_type, handler in self.__class__._decorated_handlers.items():
+            self._decorated_handlers[msg_type] = self._sync_message_handler
+
+    def _sync_message_handler(self, _, sender, msg, t):
+        if sender not in self.neighbors:
+            raise ComputationException(
+                f"Invalid message: received a message from {sender}, which is "
+                f"not in the neighbors list: {self.neighbors}"
+            )
+
+        # We might have a difference of at most one cycle with our neighbors,
+        # meaning we might receive messages for cycle i+1 while we are still
+        # at cycle i, waiting for messages from other neighbors. In that case,
+        # we simply store these messages for the next cycle.
+        # If the difference is more that one cycle, there's a bug !
+        if msg.cycle_id == self._current_cycle:
+
+            if sender in self._cycle_messages:
+                # We could allow several messages from a single neighbor
+                # in a cycle, but that's more complicated
+                # (would require grouping them for example) and I don't see this
+                # as very useful. For now, simply forbid it.
+                raise ComputationException(
+                    f"Invalid message, {self.name} received two messages "
+                    f"from {sender} for cycle {self._current_cycle}. "
+                    f"In a synchronized computation, a neighbor can only send "
+                    f"a single message in a cycle."
+                )
+
+            self._cycle_messages[sender] = (msg, t)
+
+            # Check if end of cycle, Call on cycle.
+            if len(self._cycle_messages) == len(self.neighbors):
+                self._switch_cycle()
+        elif msg.cycle_id == self._current_cycle + 1:
+            self._next_cycle_messages[sender] = (msg, t)
+        else:
+            raise ComputationException(
+                f"Invalid message for computation {self.name}, "
+                f"current cycle is {self._current_cycle} "
+                f"but received message for cycle {msg.cycle_id} "
+                f"from {sender}"
+            )
+
+    @property
+    def current_cycle(self):
+        return self._current_cycle
+
+    def post_msg(self, target: str, msg, prio: int = None, on_error=None):
+        # We need to add the current cycle_id to all messages, in order for the neighbor
+        # to be able to check that the message is for the current or next cycle.
+        self.logger.debug(f"Sending msg for cycle {self._current_cycle} {self.name} -> {target} : {msg}")
+        msg.cycle_id = self._current_cycle
+        super(SynchronousComputationMixin, self).post_msg(target, msg, prio, on_error)
+        self.cycle_message_sent.append(target)
+
+    def _switch_cycle(self):
+        self.logger.debug(f"Running cycle {self._current_cycle}")
+        self._current_cycle += 1
+        algo_message = {
+            k: (msg, t)
+            for k, (msg, t) in self._cycle_messages.items()
+            if not isinstance(msg, SynchronizationMsg)
+        }
+        self.cycle_message_sent= []
+        messages = self.on_new_cycle(algo_message, self._current_cycle - 1)
+
+        # For synchronization, we need to send messages to _all_ neighbors, even this
+        # implemented algorithms does not require some (or in many cases most) of these
+        # message.
+        remaining_neighbors = list(self.neighbors)
+        if messages is not None:
+            for target, message in messages:
+                # message.cycle_id = self._current_cycle
+                self.post_msg(target, message)
+                remaining_neighbors.remove(target)
+
+
+        # Now send a cycle synchronization message to all neighbors to which we did not
+        # already send a algo-level message.
+        for neighbor in remaining_neighbors:
+            # Some messages might also have been sent using post_msg
+            if neighbor not in self.cycle_message_sent:
+                self.post_msg(neighbor, SynchronizationMsg())
+
+        self._cycle_messages = self._next_cycle_messages
+        self._next_cycle_messages = {}
+
+    @property
+    def cycle_count(self):
+        return self._current_cycle
+
+    def on_new_cycle(self, messages: Dict[str, Tuple], cycle_id) -> Optional[List]:
+        """
+        Called when switching to a new cycle.
+
+        This method must be overridden in derived classes, this is where you write the
+        logic of your synchronous algorithm. It is automatically called when
+        all messages have been received for the current cycle and should be handled.
+        When handling these messages, the computation will generally also send messages
+        to some of its neighbors; this can be achieved either by using `post_msg` or
+        by returning the list of messages that must be sent for this cycle. Notice that
+        these messages will be delivered in the next cycle.
+
+        Notes
+        -----
+        You are only allowed to send at most one message to any given neighbor in a
+        cycle. If you send several messages to the same neighbor, a ComputationException
+        will be raised by this neighbor in the next cycle, when receiving them.
+
+        Parameters
+        ----------
+        messages: dict
+            all the messages received for this cycle (i.e. that have been set by
+            neighbors during the previous cycle). The keys of the dict are the sender
+            of the message, the values are tuple (message, time).
+        cycle_id: int
+            id for this cycle
+
+        Returns
+        -------
+        messages: list of None
+            a list of tuples (target, message) with the messages to be sent to neighbors
+            for this cycle (which they will receive at the next cycle).
+
+        """
+        #
+        pass
 
 
 class DcopComputation(MessagePassingComputation):
@@ -633,13 +840,13 @@ class DcopComputation(MessagePassingComputation):
 
     def __init__(self, name, comp_def: ComputationDef):
         if comp_def is None or name is None:
-            raise ValueError('ComputationDef and name are mandatory for a DCOP '
-                             'computation')
+            raise ValueError(
+                "ComputationDef and name are mandatory for a DCOP " "computation"
+            )
         super().__init__(name)
 
         self.algo_name = self.__class__.__module__.split(".")[-1]
-        self.logger = logging.getLogger(
-            f"pydcop.algo.{self.algo_name}.{name}")
+        self.logger = logging.getLogger(f"pydcop.algo.{self.algo_name}.{name}")
 
         self.computation_def = comp_def
         self.__cycle_count__ = 0
@@ -697,8 +904,7 @@ class DcopComputation(MessagePassingComputation):
         """
         self.__cycle_count__ += 1
         self._on_new_cycle(self.cycle_count)
-        event_bus.send('computations.cycle.'+self.name,
-                       (self.name, self.cycle_count))
+        event_bus.send("computations.cycle." + self.name, (self.name, self.cycle_count))
 
     def _on_new_cycle(self, count):
         """
@@ -716,7 +922,7 @@ class DcopComputation(MessagePassingComputation):
         """
         pass
 
-    def post_to_all_neighbors(self, msg, prio: int=None, on_error=None):
+    def post_to_all_neighbors(self, msg, prio: int = None, on_error=None):
         """
         Post a message to all neighbors of the computation.
 
@@ -734,8 +940,7 @@ class DcopComputation(MessagePassingComputation):
             self.post_msg(neighbor, msg, prio, on_error)
 
     def __repr__(self):
-        return "{}.{}({})".format(
-            self.algo_name, self.__class__.__name__, self.name)
+        return "{}.{}({})".format(self.algo_name, self.__class__.__name__, self.name)
 
 
 class VariableComputation(DcopComputation):
@@ -752,11 +957,13 @@ class VariableComputation(DcopComputation):
 
     def __init__(self, variable: Variable, comp_def: ComputationDef):
         if variable is None:
-            raise ValueError('Variable object is mandatory for a '
-                             'VariableComputation')
+            raise ValueError(
+                "Variable object is mandatory for a " "VariableComputation"
+            )
         if comp_def is None:
-            raise ValueError('ComputationDef object is mandatory for a '
-                             'VariableComputation')
+            raise ValueError(
+                "ComputationDef object is mandatory for a " "VariableComputation"
+            )
         super().__init__(variable.name, comp_def)
         self._variable = variable
         self.__value__ = None  # NEVER access this directly
@@ -766,7 +973,7 @@ class VariableComputation(DcopComputation):
         self._footprint_method = None  # cache ref to avoid multiple imports
 
     @property
-    def variable(self)-> Variable:
+    def variable(self) -> Variable:
         """
         Variable:
             The variable this algorithm is responsible for, if any.
@@ -816,8 +1023,9 @@ class VariableComputation(DcopComputation):
         """
         if self._footprint_method is None:
             try:
-                self._footprint_method = \
-                    import_module(self.__class__.__module__).computation_memory
+                self._footprint_method = import_module(
+                    self.__class__.__module__
+                ).computation_memory
             except AttributeError:
                 # if the algorithm as been imported without using
                 # `load_algoorithm_module`, computation_memory may not be
@@ -835,13 +1043,17 @@ class VariableComputation(DcopComputation):
         :param cost:
         """
         if val != self._previous_val:
-            self.logger.info('Selecting new value: %s, %s (previous: %s, %s)',
-                             val, cost, self._previous_val, self.__cost__)
+            self.logger.info(
+                "Selecting new value: %s, %s (previous: %s, %s)",
+                val,
+                cost,
+                self._previous_val,
+                self.__cost__,
+            )
             self._on_value_selection(val, cost, self.cycle_count)
             self._previous_val = val
             self.__value__ = val
-            event_bus.send('computations.value.'+self.name,
-                           (self.name, val))
+            event_bus.send("computations.value." + self.name, (self.name, val))
         self.__cost__ = cost
 
     def random_value_selection(self):
@@ -876,7 +1088,7 @@ class ExternalVariableComputation(DcopComputation):
 
     def __init__(self, external_var, msg_sender=None, comp_def=None):
         super().__init__(external_var.name, comp_def)
-        self._msg_handlers['SUBSCRIBE'] = self._on_subscribe_msg
+        self._msg_handlers["SUBSCRIBE"] = self._on_subscribe_msg
 
         self._external_var = external_var.clone()
         self._msg_sender = msg_sender
@@ -900,25 +1112,24 @@ class ExternalVariableComputation(DcopComputation):
 
     def _on_subscribe_msg(self, var_name, _, t):
         self.subscribers.add(var_name)
-        self._msg_sender.post_msg(self.name, var_name,
-                                  Message('VARIABLE_VALUE',
-                                          self._external_var.value))
+        self._msg_sender.post_msg(
+            self.name, var_name, Message("VARIABLE_VALUE", self._external_var.value)
+        )
 
     def change_value(self, value):
         self._external_var.value = value
 
     def _fire(self):
         for s in self.subscribers:
-            self._msg_sender.post_msg(self.name, s,
-                                      Message('VARIABLE_VALUE',
-                                              self._external_var.value))
+            self._msg_sender.post_msg(
+                self.name, s, Message("VARIABLE_VALUE", self._external_var.value)
+            )
 
     def __str__(self):
-        return 'External variable computation for ' + \
-               self._external_var.name
+        return "External variable computation for " + self._external_var.name
 
     def __repr__(self):
-        return 'External variable computation for ' + self._external_var.name
+        return "External variable computation for " + self._external_var.name
 
 
 def build_computation(comp_def: ComputationDef) -> MessagePassingComputation:
