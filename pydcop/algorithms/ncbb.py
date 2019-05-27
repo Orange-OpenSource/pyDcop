@@ -39,7 +39,7 @@ NCBB is a polynomial-space search for DCOP proposed by Chechetka and Sycara in 2
 It is a branch and bound search algorithm with modifications for efficiency, it runs
 concurrent search process in different partitions of the search phase.
 
-NCBB defines one computation for each varaible in the DCOP and,
+NCBB defines one computation for each variable in the DCOP and,
 like DPOP, runs on a pseudo-tree, which is automatically built when using the
 :ref:`solve<pydcop_commands_solve>` command.
 
@@ -51,6 +51,48 @@ According to the authors, it could be extended to n-ary constraints.
 NCBB is a synchronous algorithm and is composed of two phases:
 * a initialization phase, during which a global upper bound is computed
 * a search phase
+
+The only other implementation of ncbb I could find is in dcopolis,
+however I'm not sure it is correct and it is not fully implemented
+(see comments in empty `lowerBound` implementation)
+In order to make this algorithm easier to understand, we tried to make the implmentation
+as close as possible to the description of the original article.
+
+
+Initialization phase:
+
+* `VALUE` messages are propagated from top to bottom and a value is selected greedily
+  for each variable, starting from the root and based on ancestors values
+* The leafs compute an upper bound, which is also propagated upwards in the tree as
+`COST` messages
+At the end of this phase, each variable has an upper-bound for the sub-tree rooted here.
+
+
+Search phase:
+
+Main:
+* update context
+* search
+* subtree search
+* send stop (1->)
+
+update context:
+* agents
+  * receive values msg from their ancestors (->2)
+    * send lower_bound to their ancestors (3->)
+  * receive search msg from their ancestors (->4)
+    * update their upper bound
+  * receive stop message (->1)
+
+Search:
+* start subtree search
+* receives costs from children
+* send cost to parent
+
+Subtree search:
+ * send value to descendants (2->)
+ * receive costs from descendants (->3)
+ * send search to child, with upper-bound (4->)
 
 
 
