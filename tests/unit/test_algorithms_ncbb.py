@@ -32,7 +32,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from pydcop.algorithms import ComputationDef, AlgorithmDef
-from pydcop.algorithms.ncbb import NcbbAlgo, ValueMessage
+from pydcop.algorithms.ncbb import NcbbAlgo, ValueMessage, CostMessage
 from pydcop.computations_graph.pseudotree import PseudoTreeNode, build_computation_graph
 from pydcop.dcop.objects import Variable, Domain
 from pydcop.dcop.relations import constraint_from_str
@@ -94,7 +94,7 @@ def toy_pb():
         [v_a, v_b],
     )
     c2 = constraint_from_str(
-        "c1",
+        "c2",
         "{('R', 'B'): 2, "
         " ('R', 'R'): 8, "
         " ('B', 'B'): 5, "
@@ -103,7 +103,7 @@ def toy_pb():
         [v_a, v_c],
     )
     c3 = constraint_from_str(
-        "c1",
+        "c3",
         "{('R', 'B'): 2, "
         " ('R', 'R'): 4, "
         " ('B', 'B'): 2, "
@@ -112,7 +112,7 @@ def toy_pb():
         [v_a, v_d],
     )
     c4 = constraint_from_str(
-        "c1",
+        "c4",
         "{('R', 'B'): 0, "
         " ('R', 'R'): 10, "
         " ('B', 'B'): 2, "
@@ -121,12 +121,12 @@ def toy_pb():
         [v_b, v_d],
     )
     c5 = constraint_from_str(
-        "c1",
+        "c5",
         "{('R', 'B'): 2, "
         " ('R', 'R'): 4, "
-        " ('B', 'B'): 7, "
-        " ('B', 'R'): 1 "
-        "}[(E, E)]",
+        " ('B', 'B'): 0, "
+        " ('B', 'R'): 15 "
+        "}[(D, E)]",
         [v_d, v_e],
     )
 
@@ -224,4 +224,93 @@ def test_create_computations(toy_pb):
     assert not comp_d.is_root
     assert comp_d._parent == "B"
     assert set(comp_d._ancestors) == {"A", "B"}
+
+
+def test_select_value_at_root_simple_variable(three_variables_pb):
+
+    comp = get_computation_instance(three_variables_pb, "x1")
+
+    assert comp.current_value is None
+    comp.start()
+
+    # When starting the root computation it should select a value
+    # and send it to its children.
+    assert comp.current_value in ["R", "B"]
+    assert comp._msg_sender.call_count == 2
+
+    # Warning, the messages that are sent contains the cycle_id, if we don't add them
+    # the calls will not match, which is quite inconvenient...
+    msg = ValueMessage(comp.current_value)
+    msg.cycle_id = 0
+    comp._msg_sender.assert_any_call("x1", "x2", msg, None, None)
+    comp._msg_sender.assert_any_call("x1", "x3", msg, None, None)
+
+
+def test_select_value_at_root(toy_pb):
+
+    comp = get_computation_instance(toy_pb, "A")
+
+    assert comp.current_value is None
+    comp.start()
+
+    # When starting the root computation it should select a value
+    # and send it to its children.
+    assert comp.current_value in ["R", "B"]
+    assert comp._msg_sender.call_count == 3
+
+    msg = ValueMessage(comp.current_value)
+    # Warning, the messages that are sent contains the cycle_id, if we don't add them
+    # the calls will not match, which is quite inconvenient...
+    msg.cycle_id = 0
+    comp._msg_sender.assert_any_call("A", "B", msg, None, None)
+    comp._msg_sender.assert_any_call("A", "C", msg, None, None)
+    comp._msg_sender.assert_any_call("A", "D", msg, None, None)
+
+
+def test_no_value_selection_at_start_when_not_root(three_variables_pb):
+
+    comp = get_computation_instance(three_variables_pb, "x2")
+
+    assert not comp.is_root
+    assert comp.current_value is None
+    comp.start()
+
+    # at startup, only the root select a value and send it to its children
+    # as x2 is not the root of the pseudo tree, it should not select a variable
+    assert comp.current_value is None
+    comp.message_sender.assert_not_called()
+
+
+def test_select_value_in_dfs_only_one_ancestor(toy_pb):
+
+    comp = get_computation_instance(toy_pb, "B")
+    comp.start()
+
+    comp.value_phase("A", "R")
+
+    assert comp.current_value == "B"
+    assert comp._upper_bound == 1
+
+    msg = ValueMessage("B")
+    # Warning, the messages that are sent contains the cycle_id, if we don't add them
+    # the calls will not match, which is quite inconvenient...
+    msg.cycle_id = 0
+    comp._msg_sender.assert_any_call("B", "D", msg, None, None)
+
+
+def test_select_value_in_dfs_two_ancestors(toy_pb):
+
+    comp = get_computation_instance(toy_pb, "D")
+    comp.start()
+
+    comp.value_phase("A", "R")
+    comp.value_phase("B", "B")
+
+    assert comp.current_value == "B"
+
+    # msg = ValueMessage("B")
+    # # Warning, the messages that are sent contains the cycle_id, if we don't add them
+    # # the calls will not match, which is quite inconvenient...
+    # msg.cycle_id = 0
+    # comp._msg_sender.assert_any_call("B", "D", msg, None, None)
 

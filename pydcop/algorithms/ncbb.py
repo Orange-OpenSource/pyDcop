@@ -55,10 +55,12 @@ NCBB is a synchronous algorithm and is composed of two phases:
 
 
 """
+from random import choice
 from typing import Optional, List
 
 from pydcop.algorithms import ComputationDef
 from pydcop.computations_graph.pseudotree import get_dfs_relations
+from pydcop.dcop.relations import find_optimal
 from pydcop.infrastructure.computations import (
     VariableComputation,
     SynchronousComputationMixin,
@@ -82,11 +84,14 @@ def build_computation(comp_def: ComputationDef):
     return NcbbAlgo(comp_def)
 
 
-ValueMessage = message_type("ncbb_value", ["value"])
-CostMessage = message_type("ncbb_cost", ["cost"])
-SearchMessage = message_type("ncbb_search", ["search"])
-StopMessage = message_type("ncbb_stop", ["stop"])
+ValueMessage = message_type("value", ["value"])
+CostMessage = message_type("cost", ["cost"])
+SearchMessage = message_type("search", ["upper_bound"])
+SearchValueMessage = message_type("search_value", ["value"])
+SearchCostMessage = message_type("search_cost", ["lower_bound"])
+StopMessage = message_type("stop", ["stop"])
 
+PHASES = {"INIT", "SEARCH"}
 
 class NcbbAlgo(SynchronousComputationMixin, VariableComputation):
     """
@@ -109,6 +114,8 @@ class NcbbAlgo(SynchronousComputationMixin, VariableComputation):
         self._parent, self._pseudo_parents, self._children, self._pseudo_children = get_dfs_relations(
             self.computation_def.node
         )
+        self.phase = "INIT"
+        self._upper_bound = None
 
         # parent and pseudo-parents:
         self._ancestors = list(self._pseudo_parents)
@@ -128,16 +135,27 @@ class NcbbAlgo(SynchronousComputationMixin, VariableComputation):
                 )
             self._constraints.append(r)
 
-    @register("ncbb_value")
+        self._parents_values = {}
+        self._children_costs = {}
+
+    @register("value")
     def _value_msg_registration(self, variable_name, recv_msg, t):
         pass
 
-    @register("ncbb_cost")
+    @register("cost")
     def _cost_msg_registration(self, variable_name, recv_msg, t):
         pass
 
-    @register("ncbb_search")
+    @register("search")
     def _search_msg_registration(self, variable_name, recv_msg, t):
+        pass
+
+    @register("search_value")
+    def _search_value_msg_registration(self, variable_name, recv_msg, t):
+        pass
+
+    @register("search_cost")
+    def _search_cost_msg_registration(self, variable_name, recv_msg, t):
         pass
 
     @register("ncbb_stop")
@@ -155,8 +173,14 @@ class NcbbAlgo(SynchronousComputationMixin, VariableComputation):
     def on_start(self):
         # Start with the Initialization phase of NCBB
         # Starting from the root, variable send cost messages down the tree
+        if not self.is_root:
+            return
 
-        pass
+        # no cost at root, simply select a value at random and send it to children
+        # and pseudo-children
+        self.value_selection(choice(self.variable.domain))
+        for child in self._descendants:
+            self.post_msg(child, ValueMessage(self.current_value))
 
     def on_new_cycle(self, messages, cycle_id) -> Optional[List]:
 
@@ -166,14 +190,35 @@ class NcbbAlgo(SynchronousComputationMixin, VariableComputation):
         msg_types = {msg.type for (sender, msg) in messages.items()}
 
         if len(msg_types) != 1:
-            raise ComputationException()
+            raise ComputationException(
+                f"Several types of messages received at {self.name} in the same "
+                f"cycle : {msg_types}"
+            )
 
         msg_type = msg_types.pop()
 
+        if msg_type in {"value", "cost"} and self.phase != "INIT":
+            raise ComputationException(
+                f"{msg_type} messages received at {self.name} while not in INIT phase"
+            )
+
+        if (
+            msg_type in {"search_value", "search_cost", "search", "stop"}
+            and self.phase != "SEARCH"
+        ):
+            raise ComputationException(
+                f"{msg_type} messages received at {self.name} while not in SEARCH phase"
+            )
+
         if msg_type == "value":
-            # Init phase: select a value and send down the tree
-            pass
+
+            for sender, (message, t) in messages.items():
+                self.value_phase(sender, message.value)
+
         elif msg_type == "cost":
+
+            for sender, (message, t) in messages.items():
+                self.cost_phase(sender, message.value)
             pass
         elif msg_type == "search":
             pass
@@ -181,3 +226,42 @@ class NcbbAlgo(SynchronousComputationMixin, VariableComputation):
             pass
 
         return
+
+    def value_phase(self, sender, value):
+
+        if sender not in self._ancestors:
+            raise ComputationException(
+                f"Received at {self.name} value from {sender}, "
+                f"which is not an ancestor: {self._ancestors}"
+            )
+
+        # Init phase: select a value and send down the tree
+        # as value messages are sent by parent and pseudo-parents,
+        # they might arrive in several cycles and must be accumulated before we
+        # can select our value.
+        self._parents_values[sender] = value
+
+        if len(self._parents_values) == len(self._ancestors):
+            # Select our own value greedily.
+            # For this, we only take into account the constraints with our ancestrors
+            ancestors_constraints = []
+            for c in self._constraints:
+                for v in c.scope_names:
+                    if v in self._ancestors:
+                        ancestors_constraints.append(c)
+                        break
+            values, cost = find_optimal(
+                self.variable, self._parents_values, ancestors_constraints, self._mode
+            )
+            self.value_selection(values[0])
+            self._upper_bound = cost
+
+            # Send our value to our children.
+            if not self.is_leaf:
+                for child in self._descendants:
+                    self.post_msg(child, ValueMessage(self.current_value))
+            else:
+                # At leafs, we initiate cost message (sent up) as we don't have to wait
+                # for costs from our children.
+                for ancestor in self._ancestors:
+                    self.post_msg(ancestor, CostMessage(cost))
