@@ -122,6 +122,75 @@ class SynBBComputation(SynchronousComputationMixin, VariableComputation):
     def on_backward_message(self, current_path: Path, ub: Cost):
         pass
 
+
+def get_next_assignment(
+    variable: Variable,
+    current_value: Optional[VarVal],
+    constraints: List[Constraint],
+    current_path: Path,
+    upper_bound: Cost,
+    mode: str,
+):
+    """
+    Find the first next value in `variable`'s domain that respects `upper_bound`.
+
+    Parameters
+    ----------
+    variable: variable
+        The variable for which we want to select a value
+    current_value: value or `None`
+        The value currently assigned to `variable`
+    constraints:
+        The set of constraints `variable` is involved in
+    current_path: Path
+        a path assigning a value for each variable before `variable`
+    upper_bound: float
+        current bound for the path
+    mode: str
+        "min" or "max"
+
+    Returns
+    -------
+
+    """
+    candidates = get_value_candidates(variable, current_value)
+
+    found = None
+    for candidate in candidates:
+        # Check if assigning candidate value to the variable would cause the global
+        # cost to exceed the upper-bound.
+        candidate_cost = 0
+        if not current_path:
+            return candidate, 0
+        for var, val, elt_cost in current_path:
+            var_constraints = constraints_for_variable(constraints, var)
+            # This only works for binary constraints, we could extend it to n-ary constraints
+            ass_cost = assignment_cost(
+                {var: val, variable.name: candidate}, var_constraints
+            )
+            candidate_cost += ass_cost
+            if mode == "min" and (
+                candidate_cost >= upper_bound or ass_cost + elt_cost >= upper_bound
+            ):
+                break  # Try next value in domain.
+            elif mode == "max" and (
+                candidate_cost <= upper_bound or ass_cost + elt_cost <= upper_bound
+            ):
+                break  # Try next value in domain.
+            else:
+                found = candidate, candidate_cost  # Check for next elt in path.
+        if found:
+            return found
+
+    return None
+
+
+def constraints_for_variable(
+    constraints: List[Constraint], var: VarName
+) -> List[Constraint]:
+    return [c for c in constraints if var in c.scope_names]
+
+
 def get_value_candidates(
     variable: Variable, current_value: Optional[VarVal]
 ) -> List[VarVal]:
