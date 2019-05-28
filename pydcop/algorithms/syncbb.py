@@ -68,8 +68,7 @@ SyncBBForwardMessage = message_type("forward", ["current_path", "ub"])
 SyncBBBackwardMessage = message_type("backward", ["current_path", "ub"])
 SyncBBTerminateMessage = message_type("terminate", ["current_path", "ub"])
 
-
-class SynBBComputation(SynchronousComputationMixin, VariableComputation):
+class SynBBComputation(VariableComputation):
     """
 
     """
@@ -113,22 +112,23 @@ class SynBBComputation(SynchronousComputationMixin, VariableComputation):
     def on_backward_msg(self, variable_name, recv_msg, t):
         pass
 
-    def on_new_cycle(self, messages, cycle_id) -> Optional[List]:
-
-        if len(messages) > 1:
-            raise ComputationException(
-                f"Received {len(messages)} in a single cycle at {self.name}, "
-                f"while SyncBB at at most one message per cycle"
+        next_val = get_next_assignment(
+            self.variable,
+            val,
+            self.constraints,
+            current_path[:-1],
+            self.upper_bound,
+            self.mode,
+        )
+        if next_val is not None:
+            new_val, new_cost = next_val
+            new_path = current_path[:-1]
+            new_path.append((self.variable.name, new_val, new_cost))
+            self.logger.info(
+                f"Trying new value {new_val} at {self.variable.name} when backtracking, "
+                f"sending forward to {self.next_var} "
+                f"with path {new_path}"
             )
-        if not messages:
-            return
-        message = messages[0]
-
-        if message.type == "forward":
-            self.on_forward_message(message.current_path, message.ub)
-        elif message.type == "backward":
-            self.on_backward_message(message.current_path, message.ub)
-
     def on_forward_message(self, current_path: Path, ub: Cost):
         pass
 
