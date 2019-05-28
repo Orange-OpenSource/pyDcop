@@ -68,7 +68,7 @@ SyncBBForwardMessage = message_type("forward", ["current_path", "ub"])
 SyncBBBackwardMessage = message_type("backward", ["current_path", "ub"])
 SyncBBTerminateMessage = message_type("terminate", ["current_path", "ub"])
 
-class SynBBComputation(VariableComputation):
+class SyncBBComputation(VariableComputation):
     """
 
     """
