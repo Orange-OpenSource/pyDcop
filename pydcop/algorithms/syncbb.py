@@ -36,11 +36,15 @@ SyncBB simply simulates Branch and Bound in a distributed environment.
 
 
 Note: Variables and value ordering are given in advance.
+* variable are orderer as a simple chain (list)
+* values in a domain a ordered
 
 """
 from typing import Optional, List, Any, Tuple
 
 from pydcop.algorithms import ComputationDef
+from pydcop.dcop.objects import Variable
+from pydcop.dcop.relations import assignment_cost, Constraint
 from pydcop.infrastructure.computations import (
     VariableComputation,
     SynchronousComputationMixin,
@@ -55,7 +59,8 @@ INFINITY = float("inf")
 VarName = str
 VarVal = Any
 Cost = float
-Path = List[Tuple[VarName, VarVal, Cost]]
+PathElement = Tuple[VarName, VarVal, Cost]
+Path = List[PathElement]
 
 SyncBBForwardMessage = message_type("forward", ["current_path", "ub"])
 SyncBBBackwardMessage = message_type("backward", ["current_path", "ub"])
@@ -74,9 +79,10 @@ class SynBBComputation(SynchronousComputationMixin, VariableComputation):
         self.mode = computation_definition.algo.mode
 
         # TODO: define a graph model for simple chain or variable / ordering
-        self.next: VarName = None
-        self.previous: VarName = None
+        self.next_var: VarName = None
+        self.previous_var: VarName = None
         self.current_path: Path = None
+        self.upper_bound = INFINITY if self.mode == "min" else -INFINITY
 
     def on_start(self):
         # Only done by the first variable in the chain of variables
@@ -115,3 +121,35 @@ class SynBBComputation(SynchronousComputationMixin, VariableComputation):
 
     def on_backward_message(self, current_path: Path, ub: Cost):
         pass
+
+def get_value_candidates(
+    variable: Variable, current_value: Optional[VarVal]
+) -> List[VarVal]:
+    """
+    Build an ordered list of candidates values for variable.
+
+    Parameters
+    ----------
+    variable: Variable
+    current_value: value for variable.
+
+    Returns
+    -------
+    List:
+        a list of value that are after `current_value` in the ordered domain of
+        `variable`.
+    """
+    candidates = []
+    if current_value is None:
+        candidates = list(variable.domain)
+    else:
+        # Only keep values that are _after_ the current value in the ordered domain:
+        reached = False
+        for v in variable.domain:
+            if reached:
+                candidates.append(v)
+            if v != current_value:
+                continue
+            else:
+                reached = True
+    return candidates

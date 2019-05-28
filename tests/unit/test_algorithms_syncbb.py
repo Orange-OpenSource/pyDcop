@@ -32,4 +32,33 @@
 Unit tests for the SyncBB algorithm.
 
 """
+import pytest
+
+from pydcop.algorithms.syncbb import get_value_candidates, get_next_assignment
+from pydcop.computations_graph.pseudotree import build_computation_graph
+from pydcop.dcop.objects import Domain, Variable
+from pydcop.dcop.relations import constraint_from_str
+
+
+
+def test_get_candidates_no_value_selected():
+    d = Domain("d", "vals", [0, 1, 2, 3])
+    v = Variable("v", d)
+
+    obtained = get_value_candidates(v, None)
+    assert obtained == [0, 1, 2, 3]
+
+
+def test_get_candidate_value_selected():
+    d = Domain("d", "vals", ["B", "D", "A", "E"])
+    v = Variable("v", d)
+
+    obtained = get_value_candidates(v, "B")
+    assert obtained == ["D", "A", "E"]
+
+    obtained = get_value_candidates(v, "A")
+    assert obtained == ["E"]
+
+    obtained = get_value_candidates(v, "E")
+    assert obtained == []
 
