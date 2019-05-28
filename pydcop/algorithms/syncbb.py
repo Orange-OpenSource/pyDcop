@@ -53,6 +53,8 @@ from pydcop.infrastructure.computations import (
     ComputationException,
 )
 
+GRAPH_TYPE = "ordered_graph"
+
 INFINITY = float("inf")
 
 # Some types definition for the content of messages
@@ -78,9 +80,10 @@ class SynBBComputation(SynchronousComputationMixin, VariableComputation):
         self.constraints = computation_definition.node.constraints
         self.mode = computation_definition.algo.mode
 
-        # TODO: define a graph model for simple chain or variable / ordering
-        self.next_var: VarName = None
-        self.previous_var: VarName = None
+        node = self.computation_def.node
+
+        self.next_var: VarName = node.get_next()
+        self.previous_var: VarName = node.get_previous()
         self.current_path: Path = None
         self.upper_bound = INFINITY if self.mode == "min" else -INFINITY
 
