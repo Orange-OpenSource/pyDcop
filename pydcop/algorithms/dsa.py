@@ -106,7 +106,8 @@ from pydcop.infrastructure.computations import (
 )
 
 from pydcop.computations_graph.constraints_hypergraph import VariableComputationNode
-from pydcop.dcop.relations import find_optimum, assignment_cost, filter_assignment_dict
+from pydcop.dcop.relations import find_optimum, assignment_cost, filter_assignment_dict, \
+    find_optimal
 
 HEADER_SIZE = 0
 UNIT_SIZE = 1
@@ -302,7 +303,10 @@ class DsaComputation(VariableComputation):
             )
 
             self.current_cycle[self.variable.name] = self.current_value
-            args_best, best_cost = self.find_best_values()
+            assignment = self.current_cycle.copy()
+            args_best, best_cost = find_optimal(
+                self.variable, assignment, self.constraints, self.mode
+            )
             current_cost = assignment_cost(self.current_cycle, self.constraints)
             delta = abs(current_cost - best_cost)
             self.logger.debug(
@@ -385,44 +389,6 @@ class DsaComputation(VariableComputation):
             )
         else:
             self.logger.info("No probabilistic value change")
-
-    def find_best_values(self) -> Tuple[List[Any], float]:
-        """
-        Find the best values for our variable, given the current assignment.
-
-        Find the values from the domain of our variable that yield the best
-        cost (min or max depending of mode) given the assignment known for our
-        neighbors.
-
-        Returns
-        -------
-        List[Any]
-            A list of values from the domain of our variable
-        float
-            The cost achieved with these values.
-        """
-        assignment = self.current_cycle.copy()
-        arg_best, best_cost = None, float("inf")
-        if self.mode == "max":
-            arg_best, best_cost = None, -float("inf")
-
-        for value in self.variable.domain:
-            assignment[self.variable.name] = value
-            cost = assignment_cost(assignment, self.constraints)
-
-            # Take into account variable cost, if any
-            cost += self.variable.cost_for_val(value)
-
-            if cost == best_cost:
-                arg_best.append(value)
-            elif (
-                (self.mode == "min" and cost < best_cost)
-                or self.mode == "max"
-                and cost > best_cost
-            ):
-                best_cost, arg_best = cost, [value]
-
-        return arg_best, best_cost
 
     def exists_violated_constraint(self) -> bool:
         """

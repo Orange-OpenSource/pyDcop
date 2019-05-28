@@ -201,8 +201,7 @@ def message_type(msg_type: str, fields: List[str]):
 
                 else:
                     raise SimpleReprException(
-                        "Could not build repr for {self}, "
-                        "no attribute for {arg}"
+                        "Could not build repr for {self}, " "no attribute for {arg}"
                     )
         return r
 
@@ -630,6 +629,7 @@ class SynchronizationMsg(Message):
     def __repr__(self):
         return f"SynchronizationMsg()"
 
+
 class SynchronousComputationMixin:
     """
     This mixin can be used with `MessagePassingComputation` classes (and classes
@@ -729,7 +729,9 @@ class SynchronousComputationMixin:
     def post_msg(self, target: str, msg, prio: int = None, on_error=None):
         # We need to add the current cycle_id to all messages, in order for the neighbor
         # to be able to check that the message is for the current or next cycle.
-        self.logger.debug(f"Sending msg for cycle {self._current_cycle} {self.name} -> {target} : {msg}")
+        self.logger.debug(
+            f"Sending msg for cycle {self._current_cycle} {self.name} -> {target} : {msg}"
+        )
         msg.cycle_id = self._current_cycle
         super(SynchronousComputationMixin, self).post_msg(target, msg, prio, on_error)
         self.cycle_message_sent.append(target)
@@ -742,7 +744,7 @@ class SynchronousComputationMixin:
             for k, (msg, t) in self._cycle_messages.items()
             if not isinstance(msg, SynchronizationMsg)
         }
-        self.cycle_message_sent= []
+        self.cycle_message_sent = []
         messages = self.on_new_cycle(algo_message, self._current_cycle - 1)
 
         # For synchronization, we need to send messages to _all_ neighbors, even this
@@ -754,7 +756,6 @@ class SynchronousComputationMixin:
                 # message.cycle_id = self._current_cycle
                 self.post_msg(target, message)
                 remaining_neighbors.remove(target)
-
 
         # Now send a cycle synchronization message to all neighbors to which we did not
         # already send a algo-level message.
@@ -1142,4 +1143,3 @@ def build_computation(comp_def: ComputationDef) -> MessagePassingComputation:
     algo_module = load_algorithm_module(comp_def.algo.algo)
     computation = algo_module.build_computation(comp_def)
     return computation
-

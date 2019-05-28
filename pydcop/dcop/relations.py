@@ -73,6 +73,17 @@ class RelationProtocol(object):
         raise NotImplemented("dimensions not implemented")
 
     @property
+    def scope_names(self) ->List[str]:
+        """
+        The names of the variable in the scope of this constraint.
+
+        Returns
+        -------
+
+        """
+        return [v.name for v in self.dimensions]
+
+    @property
     def arity(self) -> int:
         """
         The arity of the relation is the number of variables it depends on.
@@ -1338,6 +1349,9 @@ def find_optimum(constraint: Constraint, mode: str) -> float:
     """
     Compute the optimum of the relation given the mode.
 
+    Warning: this method enumerate all possible assignments for this relation and will
+    be slow, only use it with low arity relation and small domains!
+
     Parameters
     ----------
     constraint: Constraint
@@ -1556,6 +1570,53 @@ def find_arg_optimal(variable, relation, mode):
         elif current_rel_val == best_rel_val:
             var_val.append(v)
     return var_val, best_rel_val
+
+
+def find_optimal(
+    variable: Variable, assignment: Dict, constraints: Iterable[Constraint], mode: str
+):
+    """
+    Find the best values for a set of constraints under an assignment.
+
+    Find the best values for `variable` for the set of `constraints`, given an
+    assignment for all other variables these constraints depends on.
+
+    Parameters
+    ----------
+    variable: Variable
+        the variable for which we want to find the best values.
+    assignment: dict
+        An assignment that contains a value for all other variables involved in the set
+        of constraints.
+    constraints: iterable of constraints
+        a set of constraints
+    mode: str
+        `"min"` or `"max"`
+
+    Returns
+    -------
+        List[Any]
+            A list of values from the domain of our variable
+        float
+            The cost achieved with these values.
+    """
+    arg_best, best_cost = None, float("inf")
+    if mode == "max":
+        arg_best, best_cost = None, -float("inf")
+    for value in variable.domain:
+        assignment[variable.name] = value
+        cost = assignment_cost(assignment, constraints)
+
+        # Take into account variable cost, if any
+        if hasattr(variable, "cost_for_value"):
+            cost += variable.cost_for_val(value)
+
+        if cost == best_cost:
+            arg_best.append(value)
+        elif (mode == "min" and cost < best_cost) or mode == "max" and cost > best_cost:
+            best_cost, arg_best = cost, [value]
+
+    return arg_best, best_cost
 
 
 def join(u1: Constraint, u2: Constraint) -> Constraint:

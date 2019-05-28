@@ -56,6 +56,7 @@ Example
 from random import choice
 from typing import Iterable
 
+from pydcop.computations_graph.pseudotree import get_dfs_relations
 from pydcop.infrastructure.computations import Message, VariableComputation, register
 from pydcop.dcop.objects import Variable
 from pydcop.dcop.relations import (
@@ -72,19 +73,7 @@ GRAPH_TYPE = "pseudotree"
 
 def build_computation(comp_def: ComputationDef):
 
-    parent = None
-    children = []
-    for l in comp_def.node.links:
-        if l.type == "parent" and l.source == comp_def.node.name:
-            parent = l.target
-        if l.type == "children" and l.source == comp_def.node.name:
-            children.append(l.target)
-
-    constraints = [r for r in comp_def.node.constraints]
-
-    computation = DpopAlgo(
-        comp_def.node.variable, parent, children, constraints, comp_def=comp_def
-    )
+    computation = DpopAlgo(comp_def)
     return computation
 
 
@@ -184,21 +173,34 @@ class DpopAlgo(VariableComputation):
 
     def __init__(
         self,
-        variable: Variable,
-        parent: str,
-        children: Iterable[str],
-        constraints: Iterable[Constraint],
-        comp_def=None,
+        comp_def: ComputationDef,
     ):
-
-        super().__init__(variable, comp_def)
 
         assert comp_def.algo.algo == "dpop"
 
+        super().__init__(comp_def.node.variable, comp_def)
         self._mode = comp_def.algo.mode
-        self._parent = parent
-        self._children = list(children)
+
+        self._parent, self._pseudo_parents, self._children, self._pseudo_children = get_dfs_relations(
+            self.computation_def.node
+        )
+
+        # Filter the relations on all the nodes of the DFS tree to only keep the
+        # relation on the on the lowest node in the tree that is involved in the
+        # relation.
+        self._constraints = []
+        descendants = self._pseudo_children + self._children
+        self.logger.debug(f"Descendants for computation {self.name}: {descendants} ")
+        constraints = list(comp_def.node.constraints)
+        for r in comp_def.node.constraints:
+            # filter out all relations that depends on one of our descendants
+            names = [v.name for v in r.dimensions]
+            for descendant in descendants:
+                if descendant in names:
+                    constraints.remove(r)
+                    break
         self._constraints = constraints
+        self.logger.debug(f"Constraints for computation {self.name}: {self._constraints} ")
 
         if hasattr(self._variable, "cost_for_val"):
             costs = []

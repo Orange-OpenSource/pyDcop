@@ -1758,6 +1758,26 @@ def test_assignment_cost_same_as_becnh():
     assert cost == -18
 
 
+def test_relation_from_str_with_map():
+    x1 = Variable("x1", list(range(5)))
+    x2 = Variable("x2", list(range(5)))
+    all_vars = [x1, x2]
+
+    c1 = constraint_from_str(
+        "c1",
+        "{('R', 'B'): 0, "
+        " ('R', 'R'): 5, "
+        " ('B', 'B'): 3, "
+        " ('B', 'R'): 1 "
+        "}[(x1, x2)]",
+        all_vars,
+    )
+
+    cost = assignment_cost({"x1": "R", "x2": "B"}, [c1])
+    assert cost == 0
+    assert (c1(x1="B", x2="B")) == 3
+
+
 class JoinRelationsTestCase:
     def test_arity_bothsamevar(self):
         x1 = Variable("x1", ["a", "b", "c"])

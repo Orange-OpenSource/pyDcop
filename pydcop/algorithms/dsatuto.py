@@ -49,7 +49,7 @@ from typing import Any, Tuple, List, Optional
 from numpy import random
 
 from pydcop.algorithms import ComputationDef
-from pydcop.dcop.relations import assignment_cost
+from pydcop.dcop.relations import assignment_cost, find_optimal
 from pydcop.infrastructure.computations import (
     VariableComputation,
     message_type,
@@ -107,21 +107,17 @@ class DsaTutoComputation(SynchronousComputationMixin, VariableComputation):
         )
 
         current_cost = assignment_cost(assignment, self.constraints)
-
         # Compute best local cost, based on current neighbors values:
-        arg_min, min_cost = None, float("inf")
-        for value in self.variable.domain:
-            assignment[self.variable.name] = value
-            cost = assignment_cost(assignment, self.constraints)
-            if cost < min_cost:
-                min_cost, arg_min = cost, value
+        arg_min, min_cost = find_optimal(
+            self.variable, assignment, self.constraints, self.mode
+        )
 
         self.logger.debug(
             f"Evaluate cycle {self.cycle_count}: current cost {current_cost} - best cost {min_cost}"
         )
 
         if current_cost - min_cost > 0 and 0.5 > random.random():
-            self.value_selection(arg_min)
+            self.value_selection(arg_min[0])
             self.logger.debug(f"Select new value {arg_min} for better cost {min_cost} ")
         else:
             self.logger.debug(f"Do not change value {self.current_value}")
