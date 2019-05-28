@@ -66,6 +66,7 @@ Path = List[PathElement]
 
 SyncBBForwardMessage = message_type("forward", ["current_path", "ub"])
 SyncBBBackwardMessage = message_type("backward", ["current_path", "ub"])
+SyncBBTerminateMessage = message_type("terminate", ["current_path", "ub"])
 
 
 class SynBBComputation(SynchronousComputationMixin, VariableComputation):
@@ -94,6 +95,15 @@ class SynBBComputation(SynchronousComputationMixin, VariableComputation):
             ub = INFINITY if self.mode == "min" else -INFINITY
             msg = SyncBBForwardMessage(path, ub)
             self.post_msg(self.next, msg)
+    @register("terminate")
+    def on_terminate_message(self, sender, msg, t):
+        self.logger.debug(
+            f"Receiving terminate message at {self.variable.name} from {sender}: "
+        )
+        if self.next_var is not None:
+            self.post_msg(self.next_var, SyncBBTerminateMessage())
+        self.finished()
+
 
     @register("forward")
     def on_forward_msg(self, variable_name, recv_msg, t):
