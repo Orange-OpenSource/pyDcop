@@ -89,11 +89,14 @@ class SynBBComputation(VariableComputation):
 
     def on_start(self):
         # Only done by the first variable in the chain of variables
-        if self.previous is None:
+        if self.previous_var is None:
             path = [(self.variable.name, self.variable.domain[0], 0)]
             ub = INFINITY if self.mode == "min" else -INFINITY
-            msg = SyncBBForwardMessage(path, ub)
-            self.post_msg(self.next, msg)
+            self.logger.debug(
+                f"At startup, first var {self.name} send path {path} to {self.next_var}"
+            )
+            self.post_msg(self.next_var, SyncBBForwardMessage(path, ub))
+
     @register("terminate")
     def on_terminate_message(self, sender, msg, t):
         self.logger.debug(
@@ -105,12 +108,110 @@ class SynBBComputation(VariableComputation):
 
 
     @register("forward")
-    def on_forward_msg(self, variable_name, recv_msg, t):
-        pass
+    def on_forward_message(self,  sender, recv_msg, t):
+        current_path= recv_msg.current_path
+        ub= recv_msg.ub
+
+        self.logger.debug(
+            f"Receiving forward message at {self.variable.name} from {sender}: "
+            f"path: {current_path}, bound: {ub}"
+        )
+        self.previous_path = current_path
+
+        # Find a new assignment for our variable:
+        next_value = get_next_assignment(
+            self.variable,
+            None,
+            self.constraints,
+            current_path,
+            self.upper_bound,
+            mode=self.mode,
+        )
+
+        if next_value is None:
+            # No possible next value for this variable
+            if self.previous_var is None:
+                # We are back at the first variable in the ordering, terminate.
+                self.post_msg(self.next_var, SyncBBTerminateMessage())
+                self.finished()
+                self.logger.info(
+                    f"Terminate at {self.variable.name}"
+                )
+            else:
+                # Backtrack to previous variable, we cannot select a value for the
+                # variable with the partial assignment in current_path
+                msg = SyncBBBackwardMessage(self.previous_path, self.upper_bound)
+                self.post_msg(self.previous_var, msg)
+                self.logger.info(
+                    f"Backtracking to {self.previous_var } at {self.variable.name} : "
+                    f"no possible value with path {current_path}"
+                )
+
+        else:
+
+            if self.next_var is None:
+                # Last variable in the chain: the path must be a full assignment.
+                # Let's test all values to find the upper bound for this path.
+                path_bound = sum(c for _, _, c in current_path)
+                value, cost = next_value
+                best_val, best_bound = None, self.upper_bound
+                while True:
+                    if path_bound + cost < best_bound:
+                        best_bound = path_bound + cost
+                        best_val = value
+
+                    next_value = get_next_assignment(
+                        self.variable,
+                        value,
+                        self.constraints,
+                        current_path,
+                        self.upper_bound,
+                        self.mode,
+                    )
+                    if next_value is None:
+                        break
+                    value, cost = next_value
+                if best_val is not None:
+                    self.upper_bound = best_bound
+                    self.value_selection(best_val, self.upper_bound)
+                    self.logger.info(
+                        f"New upper bound {self.upper_bound} found at {self.variable.name}, "
+                        f"with value {best_val}"
+                    )
+                self.logger.info(
+                    f"At end, sending backward from {self.variable.name} "
+                    f"to {self.previous_var} with path {current_path}, "
+                    f"bound {self.upper_bound}"
+                )
+                self.post_msg(
+                    self.previous_var,
+                    SyncBBBackwardMessage(current_path, self.upper_bound),
+                )
+            else:
+                value, cost = next_value
+                new_path = current_path.copy()
+                new_path.append((self.variable.name, value, cost))
+                self.logger.info(
+                    f"Value {value} selected at {self.variable.name} "
+                    f"sending forward to {self.next_var} "
+                    f"with path {new_path}"
+                )
+                self.post_msg(
+                    self.next_var, SyncBBForwardMessage(new_path, self.upper_bound)
+                )
 
     @register("backward")
-    def on_backward_msg(self, variable_name, recv_msg, t):
-        pass
+    def on_backward_msg(self, sender, recv_msg, t):
+        current_path = recv_msg.current_path
+        self.logger.debug(
+            f"Receiving backward message at {self.variable.name} from {sender}: "
+            f"path: {current_path}, bound: {recv_msg.ub}"
+        )
+        var, val, cost = current_path[-1]
+        if recv_msg.ub < self.upper_bound:
+            self.upper_bound = recv_msg.ub
+            self.value_selection(val, self.upper_bound)
+        assert var == self.variable.name
 
         next_val = get_next_assignment(
             self.variable,
@@ -129,11 +230,29 @@ class SynBBComputation(VariableComputation):
                 f"sending forward to {self.next_var} "
                 f"with path {new_path}"
             )
-    def on_forward_message(self, current_path: Path, ub: Cost):
-        pass
-
-    def on_backward_message(self, current_path: Path, ub: Cost):
-        pass
+            self.post_msg(
+                self.next_var, SyncBBForwardMessage(new_path, self.upper_bound)
+            )
+        else:
+            if self.previous_var is None:
+                # First variable in the ordering, and we could not find a possible value
+                # No solution !
+                self.logger.info(
+                    f"Terminate at first variable {self.variable.name}, "
+                    f"no next variable when backtracking."
+                )
+                self.finished()
+                self.post_msg(self.next_var, SyncBBTerminateMessage())
+            else:
+                # Could not find a possible value, backtrack further
+                self.logger.info(
+                    f"Backtracking at {self.variable.name}: no possible value "
+                    f"on backtracking with path {current_path}"
+                )
+                self.post_msg(
+                    self.previous_var,
+                    SyncBBBackwardMessage(current_path[:-1], self.upper_bound),
+                )
 
 
 def get_next_assignment(
