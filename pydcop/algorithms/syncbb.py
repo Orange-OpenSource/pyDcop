@@ -49,8 +49,69 @@ from pydcop.infrastructure.computations import (
     ComputationException,
 )
 
+INFINITY = float("inf")
+
+# Some types definition for the content of messages
+VarName = str
+VarVal = Any
+Cost = float
+Path = List[Tuple[VarName, VarVal, Cost]]
+
+SyncBBForwardMessage = message_type("forward", ["current_path", "ub"])
+SyncBBBackwardMessage = message_type("backward", ["current_path", "ub"])
+
 
 class SynBBComputation(SynchronousComputationMixin, VariableComputation):
     """
 
     """
+
+    def __init__(self, computation_definition: ComputationDef):
+        super().__init__(computation_definition.node.variable, computation_definition)
+
+        assert computation_definition.algo.algo == "syncbb"
+        self.constraints = computation_definition.node.constraints
+        self.mode = computation_definition.algo.mode
+
+        # TODO: define a graph model for simple chain or variable / ordering
+        self.next: VarName = None
+        self.previous: VarName = None
+        self.current_path: Path = None
+
+    def on_start(self):
+        # Only done by the first variable in the chain of variables
+        if self.previous is None:
+            path = [(self.variable.name, self.variable.domain[0], 0)]
+            ub = INFINITY if self.mode == "min" else -INFINITY
+            msg = SyncBBForwardMessage(path, ub)
+            self.post_msg(self.next, msg)
+
+    @register("forward")
+    def on_forward_msg(self, variable_name, recv_msg, t):
+        pass
+
+    @register("backward")
+    def on_backward_msg(self, variable_name, recv_msg, t):
+        pass
+
+    def on_new_cycle(self, messages, cycle_id) -> Optional[List]:
+
+        if len(messages) > 1:
+            raise ComputationException(
+                f"Received {len(messages)} in a single cycle at {self.name}, "
+                f"while SyncBB at at most one message per cycle"
+            )
+        if not messages:
+            return
+        message = messages[0]
+
+        if message.type == "forward":
+            self.on_forward_message(message.current_path, message.ub)
+        elif message.type == "backward":
+            self.on_backward_message(message.current_path, message.ub)
+
+    def on_forward_message(self, current_path: Path, ub: Cost):
+        pass
+
+    def on_backward_message(self, current_path: Path, ub: Cost):
+        pass
