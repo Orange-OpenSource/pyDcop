@@ -268,3 +268,36 @@ class VariableComputation(SynchronousComputationMixin, VariableComputation):
 
     def on_new_cycle(self, messages, cycle_id) -> Optional[List]:
         pass
+
+
+def select_value(variable: Variable, costs: Dict, mode: str) -> Tuple[Any, float]:
+    """
+    select the value for `variable` with the best cost / reward (depending on `mode`)
+
+    Returns
+    -------
+    a Tuple containing the selected value and the corresponding cost for
+    this computation.
+    """
+
+    # If we have received costs from all our factor, we can select a
+    # value from our domain.
+    d_costs = {d: variable.cost_for_val(d) for d in variable.domain}
+    for d in variable.domain:
+        for f_costs in costs.values():
+            if d not in f_costs:
+                # As infinite costs are not included in messages,
+                # if there is not cost for this value it means the costs
+                # is infinite and we can stop adding other costs.
+                d_costs[d] = INFINITY if mode == "min" else -INFINITY
+                break
+            d_costs[d] += f_costs[d]
+
+    from operator import itemgetter
+
+    if mode == "min":
+        optimal_d = min(d_costs.items(), key=itemgetter(1))
+    else:
+        optimal_d = max(d_costs.items(), key=itemgetter(1))
+
+    return optimal_d[0], optimal_d[1]

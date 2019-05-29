@@ -97,4 +97,16 @@ def test_comp_creation_with_factory_method():
     assert comp is not None
     assert comp.name == "v1"
     assert comp.variable == v1
-    assert comp.factor_names == ["c1"]
+    assert comp.factor_names == ["c1"]def test_select_value_no_cost_var():
+    d = Domain("d", "", ["R", "G", "B"])
+    v1 = Variable("v1", d)
+
+    selected, cost = select_value(v1, {}, "min")
+    assert selected in {"R", "G", "B"}
+    assert cost == 0
+
+    v1 = VariableWithCostFunc("v1", [1, 2, 3], lambda v: (4 - v) / 10)
+
+    selected, cost = select_value(v1, {}, "min")
+    assert selected == 3
+    assert cost == 0.1
