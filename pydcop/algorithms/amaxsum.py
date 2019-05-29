@@ -144,48 +144,17 @@ class MaxSumFactorComputation(DcopComputation):
         return computation_memory(self.computation_def.node)
 
     def on_start(self):
-        # FIXME: remove, return value not used any more
-        msg_count, msg_size = 0, 0
-
         # Only unary factors (leaf in the graph) needs to send their costs at
         # init.Each leaf factor sends his costs to its only variable.
         # When possible it is better to use a variable with integrated costs
         # instead of a variable with an unary relation representing costs.
         if len(self.variables) == 1:
-            self.logger.warning("Sending init costs of unary factor %s", self.name)
-            msg_count, msg_size = self._init_msg()
-
-        return {"num_msg_out": msg_count, "size_msg_out": msg_size}
-
-    def _init_msg(self):
-        # FIXME: remove method: can be done directly in on_start
-        msg_debug = [] # FIXME: remove, unused
-        msg_count, msg_size = 0, 0 # FIXME: remove, unused
-
-        for v in self.variables:
-            costs_v = self._costs_for_var(v)
-            msg_size += self._send_costs(v.name, costs_v)
-            msg_count += 1
-            msg_debug.append((v.name, costs_v))
-
-        if self.logger.isEnabledFor(logging.DEBUG):
-            debug = "Unary factor : init msg {} \n".format(self.name)
-            for dest, msg in msg_debug:
-                debug += "  * {} -> {} : {}\n".format(self.name, dest, msg)
-            self.logger.debug(debug + "\n")
-        else:
-            self.logger.info(
-                "Init messages for %s to %s", self.name, [c for c, _ in msg_debug]
-            )
-
-        return msg_count, msg_size # FIXME: remove, unused
-
-    def _send_costs(self, var_name, costs):
-        # FIXME: remove, use post_msg directly (one line, same size as method call !)
-        msg = maxsum.MaxSumMessage(costs)
-        size = msg.size
-        self.post_msg(var_name, msg)
-        return size
+            for v in self.variables:
+                costs_v = maxsum.factor_costs_for_var(self.factor, v, self._costs, self.mode)
+                self.post_msg(v.name, maxsum.MaxSumMessage(costs_v))
+                self.logger.info(
+                    f"Sending init messages from factor {self.name} -> {v.name} : {costs_v}"
+                )
 
     @register("max_sum")
     def _on_maxsum_msg(self, var_name, msg, t):
@@ -200,9 +169,6 @@ class MaxSumFactorComputation(DcopComputation):
             except f for this value d for the domain.
         """
         self._costs[var_name] = msg.costs
-        send, no_send = [], []
-        debug = ""
-        msg_count, msg_size = 0, 0
 
         # Wait until we received costs from all our variables before sending
         # our own costs
@@ -210,101 +176,21 @@ class MaxSumFactorComputation(DcopComputation):
             stable = True
             for v in self.variables:
                 if v.name != var_name:
-                    costs_v = self._costs_for_var(v)
+                    costs_v = maxsum.factor_costs_for_var(self.factor, v, self._costs, self.mode)
                     same, same_count = self._match_previous(v.name, costs_v)
                     if not same or same_count < SAME_COUNT:
-                        debug += "  * SEND {} -> {} : {}\n".format(
-                            self.name, v.name, costs_v
-                        )
-                        msg_size += self._send_costs(v.name, costs_v)
-                        send.append(v.name)
-                        msg_count += 1
+                        self.logger.debug(
+                            f"Sending from factor {self.name} -> {v.name} : {costs_v}")
+                        self.post_msg(v.name, maxsum.MaxSumMessage(costs_v))
                         self._prev_messages[v.name] = costs_v, same_count + 1
                     else:
-                        no_send.append(v.name)
-                        debug += "  * NO-SEND {} -> " "{} : {}\n".format(
-                            self.name, v.name, costs_v
-                        )
-        else:
-            debug += (
-                "  * Still waiting for costs from all"
-                " the variables {}\n".format(self._costs.keys())
-            )
+                        self.logger.debug(
+                            f"Not sending (same) from factor {self.name} -> {v.name} : {costs_v}")
 
-        if self.logger.isEnabledFor(logging.DEBUG):
+        else:
             self.logger.debug(
-                "ON %s -> %s message : %s  \n%s", var_name, self.name, msg.costs, debug
+                f" Still waiting for costs from all  the variables {self._costs.keys()}"
             )
-        else:
-            self.logger.info(
-                "On cost msg from %s, send messages to %s - no " "send %s",
-                var_name,
-                send,
-                no_send,
-            )
-
-        return {"num_msg_out": msg_count, "size_msg_out": msg_size}
-
-    def _costs_for_var(self, variable):
-        """
-        Produce the message for the variable v.
-
-        The content of this message is a table d -> mincost where
-        * d is a value of the domain of the variable v
-        * mincost is the minimum value of f when the variable v take the 
-          value d
-
-        :param variable: the variable we want to send the costs to
-        :return: a mapping { value => cost}
-        where value is all the values from the domain of 'variable'
-        costs is the cost when 'variable'  == 'value'
-
-        """
-        costs = {}
-        for d in variable.domain:
-            # for each value d in the domain of v, calculate min cost (a)
-            # where a is any assignment where v = d
-            # cost (a) = f(a) + sum( costvar())
-            # where costvar is the cost received from our other variables
-
-            mode_opt = INFINITY if self.mode == "min" else -INFINITY
-            optimal_value = mode_opt
-
-            for assignment in self._valid_assignments():
-                if assignment[variable.name] != d:
-                    continue
-                f_val = self.factor(**assignment)
-                if f_val == INFINITY:
-                    continue
-
-                sum_cost = 0
-                # sum of the costs from all other variables
-                for another_var, var_value in assignment.items():
-                    if another_var == variable.name:
-                        continue
-                    if another_var in self._costs:
-                        if var_value not in self._costs[another_var]:
-                            # If there is no cost for this value, it means it
-                            #  is infinite (as infinite cost are not included
-                            # in messages) and we can stop adding costs.
-                            sum_cost = mode_opt
-                            break
-                        sum_cost += self._costs[another_var][var_value]
-                    else:
-                        # we have not received yet costs from variable v
-                        pass
-
-                current_val = f_val + sum_cost
-                if (optimal_value > current_val and self.mode == "min") or (
-                    optimal_value < current_val and self.mode == "max"
-                ):
-
-                    optimal_value = current_val
-
-            if optimal_value != mode_opt:
-                costs[d] = optimal_value
-
-        return costs
 
     def _valid_assignments(self):
         """

@@ -67,6 +67,8 @@ INFINITY = 100000
 
 SAME_COUNT = 4
 
+STABILITY_COEFF = 0.1
+
 HEADER_SIZE = 0
 UNIT_SIZE = 1
 
@@ -252,6 +254,86 @@ class MaxSumFactorComputation(SynchronousComputationMixin, DcopComputation):
     def on_new_cycle(self, messages, cycle_id) -> Optional[List]:
         pass
 
+
+def factor_costs_for_var(factor: Constraint, variable: Variable, recv_costs, mode: str):
+    """
+    Computes the marginals to be send by a factor to a variable
+
+
+    The content of this message is a table d -> mincost where
+    * d is a value of the domain of the variable v
+    * mincost is the minimum value of f when the variable v take the
+      value d
+
+    :param variable: the variable we want to send the costs to
+    :return: a mapping { value => cost}
+    where value is all the values from the domain of 'variable'
+    costs is the cost when 'variable'  == 'value'
+
+    Parameters
+    ----------
+    factor: Constraint
+        the factor that will send these cost to `variable`
+    variable: Variable
+
+    recv_costs: Dict
+        a dict containing the costs received from other variables
+    mode: str
+        "min" or "max"
+
+    Returns
+    -------
+    Dict:
+        a dict that associates a cost to each value in the domain of `variable`
+
+    """
+    # TODO: support passing list of valid assignment as param
+    costs = {}
+    other_vars = factor.dimensions[:]
+    other_vars.remove(variable)
+    for d in variable.domain:
+        # for each value d in the domain of v, calculate min cost (a)
+        # where a is any assignment where v = d
+        # cost (a) = f(a) + sum( costvar())
+        # where costvar is the cost received from our other variables
+
+        mode_opt = INFINITY if mode == "min" else -INFINITY
+        optimal_value = mode_opt
+
+        for assignment in generate_assignment_as_dict(other_vars):
+            assignment[variable.name] = d
+            f_val = factor(**assignment)
+            if f_val == INFINITY:
+                continue
+
+            sum_cost = 0
+            # sum of the costs from all other variables
+            for another_var, var_value in assignment.items():
+                if another_var == variable.name:
+                    continue
+                if another_var in recv_costs:
+                    if var_value not in recv_costs[another_var]:
+                        # If there is no cost for this value, it means it
+                        #  is infinite (as infinite cost are not included
+                        # in messages) and we can stop adding costs.
+                        sum_cost = mode_opt
+                        break
+                    sum_cost += recv_costs[another_var][var_value]
+                else:
+                    # we have not received yet costs from variable v
+                    pass
+
+            current_val = f_val + sum_cost
+            if (optimal_value > current_val and mode == "min") or (
+                optimal_value < current_val and mode == "max"
+            ):
+
+                optimal_value = current_val
+
+        if optimal_value != mode_opt:
+            costs[d] = optimal_value
+
+    return costs
 
 
 class MaxSumVariableComputation(SynchronousComputationMixin, VariableComputation):
