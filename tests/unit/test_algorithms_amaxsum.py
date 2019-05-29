@@ -35,15 +35,15 @@ from unittest.mock import MagicMock
 
 from pydcop.algorithms.amaxsum import (
     approx_match,
-    FactorAlgo,
+    MaxSumFactorComputation,
     computation_memory,
     VARIABLE_UNIT_SIZE,
     FACTOR_UNIT_SIZE,
     communication_load,
     HEADER_SIZE,
     UNIT_SIZE,
-    MaxSumMessage,
 )
+from pydcop.algorithms.maxsum import MaxSumMessage
 from pydcop.computations_graph.factor_graph import (
     VariableComputationNode,
     FactorComputationNode,
@@ -64,9 +64,11 @@ class MaxSumFactorAlgoTest(unittest.TestCase):
             return x1_ + x2_
 
         comp_def = MagicMock()
-        comp_def.algo.algo = "maxsum"
+        comp_def.algo.algo = "amaxsum"
         comp_def.algo.mode = "min"
-        f = FactorAlgo(phi, comp_def=comp_def)
+        comp_def.node.factor = phi
+
+        f = MaxSumFactorComputation(comp_def=comp_def)
 
         self.assertEqual(f.name, "phi")
         self.assertEqual(len(f.variables), 2)
@@ -80,9 +82,10 @@ class MaxSumFactorAlgoTest(unittest.TestCase):
             return x1_ * 2
 
         comp_def = MagicMock()
-        comp_def.algo.algo = "maxsum"
+        comp_def.algo.algo = "amaxsum"
         comp_def.algo.mode = "min"
-        f = FactorAlgo(cost, comp_def=comp_def)
+        comp_def.node.factor = cost
+        f = MaxSumFactorComputation(comp_def=comp_def)
 
         costs = f._costs_for_var(x1)
 
@@ -103,9 +106,10 @@ class MaxSumFactorAlgoTest(unittest.TestCase):
             return x1 * 2
 
         comp_def = MagicMock()
-        comp_def.algo.algo = "maxsum"
+        comp_def.algo.algo = "amaxsum"
         comp_def.algo.mode = "min"
-        f = FactorAlgo(cost, comp_def=comp_def)
+        comp_def.node.factor = cost
+        f = MaxSumFactorComputation(comp_def=comp_def)
 
         costs = f._costs_for_var(x1)
 
@@ -125,9 +129,10 @@ class MaxSumFactorAlgoTest(unittest.TestCase):
             return abs((x1_ - x2_) / 2)
 
         comp_def = MagicMock()
-        comp_def.algo.algo = "maxsum"
+        comp_def.algo.algo = "amaxsum"
         comp_def.algo.mode = "min"
-        f = FactorAlgo(cost, comp_def=comp_def)
+        comp_def.node.factor = cost
+        f = MaxSumFactorComputation(comp_def=comp_def)
 
         costs = f._costs_for_var(x1)
 
