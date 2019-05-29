@@ -76,10 +76,10 @@ VARIABLE_UNIT_SIZE = 1
 def build_computation(comp_def: ComputationDef):
     if comp_def.node.type == "VariableComputation":
         logger.debug(f"Building variable computation {comp_def}")
-        return VariableComputation(comp_def=comp_def)
+        return MaxSumVariableComputation(comp_def=comp_def)
     if comp_def.node.type == "FactorComputation":
         logger.debug(f"Building factor computation {comp_def}")
-        return FactorComputation(comp_def=comp_def)
+        return MaxSumFactorComputation(comp_def=comp_def)
 
 
 def computation_memory(
@@ -222,13 +222,13 @@ VarVal = Any
 Cost = float
 
 
-class FactorComputation(SynchronousComputationMixin, DcopComputation):
+class MaxSumFactorComputation(SynchronousComputationMixin, DcopComputation):
     def __init__(self, comp_def: ComputationDef):
         assert comp_def.algo.algo == "maxsum"
         super().__init__(comp_def.node.factor.name, comp_def)
 
         self.mode = comp_def.algo.mode
-        self.factor = comp_def.node.factor
+        self._factor = comp_def.node.factor
 
         # costs : messages for our variables, used to store the content of the
         # messages received from our variables.
@@ -250,7 +250,8 @@ class FactorComputation(SynchronousComputationMixin, DcopComputation):
         pass
 
 
-class VariableComputation(SynchronousComputationMixin, VariableComputation):
+
+class MaxSumVariableComputation(SynchronousComputationMixin, VariableComputation):
     def __init__(self, comp_def: ComputationDef):
         super().__init__(comp_def.node.variable, comp_def)
         assert comp_def.algo.algo == "maxsum"
