@@ -33,7 +33,7 @@ import json
 import unittest
 from unittest.mock import MagicMock
 
-from pydcop.algorithms.maxsum import (
+from pydcop.algorithms.amaxsum import (
     approx_match,
     FactorAlgo,
     computation_memory,

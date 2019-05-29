@@ -38,7 +38,7 @@ from tests.api.instances_and_utils import dcop_graphcoloring_3
 def test_api_distribute_maxsum_ilp_compref():
     from pydcop.computations_graph import factor_graph
     from pydcop.distribution import ilp_compref
-    from pydcop.algorithms import maxsum
+    from pydcop.algorithms import amaxsum
 
     dcop = dcop_graphcoloring_3()
     agents = create_agents('a', range(1, 4), capacity=100)
@@ -46,8 +46,8 @@ def test_api_distribute_maxsum_ilp_compref():
 
     cg = factor_graph.build_computation_graph(dcop)
     dist = ilp_compref.distribute(cg, dcop.agents.values(),
-                                  computation_memory=maxsum.computation_memory,
-                                  communication_load=maxsum.communication_load)
+                                  computation_memory=amaxsum.computation_memory,
+                                  communication_load=amaxsum.communication_load)
 
     assert dist.is_hosted(['v1', 'v2', 'v3'])
 

@@ -34,7 +34,7 @@ import sys
 
 import pydcop.infrastructure.communication
 from pydcop import infrastructure
-from pydcop.algorithms import maxsum
+from pydcop.algorithms import amaxsum
 from pydcop.dcop import relations
 from pydcop.dcop.objects import Variable, VariableWithCostFunc
 
@@ -95,21 +95,21 @@ def maxsum_smartlights_multiplecomputationagent_costvariable():
 
     # Create computation for factors and variables
     # Light 1
-    algo_l1 = maxsum.VariableAlgo(l1, [scene_rel.name])
+    algo_l1 = amaxsum.VariableAlgo(l1, [scene_rel.name])
 
     # Light 2
-    algo_l2 = maxsum.VariableAlgo(l2, [scene_rel.name])
+    algo_l2 = amaxsum.VariableAlgo(l2, [scene_rel.name])
 
     # Light 3
-    algo_l3 = maxsum.VariableAlgo(l3, [scene_rel.name,
-                                       rule_rel.name])
+    algo_l3 = amaxsum.VariableAlgo(l3, [scene_rel.name,
+                                        rule_rel.name])
 
     # Scene
-    algo_y1 = maxsum.VariableAlgo(y1, [rule_rel.name, scene_rel.name])
-    algo_scene = maxsum.FactorAlgo(scene_rel)
+    algo_y1 = amaxsum.VariableAlgo(y1, [rule_rel.name, scene_rel.name])
+    algo_scene = amaxsum.FactorAlgo(scene_rel)
 
     # Rule
-    algo_rule = maxsum.FactorAlgo(rule_rel)
+    algo_rule = amaxsum.FactorAlgo(rule_rel)
 
     # Distribution of the computation on the three physical light-bulb nodes.
     # We have 9 computations to distribute on 3 agents, mapping the 3 light

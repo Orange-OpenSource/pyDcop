@@ -32,8 +32,8 @@
 import unittest
 from collections import namedtuple
 
-from pydcop.algorithms import maxsum as ms
-from pydcop.algorithms.maxsum import communication_load, computation_memory, \
+from pydcop.algorithms import amaxsum as ms
+from pydcop.algorithms.amaxsum import communication_load, computation_memory, \
     VARIABLE_UNIT_SIZE
 from pydcop.computations_graph.factor_graph import ComputationsFactorGraph, \
     VariableComputationNode, FactorComputationNode, FactorGraphLink

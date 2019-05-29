@@ -359,7 +359,7 @@ def test_memory_footprint_from_import_module():
 
 def test_memory_footprint_from_classic_import():
     # use maxsum as is has a computation_memory function defined
-    import pydcop.algorithms.maxsum as maxsum_module
+    import pydcop.algorithms.amaxsum as maxsum_module
     from pydcop.computations_graph.factor_graph import \
         VariableComputationNode as FGVariableComputationNode
 
