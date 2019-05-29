@@ -29,10 +29,20 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from pydcop.algorithms import ComputationDef, AlgorithmDef
-from pydcop.algorithms.maxsum import VariableComputation, FactorComputation, \
-    build_computation
+from pydcop.algorithms.maxsum import (
+    VariableComputation,
+    FactorComputation,
+    build_computation,
+    factor_costs_for_var,
+    select_value,
+)
 from pydcop.computations_graph.factor_graph import build_computation_graph
-from pydcop.dcop.objects import Variable, Domain
+from pydcop.dcop.objects import (
+    Variable,
+    Domain,
+    VariableWithCostDict,
+    VariableWithCostFunc,
+)
 from pydcop.dcop.relations import constraint_from_str
 
 
