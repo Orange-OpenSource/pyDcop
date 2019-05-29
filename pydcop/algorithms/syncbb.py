@@ -30,14 +30,118 @@
 
 
 """
-Implementation of Synchronous Branch and Bound (SBB or SyncBB)
+SyncBB: Synchronous Branch and Bound
+------------------------------------
 
-SyncBB simply simulates Branch and Bound in a distributed environment.
+Synchronous Branch and Bound (SBB or SyncBB) :cite:`hirayama_distributed_1997` is
+a complete search DCOP algorithm that simply simulates
+Branch and Bound in a distributed environment. It was initially defined
+in :cite:`hirayama_distributed_1997` for distributed constraints satisfaction
+problems  but is easily extended to optimization problems, as it is done here.
+
+During execution of SyncBB,
+a *Current Partial Assignment* (CPA) is exchanged as a token among
+the agents according to the ordering until a solution is found.
+The algorithm is synchronous and sequential, only the agent holding the CPA can work
+(all other agents are idle),
+which make SyncBB slow.
+
+In SyncBB, the CPA is represented as a path, whose elements consist of
+a variable, the value for that variable and the cost incurred by that value.
+For example in the path ``[ (A, 2, 0), (B, 3, 4) ]``,
+the variable ``A`` takes the value 2 and ``B`` the value 3, which causes a cost of 4.
+Along with this path, agents also send the currently known upper-bound
+(notice that some article consider the upper bound to be broadcasted,
+but that is not necessary as it can be passed in the messages with the path.)
+
+At start, the first agent in the ordering assigns it first value and send the resulting
+path to the next agent.
+Each agent extends the path it by adding its value assignment to  it,
+as well as the cost it incurred because of constraints with other assignments
+appearing in the received path.
+Whenever reaching the last agent of the ordering,
+the path contains a full assignment, whose cost can be evaluated and might be used
+as a new upper-bound.
+
+When the domain of the first agent is exhausted, the last discovered full assignment is
+reported as the solution (this requires remembering what that assignment was).
 
 
-Note: Variables and value ordering are given in advance.
-* variable are orderer as a simple chain (list)
-* values in a domain a ordered
+Variables and value ordering are given in advance:
+
+* variables are ordered as a simple chain (list)
+* values in a variable's domain are also ordered
+
+
+Example
+^^^^^^^
+::
+
+    pydcop solve -a syncbb graph_coloring_tuto.yaml
+    {
+      ...
+      "assignment": {
+        "v1": "G",
+        "v2": "G",
+        "v3": "G",
+        "v4": "G"
+      },
+      "cost": 12,
+      "cycle": 0,
+      "msg_count": 23,
+      "msg_size": 0,
+      "status": "FINISHED",
+      "time": 0.022340279014315456,
+      "violation": 0
+    }
+
+Implementation
+^^^^^^^^^^^^^^
+
+**Features**
+
+* cycles reporting
+* no parameters
+* complete: terminates automatically (no need for ``timeout`` ``stop_cycle`` parameters.
+
+
+**Notes**
+
+* The fixed ordering of agents is based on a `ordered_graph` computation graph,
+  which is simply a classical constraints graph with a lexical order on variables.
+* The ordering of the values is simply the order used when building the domain of
+  the variables.
+* We introduce an extra message to terminate the algorithm at each agent. This messages
+  is sent from the first agent (which is the only agent that can decide termination)
+  and is propagated according to the ordering.
+* Agent select their value when they receive a backward message that contains a better
+  bound that the one they currently know. This means that an agent may select different
+  value during execution but is guaranteed to have the value from the solution assignment
+  at termination.
+* Although SyncBB is a synchronous algorithm, we do not use the
+  ``SynchronousComputationMixin`` which would make things more complicated with no
+  benefits. As only one single computation is active at any given time, we can simple
+  call ``new_cycle()`` everytime a computation handles a message.
+
+
+
+Messages
+^^^^^^^^
+
+.. autoclass:: SyncBBForwardMessage
+  :members:
+
+.. autoclass:: SyncBBBackwardMessage
+  :members:
+
+.. autoclass:: SyncBBTerminateMessage
+  :members:
+
+Computation
+^^^^^^^^^^^
+
+.. autoclass:: SyncBBComputation
+  :members:
 
 """
 from typing import Optional, List, Any, Tuple
@@ -68,8 +172,10 @@ SyncBBForwardMessage = message_type("forward", ["current_path", "ub"])
 SyncBBBackwardMessage = message_type("backward", ["current_path", "ub"])
 SyncBBTerminateMessage = message_type("terminate", ["current_path", "ub"])
 
+
 class SyncBBComputation(VariableComputation):
     """
+    Computation for the SyncBB algorithm.
 
     """
 
@@ -87,7 +193,14 @@ class SyncBBComputation(VariableComputation):
         self.current_path: Path = None
         self.upper_bound = INFINITY if self.mode == "min" else -INFINITY
 
-    def on_start(self):
+    def on_start(self) -> None:
+        """
+        SyncBB computation startup handler.
+
+        At startup, only the first computation in the ordering assigns its first value and
+        send the path to the next computation.
+
+        """
         # Only done by the first variable in the chain of variables
         if self.previous_var is None:
             path = [(self.variable.name, self.variable.domain[0], 0)]
@@ -98,7 +211,18 @@ class SyncBBComputation(VariableComputation):
             self.post_msg(self.next_var, SyncBBForwardMessage(path, ub))
 
     @register("terminate")
-    def on_terminate_message(self, sender, msg, t):
+    def on_terminate_message(self, sender, _, t) -> None:
+        """
+        Message handler for forward messages.
+
+        Parameters
+        ----------
+        sender: computation
+            name of the computation that sent the message
+        _: terminate message
+        t: timestamp
+
+        """
         self.logger.debug(
             f"Receiving terminate message at {self.variable.name} from {sender}: "
         )
@@ -108,9 +232,20 @@ class SyncBBComputation(VariableComputation):
 
 
     @register("forward")
-    def on_forward_message(self,  sender, recv_msg, t):
-        current_path= recv_msg.current_path
-        ub= recv_msg.ub
+    def on_forward_message(self, sender, recv_msg, t) -> None:
+        """
+        Message handler for forward messages.
+
+        Parameters
+        ----------
+        sender: computation
+            name of the computation that sent the message
+        recv_msg: message
+        t: timestamp
+
+        """
+        current_path = recv_msg.current_path
+        ub = recv_msg.ub
 
         self.logger.debug(
             f"Receiving forward message at {self.variable.name} from {sender}: "
@@ -201,7 +336,18 @@ class SyncBBComputation(VariableComputation):
                 )
 
     @register("backward")
-    def on_backward_msg(self, sender, recv_msg, t):
+    def on_backward_msg(self, sender, recv_msg, t) -> None:
+        """
+        Message handler for backward messages.
+
+        Parameters
+        ----------
+        sender: computation
+            name of the computation that sent the message
+        recv_msg: message
+        t: timestamp
+
+        """
         current_path = recv_msg.current_path
         self.logger.debug(
             f"Receiving backward message at {self.variable.name} from {sender}: "

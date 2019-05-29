@@ -44,6 +44,7 @@ algorithm supported by pyDCOP.
   algorithms/gdba
   algorithms/maxsum
   algorithms/dpop
+  algorithms/syncbb
 
 
 For documentation on how to develop new algorithms,
