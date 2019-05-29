@@ -414,10 +414,14 @@ class MaxSumVariableComputation(VariableComputation):
         """
         Handling cost message from a neighbor factor.
 
-        :param factor_name: the name of that factor that sent us this message.
-        :param msg: a message whose content is a map { d -> cost } where:
-         * d is a value from the domain of this variable
-         * cost if the minimum cost of the factor when taking value d
+        Parameters
+        ----------
+        factor_name: str
+            the name of that factor that sent us this message.
+        msg: MaxSumMessage
+            a message whose content is a map { d -> cost } where:
+            * d is a value from the domain of this variable
+            * cost if the minimum cost of the factor when taking value d
         """
         self._costs[factor_name] = msg.costs
 
@@ -431,61 +435,19 @@ class MaxSumVariableComputation(VariableComputation):
         # sent these costs back to the original sender:
         # factor -> variable -> unary_cost_factor -> variable -> factor
         fs = self._factors.copy()
-        # if not self.var_with_cost:
         fs.remove(factor_name)
 
-        self._compute_and_send_costs(fs)
-
-    def _compute_and_send_costs(self, factor_names):
-        """
-        Computes and send costs messages for all factors in factor_names.
-
-        :param factor_names: a list of names of factors to compute and send
-        messages to.
-        """
-        debug = ""
-        stable = True
-        send, no_send = [], []
-        msg_count, msg_size = 0, 0
-        for f_name in factor_names:
+        for f_name in fs:
             costs_f = maxsum.costs_for_factor(self.variable, f_name, self._factors, self._costs)
+
             same, same_count = self._match_previous(f_name, costs_f)
             if not same or same_count < SAME_COUNT:
-                debug += "  * SEND : {} -> {} : {}\n".format(self.name, f_name, costs_f)
-                msg_size += self._send_costs(f_name, costs_f)
-                send.append(f_name)
+                self.logger.debug(f"Sending from variable {self.name} -> {f_name} : {costs_f}")
+                self.post_msg(f_name, maxsum.MaxSumMessage(costs_f))
                 self._prev_messages[f_name] = costs_f, same_count + 1
-                stable = False
-                msg_count += 1
 
             else:
-                no_send.append(f_name)
-                debug += "  * NO-SEND : {} -> {} : {}\n".format(
-                    self.name, f_name, costs_f
-                )
-
-        # Display sent messages
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug("Sending messages from %s :\n%s", self.name, debug)
-        else:
-            self.logger.info(
-                "Sending messages from %s to %s, no_send %s", self.name, send, no_send
-            )
-
-        return msg_count, msg_size
-
-    def _send_costs(self, factor_name, costs):
-        """
-        Sends a cost messages and return the size of the message sent.
-        :param factor_name:
-        :param costs:
-        :return:
-        """
-        msg = maxsum.MaxSumMessage(costs)
-        self.post_msg(factor_name, msg)
-        return msg.size
-
-
+                self.logger.debug(f"Not sending (similar) from {self.name} -> {f_name} : {costs_f}")
 
     def _match_previous(self, f_name, costs):
         """
