@@ -224,7 +224,9 @@ def test_solve_min(toy_pb):
 
     assignment = solve(dcop, "syncbb", "oneagent")
 
-    # Note: this is supposed to be exactly the same pb as bellow
+    # Note: this is exactly the same pb as in the file bellow
+    # dcop = load_dcop_from_file(["/pyDcop/tests/instances/graph_coloring_tuto.yaml"])
+
     assert assignment == {"vA": "G", "vB": "G", "vC": "G", "vD": "G"}
 
 
@@ -245,13 +247,3 @@ def test_solve_max(toy_pb):
     # Note: this is supposed to be exactly the same pb as bellow
     assert assignment == {"vA": "G", "vB": "R", "vC": "R", "vD": "G"}
 
-
-def test_solve_from_file(toy_pb):
-    dcop = load_dcop_from_file(
-        [
-            "/home/pierre/Projects/These/github/pyDcop/tests/instances/graph_coloring_tuto.yaml"
-        ]
-    )
-    assignment = solve(dcop, "syncbb", "oneagent")
-
-    assert assignment == {"v1": "G", "v2": "G", "v3": "G", "v4": "G"}
