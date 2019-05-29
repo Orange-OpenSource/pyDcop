@@ -32,7 +32,7 @@
 import logging
 import sys
 
-from pydcop.algorithms.maxsum import VariableAlgo, FactorAlgo
+from pydcop.algorithms.amaxsum import VariableAlgo, FactorAlgo
 from pydcop.dcop.objects import VariableWithCostFunc, VariableNoisyCostFunc
 from pydcop.dcop.relations import AsNAryFunctionRelation
 from pydcop.infrastructure.agents import Agent

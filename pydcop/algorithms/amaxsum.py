@@ -293,7 +293,7 @@ class FactorAlgo(DcopComputation):
         name = name if name is not None else factor.name
         super().__init__(name, comp_def)
 
-        assert comp_def.algo.algo == "maxsum"
+        assert comp_def.algo.algo == "amaxsum"
         assert (comp_def.algo.mode == "min") or (comp_def.algo.mode == "max")
 
         self._factor = factor
@@ -557,7 +557,7 @@ class VariableAlgo(VariableComputation):
         """
         super().__init__(variable, comp_def)
 
-        assert comp_def.algo.algo == "maxsum"
+        assert comp_def.algo.algo == "amaxsum"
         assert (comp_def.algo.mode == "min") or (comp_def.algo.mode == "max")
 
         self.mode = comp_def.algo.mode

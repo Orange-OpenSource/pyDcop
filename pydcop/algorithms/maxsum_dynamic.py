@@ -32,7 +32,7 @@
 import logging
 
 from pydcop.infrastructure.computations import Message, register
-from pydcop.algorithms.maxsum import FactorAlgo, MaxSumMessage, VariableAlgo
+from pydcop.algorithms.amaxsum import FactorAlgo, MaxSumMessage, VariableAlgo
 from pydcop.dcop.relations import NeutralRelation
 
 
