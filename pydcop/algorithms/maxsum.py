@@ -38,13 +38,15 @@ Synchronous implementation of the MaxSum algorithm
 
 """
 import logging
-from typing import Optional
+from typing import Optional, List, Dict, Any
+from collections import defaultdict
 
-from mypy.nodes import List
 
 from pydcop.algorithms import ComputationDef, AlgoParameterDef
 from pydcop.algorithms import amaxsum
+from pydcop.algorithms.amaxsum import MaxSumMessage
 from pydcop.dcop.objects import Variable
+from pydcop.dcop.relations import Constraint, generate_assignment_as_dict
 from pydcop.infrastructure.computations import (
     DcopComputation,
     SynchronousComputationMixin,
@@ -55,17 +57,19 @@ from pydcop.infrastructure.computations import (
 GRAPH_TYPE = "factor_graph"
 logger = logging.getLogger("pydcop.maxsum")
 
+# Avoid using symbolic infinity as it is currently not correctly
+# (de)serialized
+# INFINITY = float('inf')
+INFINITY = 100000
+
 
 def build_computation(comp_def: ComputationDef):
     if comp_def.node.type == "VariableComputation":
-        factor_names = [l.factor_node for l in comp_def.node.links]
-        logger.debug(
-            "building variable computation {} - {}".format(comp_def.node, factor_names)
-        )
-        return VariableAlgo(comp_def.node.variable, factor_names, comp_def=comp_def)
+        logger.debug(f"Building variable computation {comp_def}")
+        return VariableComputation(comp_def=comp_def)
     if comp_def.node.type == "FactorComputation":
-        logger.debug("building factor computation {}".format(comp_def.node))
-        return FactorAlgo(comp_def.node.factor, comp_def=comp_def)
+        logger.debug(f"Building factor computation {comp_def}")
+        return FactorComputation(comp_def=comp_def)
 
 
 # MaxSum and AMaxSum have the same definitions for communication load
@@ -73,10 +77,29 @@ def build_computation(comp_def: ComputationDef):
 computation_memory = amaxsum.computation_memory
 communication_load = amaxsum.communication_load
 
+# Some semantic type definition, to make things easier to read and check:
+VarName = str
+VarVal = Any
+Cost = float
 
-class FactorAlgo(SynchronousComputationMixin, DcopComputation):
+
+class FactorComputation(SynchronousComputationMixin, DcopComputation):
     def __init__(self, comp_def: ComputationDef):
         assert comp_def.algo.algo == "maxsum"
+        super().__init__(comp_def.node.factor.name, comp_def)
+
+        self.mode = comp_def.algo.mode
+        self.factor = comp_def.node.factor
+
+        # costs : messages for our variables, used to store the content of the
+        # messages received from our variables.
+        # {v -> {d -> costs} }
+        # For each variable, we keep a dict mapping the values for this
+        # variable to an associated cost.
+        self._costs: Dict[VarName, Dict[VarVal:Cost]] = {}
+
+        # A dict var_name -> (message, count)
+        self._prev_messages = defaultdict(lambda: (None, 0))
 
     @register("max_sum")
     def on_msg(self, variable_name, recv_msg, t):
@@ -88,15 +111,20 @@ class FactorAlgo(SynchronousComputationMixin, DcopComputation):
         pass
 
 
-class VariableAlgo(SynchronousComputationMixin, VariableComputation):
-    def __init__(self, factor_names: List[str], comp_def: ComputationDef):
+class VariableComputation(SynchronousComputationMixin, VariableComputation):
+    def __init__(self, comp_def: ComputationDef):
         super().__init__(comp_def.node.variable, comp_def)
         assert comp_def.algo.algo == "maxsum"
+
+        self.factor_names = [link.factor_node for link in comp_def.node.links]
 
     @register("max_sum")
     def on_msg(self, variable_name, recv_msg, t):
         # No implementation here, simply used to declare the kind of message supported
         # by this computation
+        pass
+
+    def on_start(self) -> None:
         pass
 
     def on_new_cycle(self, messages, cycle_id) -> Optional[List]:

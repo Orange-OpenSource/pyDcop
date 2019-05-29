@@ -27,3 +27,64 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+from pydcop.algorithms import ComputationDef, AlgorithmDef
+from pydcop.algorithms.maxsum import VariableComputation, FactorComputation, \
+    build_computation
+from pydcop.computations_graph.factor_graph import build_computation_graph
+from pydcop.dcop.objects import Variable, Domain
+from pydcop.dcop.relations import constraint_from_str
+
+
+def test_comp_creation():
+    d = Domain("d", "", ["R", "G"])
+    v1 = Variable("v1", d)
+    v2 = Variable("v2", d)
+    c1 = constraint_from_str("c1", "10 if v1 == v2 else 0", [v1, v2])
+    graph = build_computation_graph(None, constraints=[c1], variables=[v1, v2])
+
+    comp_node = graph.computation("c1")
+    algo_def = AlgorithmDef.build_with_default_param("maxsum")
+    comp_def = ComputationDef(comp_node, algo_def)
+
+    comp = FactorComputation(comp_def)
+    assert comp is not None
+    assert comp.name == "c1"
+    assert comp.factor == c1
+
+    comp_node = graph.computation("v1")
+    algo_def = AlgorithmDef.build_with_default_param("maxsum")
+    comp_def = ComputationDef(comp_node, algo_def)
+
+    comp = VariableComputation(comp_def)
+    assert comp is not None
+    assert comp.name == "v1"
+    assert comp.variable == v1
+    assert comp.factor_names == ["c1"]
+
+
+def test_comp_creation_with_factory_method():
+    d = Domain("d", "", ["R", "G"])
+    v1 = Variable("v1", d)
+    v2 = Variable("v2", d)
+    c1 = constraint_from_str("c1", "10 if v1 == v2 else 0", [v1, v2])
+    graph = build_computation_graph(None, constraints=[c1], variables=[v1, v2])
+
+    comp_node = graph.computation("c1")
+    algo_def = AlgorithmDef.build_with_default_param("maxsum")
+    comp_def = ComputationDef(comp_node, algo_def)
+
+    comp = build_computation(comp_def)
+    assert comp is not None
+    assert comp.name == "c1"
+    assert comp.factor == c1
+
+    comp_node = graph.computation("v1")
+    algo_def = AlgorithmDef.build_with_default_param("maxsum")
+    comp_def = ComputationDef(comp_node, algo_def)
+
+    comp = build_computation(comp_def)
+    assert comp is not None
+    assert comp.name == "v1"
+    assert comp.variable == v1
+    assert comp.factor_names == ["c1"]
