@@ -422,24 +422,13 @@ class MaxSumVariableComputation(VariableComputation):
             self.value_selection(*maxsum.select_value(self.variable, self._costs, self.mode))
         self.logger.info(f"Initial value selected {self.current_value}")
 
-        costs_factors = {}
-        for f in self.factors:
-            costs_f = self._costs_for_factor(f)
-            costs_factors[f] = costs_f
-
-        if self.logger.isEnabledFor(logging.DEBUG):
-            debug = f"Var : init msgt {self.name} \n"
-            for dest, msg in costs_factors.items():
-                debug += f"  * {self.name} -> {dest} : {msg}\n"
-            self.logger.debug(debug + "\n")
-        else:
+        # Send our costs to the factors we depends on.
+        for f in self._factors:
+            costs_f = maxsum.costs_for_factor(self.variable, f, self._factors, self._costs)
             self.logger.info(
-                f"Sending init msg from {self.name} (with cost) to {costs_factors}",
+                f"Sending init msg from variable {self.name} to factor {f} : {costs_f}"
             )
-
-        # Sent the messages to the factors
-        for f, c in costs_factors.items():
-            self._send_costs(f, c)
+            self.post_msg(f, maxsum.MaxSumMessage(costs_f))
 
     @register("max_sum")
     def _on_maxsum_msg(self, factor_name, msg, t):
@@ -480,7 +469,7 @@ class MaxSumVariableComputation(VariableComputation):
         send, no_send = [], []
         msg_count, msg_size = 0, 0
         for f_name in factor_names:
-            costs_f = self._costs_for_factor(f_name)
+            costs_f = maxsum.costs_for_factor(self.variable, f_name, self._factors, self._costs)
             same, same_count = self._match_previous(f_name, costs_f)
             if not same or same_count < SAME_COUNT:
                 debug += "  * SEND : {} -> {} : {}\n".format(self.name, f_name, costs_f)
@@ -534,52 +523,5 @@ class MaxSumVariableComputation(VariableComputation):
             return same, count
         else:
             return False, 0
-
-    def _costs_for_factor(self, factor_name):
-        """
-        Produce the message that must be sent to factor f.
-
-        The content if this message is a d -> cost table, where
-        * d is a value from the domain
-        * cost is the sum of the costs received from all other factors except f
-        for this value d for the domain.
-
-        :param factor_name: the name of a factor for this variable
-        :return: the value -> cost table
-        """
-        # If our variable has integrated costs, add them
-        msg_costs = {d: self.variable.cost_for_val(d) for d in self.variable.domain}
-
-        sum_cost = 0
-        for d in self.variable.domain:
-            for f in [f for f in self.factors if f != factor_name and f in self._costs]:
-                f_costs = self._costs[f]
-                if d not in f_costs:
-                    msg_costs[d] = INFINITY
-                    break
-                c = f_costs[d]
-                sum_cost += c
-                msg_costs[d] += c
-
-        # Experimentally, when we do not normalize costs the algorithm takes
-        # more cycles to stabilize
-        # return {d: c for d, c in msg_costs.items() if c != INFINITY}
-
-        # Normalize costs with the average cost, to avoid exploding costs
-        avg_cost = sum_cost / len(msg_costs)
-        normalized_msg_costs = {
-            d: c - avg_cost for d, c in msg_costs.items() if c != INFINITY
-        }
-        msg_costs = normalized_msg_costs
-
-        prev_costs, count = self._prev_messages[factor_name]
-        damped_costs = {}
-        if prev_costs is not None:
-            for d, c in msg_costs.items():
-                damped_costs[d] = self.damping * prev_costs[d] + (1 - self.damping) * c
-            self.logger.warning("damping : replace %s with %s", msg_costs, damped_costs)
-            msg_costs = damped_costs
-
-        return msg_costs
-
+  
 

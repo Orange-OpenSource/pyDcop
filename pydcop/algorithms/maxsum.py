@@ -218,6 +218,7 @@ class MaxSumMessage(Message):
 
 # Some semantic type definition, to make things easier to read and check:
 VarName = str
+FactorName = str
 VarVal = Any
 Cost = float
 
@@ -257,6 +258,17 @@ class MaxSumVariableComputation(SynchronousComputationMixin, VariableComputation
         assert comp_def.algo.algo == "maxsum"
 
         self.factor_names = [link.factor_node for link in comp_def.node.links]
+        self.mode = comp_def.algo.mode
+        self.costs = {}
+
+        # Add noise to the variable, on top of cost if needed
+        # TODO: make this configurable through parameters
+        self._variable = VariableNoisyCostFunc(
+            self.variable.name,
+            self.variable.domain,
+            cost_func=lambda x: self.variable.cost_for_val(x),
+            initial_value=self.variable.initial_value,
+        )
 
     @register("max_sum")
     def on_msg(self, variable_name, recv_msg, t):
@@ -265,7 +277,20 @@ class MaxSumVariableComputation(SynchronousComputationMixin, VariableComputation
         pass
 
     def on_start(self) -> None:
-        pass
+        # Select our initial value
+        if self.variable.initial_value is not None:
+            self.value_selection(self.variable.initial_value)
+        else:
+            self.value_selection(select_value(self.variable, self.costs, self.mode))
+        self.logger.info(f"Initial value selected {self.current_value}")
+
+        # Send our costs to the factors we depends on.
+        for f in self._factors:
+            costs_f = costs_for_factor(self.variable, f, self._factors, self._costs)
+            self.logger.info(
+                f"Sending init msg from variable {self.name} to factor {f} : {costs_f}"
+            )
+            self.post_msg(f, MaxSumMessage(costs_f))
 
     def on_new_cycle(self, messages, cycle_id) -> Optional[List]:
         pass
@@ -302,3 +327,67 @@ def select_value(variable: Variable, costs: Dict, mode: str) -> Tuple[Any, float
         optimal_d = max(d_costs.items(), key=itemgetter(1))
 
     return optimal_d[0], optimal_d[1]
+
+
+def costs_for_factor(
+    variable: Variable, factor: FactorName, factors: List[Constraint], costs: Dict
+) -> Dict[VarVal, Cost]:
+    """
+    Produce the message that must be sent to factor f.
+
+    The content if this message is a d -> cost table, where
+    * d is a value from the domain
+    * cost is the sum of the costs received from all other factors except f
+    for this value d for the domain.
+
+    Parameters
+    ----------
+    variable: Variable
+        the variable sending the message
+    factor: str
+        the name of the factor the message will be sent to
+    factors: list of Constraints
+        the constraints this variables depends on
+    costs: dict
+        the accumulated costs received by the variable from all factors
+
+    Returns
+    -------
+    Dict:
+        a dict containing a cost for each value in the domain of the variable
+    """
+    # If our variable has integrated costs, add them
+    msg_costs = {d: variable.cost_for_val(d) for d in variable.domain}
+
+    sum_cost = 0
+    for d in variable.domain:
+        for f in [f for f in factors if f != factor and f in costs]:
+            f_costs = costs[f]
+            if d not in f_costs:
+                msg_costs[d] = INFINITY
+                break
+            c = f_costs[d]
+            sum_cost += c
+            msg_costs[d] += c
+
+    # Experimentally, when we do not normalize costs the algorithm takes
+    # more cycles to stabilize
+    # return {d: c for d, c in msg_costs.items() if c != INFINITY}
+
+    # Normalize costs with the average cost, to avoid exploding costs
+    avg_cost = sum_cost / len(msg_costs)
+    normalized_msg_costs = {
+        d: c - avg_cost for d, c in msg_costs.items() if c != INFINITY
+    }
+    msg_costs = normalized_msg_costs
+
+    # FIXME: restore damping support
+    # prev_costs, count = self._prev_messages[factor]
+    # damped_costs = {}
+    # if prev_costs is not None:
+    #     for d, c in msg_costs.items():
+    #         damped_costs[d] = self.damping * prev_costs[d] + (1 - self.damping) * c
+    #     self.logger.warning("damping : replace %s with %s", msg_costs, damped_costs)
+    #     msg_costs = damped_costs
+
+    return msg_costs
