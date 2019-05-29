@@ -1,0 +1,68 @@
+name: graph coloring
+objective: max
+description: |
+  max version of the example used for AAMAS 19 tutorial
+  Only binary variables
+  Solution: G R R G
+  Cost: 53
+
+domains:
+  colors:
+    values: [R, G]
+    type: 'color'
+
+variables:
+  v1:
+    domain: colors
+  v2:
+    domain: colors
+  v3:
+    domain: colors
+  v4:
+    domain: colors
+
+constraints:
+  c_1_2:
+    type: extensional
+    variables: [v1, v2]
+    values:
+      5: R R
+      8: R G
+      20: G R
+      3: G G
+  c_1_3:
+    type: extensional
+    variables: [v1, v3]
+    values:
+      5: R R
+      10: R G
+      20: G R
+      3: G G
+  c_2_3:
+    type: extensional
+    variables: [v2, v3]
+    values:
+      5: R R
+      4: R G
+      3: G R | G G
+
+  c_2_4:
+    type: extensional
+    variables: [v2, v4]
+    values:
+      3: R R | G G
+      8: R G
+      10: G R
+
+agents:
+  a1:
+    capacity: 100
+  a2:
+    capacity: 100
+  a3:
+    capacity: 100
+  a4:
+    capacity: 100
+  a5:
+    capacity: 100
+

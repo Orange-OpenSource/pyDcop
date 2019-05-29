@@ -2,8 +2,10 @@
 # DCOP name is mandatory.
 name: 'dcop yaml sample format'
 # The desciption is optional and can span several lines if needed
-description: This serves as a informal specification
-             of the yaml-based ddcop serialization format.
+description: |
+  This serves as a informal specification
+  of the yaml-based ddcop serialization format.
+  Note: in the description field, use the "|" yaml syntax for long string (see this example).
 
 # Objective is mandatory and can be min or max
 objective: min

@@ -13,6 +13,7 @@ pyDCOP currently implements the following algorithms:
   implementation/reference/algorithms/gdba
   implementation/reference/algorithms/maxsum
   implementation/reference/algorithms/dpop
+  implementation/reference/algorithms/syncbb
 
 
 We welcome contributions, especially the implementation of DCOP algorithms
