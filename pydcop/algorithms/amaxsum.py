@@ -48,22 +48,14 @@ who will 'run' them).
 
 
 import logging
-from random import choice
-
-from typing import Dict, Union, Tuple, Any, List
 
 from collections import defaultdict
 
-from pydcop.computations_graph.factor_graph import (
-    VariableComputationNode,
-    FactorComputationNode,
-)
 from pydcop.dcop.objects import VariableNoisyCostFunc, Variable
 from pydcop.algorithms import AlgoParameterDef, ComputationDef
 from pydcop.algorithms import maxsum
 from pydcop.dcop.relations import generate_assignment_as_dict
 from pydcop.infrastructure.computations import (
-    Message,
     DcopComputation,
     VariableComputation,
     register,
@@ -92,14 +84,11 @@ logger = logging.getLogger("pydcop.maxsum")
 
 def build_computation(comp_def: ComputationDef):
     if comp_def.node.type == "VariableComputation":
-        factor_names = [l.factor_node for l in comp_def.node.links]
-        logger.debug(
-            "building variable computation {} - {}".format(comp_def.node, factor_names)
-        )
-        return VariableAlgo(comp_def.node.variable, factor_names, comp_def=comp_def)
+        logger.debug(f"Building variable computation {comp_def}")
+        return MaxSumVariableComputation(comp_def=comp_def)
     if comp_def.node.type == "FactorComputation":
-        logger.debug("building factor computation {}".format(comp_def.node))
-        return FactorAlgo(comp_def.node.factor, comp_def=comp_def)
+        logger.debug(f"Building factor computation {comp_def}")
+        return MaxSumFactorComputation(comp_def=comp_def)
 
 
 # MaxSum and AMaxSum have the same definitions for communication load
@@ -139,42 +128,17 @@ def approx_match(costs, prev_costs):
     return True
 
 
-class FactorAlgo(DcopComputation):
+class MaxSumFactorComputation(DcopComputation):
     """
     FactorAlgo encapsulate the algorithm running at factor's node.
 
     """
 
-    def __init__(
-        self,
-        factor,
-        name=None,
-        msg_sender=None,
-        infinity=INFINITY,
-        stability=STABILITY_COEFF,
-        comp_def=None,
-    ):
-        """
-        Factor algorithm (factor can be n-ary).
-        Variables does not need to be listed explicitly, they are taken from
-        the factor function.
-
-        :param factor: a factor object implementing the factor protocol ,
-        :param msg_sender: the object that will be used to send messages to
-        neighbors, it must have a post_msg(sender, target_name, name) method.
-        """
-        name = name if name is not None else factor.name
-        super().__init__(name, comp_def)
-
+    def __init__(self, comp_def=None):
         assert comp_def.algo.algo == "amaxsum"
-        assert (comp_def.algo.mode == "min") or (comp_def.algo.mode == "max")
-
-        self._factor = factor
+        super().__init__(comp_def.node.factor.name, comp_def)
         self.mode = comp_def.algo.mode
-
-        global INFINITY, STABILITY_COEFF
-        INFINITY = infinity
-        STABILITY_COEFF = stability
+        self.factor = comp_def.node.factor
 
         # costs : messages for our variables, used to store the content of the
         # messages received from our variables.
@@ -183,42 +147,25 @@ class FactorAlgo(DcopComputation):
         # variable to an associated cost.
         self._costs = {}
 
-        self._msg_sender = msg_sender
 
         # A dict var_name -> (message, count)
         self._prev_messages = defaultdict(lambda: (None, 0))
 
-        if len(self.variables) <= 1:
-            self._is_stable = True
-        else:
-            self._is_stable = False
-
         self._valid_assignments_cache = None
         self._valid_assignments()
-
-    @property
-    def name(self):
-        return self._name
 
     @property
     def variables(self):
         """
         :return: The list of variables objects the factor depends on.
         """
-        return self._factor.dimensions
-
-    @property
-    def factor(self):
-        return self._factor
-
-    @property
-    def is_stable(self):
-        return self._is_stable
+        return self.factor.dimensions
 
     def footprint(self):
         return computation_memory(self.computation_def.node)
 
     def on_start(self):
+        # FIXME: remove, return value not used any more
         msg_count, msg_size = 0, 0
 
         # Only unary factors (leaf in the graph) needs to send their costs at
@@ -232,8 +179,9 @@ class FactorAlgo(DcopComputation):
         return {"num_msg_out": msg_count, "size_msg_out": msg_size}
 
     def _init_msg(self):
-        msg_debug = []
-        msg_count, msg_size = 0, 0
+        # FIXME: remove method: can be done directly in on_start
+        msg_debug = [] # FIXME: remove, unused
+        msg_count, msg_size = 0, 0 # FIXME: remove, unused
 
         for v in self.variables:
             costs_v = self._costs_for_var(v)
@@ -251,10 +199,11 @@ class FactorAlgo(DcopComputation):
                 "Init messages for %s to %s", self.name, [c for c, _ in msg_debug]
             )
 
-        return msg_count, msg_size
+        return msg_count, msg_size # FIXME: remove, unused
 
     def _send_costs(self, var_name, costs):
-        msg = MaxSumMessage(costs)
+        # FIXME: remove, use post_msg directly (one line, same size as method call !)
+        msg = maxsum.MaxSumMessage(costs)
         size = msg.size
         self.post_msg(var_name, msg)
         return size
@@ -278,7 +227,7 @@ class FactorAlgo(DcopComputation):
 
         # Wait until we received costs from all our variables before sending
         # our own costs
-        if len(self._costs) == len(self._factor.dimensions):
+        if len(self._costs) == len(self.factor.dimensions):
             stable = True
             for v in self.variables:
                 if v.name != var_name:
@@ -292,13 +241,11 @@ class FactorAlgo(DcopComputation):
                         send.append(v.name)
                         msg_count += 1
                         self._prev_messages[v.name] = costs_v, same_count + 1
-                        self._is_stable = False
                     else:
                         no_send.append(v.name)
                         debug += "  * NO-SEND {} -> " "{} : {}\n".format(
                             self.name, v.name, costs_v
                         )
-            self._is_stable = stable
         else:
             debug += (
                 "  * Still waiting for costs from all"
@@ -347,7 +294,7 @@ class FactorAlgo(DcopComputation):
             for assignment in self._valid_assignments():
                 if assignment[variable.name] != d:
                     continue
-                f_val = self._factor(**assignment)
+                f_val = self.factor(**assignment)
                 if f_val == INFINITY:
                     continue
 
@@ -387,11 +334,13 @@ class FactorAlgo(DcopComputation):
 
         :return: a list of all assignments returning a non-infinite value
         """
+        # Fixme: extract as a function
+        # FIXME: does not take into account min / max
         if self._valid_assignments_cache is None:
             self._valid_assignments_cache = []
-            all_vars = self._factor.dimensions[:]
+            all_vars = self.factor.dimensions[:]
             for assignment in generate_assignment_as_dict(all_vars):
-                if self._factor(**assignment) != INFINITY:
+                if self.factor(**assignment) != INFINITY:
                     self._valid_assignments_cache.append(assignment)
         return self._valid_assignments_cache
 
@@ -412,14 +361,15 @@ class FactorAlgo(DcopComputation):
             return False, 0
 
 
-class VariableAlgo(VariableComputation):
-    def __init__(
-        self,
-        variable: Variable,
-        factor_names: List[str],
-        msg_sender=None,
-        comp_def: ComputationDef = None,
-    ):
+class MaxSumVariableComputation(VariableComputation):
+    """
+    Maxsum Computation for variable.
+
+    Parameters
+    ----------
+    comp_def: ComputationDef
+    """
+    def __init__(self,comp_def: ComputationDef = None):
         """
 
         :param variable: variable object
@@ -428,55 +378,30 @@ class VariableAlgo(VariableComputation):
         :param msg_sender: the object that will be used to send messages to
         neighbors, it must have a  post_msg(sender, target_name, name) method.
         """
-        super().__init__(variable, comp_def)
+        super().__init__(comp_def.node.variable, comp_def)
 
         assert comp_def.algo.algo == "amaxsum"
         assert (comp_def.algo.mode == "min") or (comp_def.algo.mode == "max")
 
         self.mode = comp_def.algo.mode
 
-        # self._v = variable.clone()
         # Add noise to the variable, on top of cost if needed
-        if variable.has_cost:
-            self._v = VariableNoisyCostFunc(
-                variable.name,
-                variable.domain,
-                cost_func=lambda x: variable.cost_for_val(x),
-                initial_value=variable.initial_value,
-            )
-        else:
-            self._v = VariableNoisyCostFunc(
-                variable.name,
-                variable.domain,
-                cost_func=lambda x: 0,
-                initial_value=variable.initial_value,
-                noise_level=0.0001
-            )
-
-        self.var_with_cost = True
-
-        # the currently selected value, will evolve when the algorithm is
-        # still running.
-        # if self._v.initial_value:
-        #     self.value_selection(self._v.initial_value, None)
-        #
-        # elif self.var_with_cost:
-        #     current_cost, current_value =\
-        #         min(((self._v.cost_for_val(dv), dv) for dv in self._v.domain ))
-        #     self.value_selection(current_value, current_cost)
+        # TODO: make this configurable through parameters
+        self._variable = VariableNoisyCostFunc(
+            self.variable.name,
+            self.variable.domain,
+            cost_func=lambda x: self.variable.cost_for_val(x),
+            initial_value=self.variable.initial_value,
+        )
 
         # The list of factors (names) this variables is linked with
-        self._factors = factor_names
-
-        # The object used to send messages to factor
-        self._msg_sender = msg_sender
+        self._factors = [link.factor_node for link in comp_def.node.links]
 
         # costs : this dict is used to store, for each value of the domain,
         # the associated cost sent by each factor this variable is involved
         # with. { factor : {domain value : cost }}
         self._costs = {}
 
-        self._is_stable = False
         self._prev_messages = defaultdict(lambda: (None, 0))
 
         self.damping = comp_def.algo.params["damping"]
@@ -498,76 +423,36 @@ class VariableAlgo(VariableComputation):
     def footprint(self):
         return computation_memory(self.computation_def.node)
 
-    def add_factor(self, factor_name):
-        """
-        Register a factor to this variable.
-
-        All factors depending on a variable MUST be registered so that the
-        variable algorithm can send cost messages to them.
-
-        :param factor_name: the name of a factor which depends on this
-        variable.
-        """
-        self._factors.append(factor_name)
-
-    def on_start(self):
-        init_stats = self._init_msg()
-        return init_stats
-
-    def _init_msg(self):
+    def on_start(self) -> None:
         # Each variable with integrated costs sends his costs to the factors
         # which depends on it.
         # A variable with no integrated costs simply sends neutral costs
-        msg_count, msg_size = 0, 0
 
-        # select our value
-        if self.var_with_cost:
-            self.value_selection(*self._select_value())
-        elif self._v.initial_value:
-            self.value_selection(self._v.initial_value, None)
+        # select our initial value
+        if self.variable.initial_value:
+            self.value_selection(self.variable.initial_value, None)
         else:
-            self.value_selection(choice(self._v.domain))
-        self.logger.info("Initial value selected %s ", self.current_value)
+            self.value_selection(*maxsum.select_value(self.variable, self._costs, self.mode))
+        self.logger.info(f"Initial value selected {self.current_value}")
 
-        if self.var_with_cost:
-            costs_factors = {}
-            for f in self.factors:
-                costs_f = self._costs_for_factor(f)
-                costs_factors[f] = costs_f
+        costs_factors = {}
+        for f in self.factors:
+            costs_f = self._costs_for_factor(f)
+            costs_factors[f] = costs_f
 
-            if self.logger.isEnabledFor(logging.DEBUG):
-                debug = "Var : init msgt {} \n".format(self.name)
-                for dest, msg in costs_factors.items():
-                    debug += "  * {} -> {} : {}\n".format(self.name, dest, msg)
-                self.logger.debug(debug + "\n")
-            else:
-                self.logger.info(
-                    "Sending init msg from %s (with cost) to %s",
-                    self.name,
-                    costs_factors,
-                )
-
-            # Sent the messages to the factors
-            for f, c in costs_factors.items():
-                msg_size += self._send_costs(f, c)
-                msg_count += 1
-        else:
-            c = {d: 0 for d in self._v.domain}
-            debug = "Var : init msg {} \n".format(self.name)
-
-            self.logger.info("Sending init msg from %s to %s", self.name, self.factors)
-
-            for f in self.factors:
-                msg_size += self._send_costs(f, c)
-                msg_count += 1
-                debug += "  * {} -> {} : {}\n".format(self.name, f, c)
+        if self.logger.isEnabledFor(logging.DEBUG):
+            debug = f"Var : init msgt {self.name} \n"
+            for dest, msg in costs_factors.items():
+                debug += f"  * {self.name} -> {dest} : {msg}\n"
             self.logger.debug(debug + "\n")
+        else:
+            self.logger.info(
+                f"Sending init msg from {self.name} (with cost) to {costs_factors}",
+            )
 
-        return {
-            "num_msg_out": msg_count,
-            "size_msg_out": msg_size,
-            "current_value": self.current_value,
-        }
+        # Sent the messages to the factors
+        for f, c in costs_factors.items():
+            self._send_costs(f, c)
 
     @register("max_sum")
     def _on_maxsum_msg(self, factor_name, msg, t):
@@ -582,7 +467,7 @@ class VariableAlgo(VariableComputation):
         self._costs[factor_name] = msg.costs
 
         # select our value
-        self.value_selection(*self._select_value())
+        self.value_selection(*maxsum.select_value(self.variable, self._costs, self.mode))
 
         # Compute and send our own costs to all other factors.
         # If our variable has his own costs, we must sent them back even
@@ -591,17 +476,10 @@ class VariableAlgo(VariableComputation):
         # sent these costs back to the original sender:
         # factor -> variable -> unary_cost_factor -> variable -> factor
         fs = self.factors
-        if not self.var_with_cost:
-            fs.remove(factor_name)
+        # if not self.var_with_cost:
+        fs.remove(factor_name)
 
-        msg_count, msg_size = self._compute_and_send_costs(fs)
-
-        # return stats about this cycle:
-        return {
-            "num_msg_out": msg_count,
-            "size_msg_out": msg_size,
-            "current_value": self.current_value,
-        }
+        self._compute_and_send_costs(fs)
 
     def _compute_and_send_costs(self, factor_names):
         """
@@ -630,7 +508,6 @@ class VariableAlgo(VariableComputation):
                 debug += "  * NO-SEND : {} -> {} : {}\n".format(
                     self.name, f_name, costs_f
                 )
-        self._is_stable = stable
 
         # Display sent messages
         if self.logger.isEnabledFor(logging.DEBUG):
@@ -649,7 +526,7 @@ class VariableAlgo(VariableComputation):
         :param costs:
         :return:
         """
-        msg = MaxSumMessage(costs)
+        msg = maxsum.MaxSumMessage(costs)
         self.post_msg(factor_name, msg)
         return msg.size
 
@@ -684,13 +561,10 @@ class VariableAlgo(VariableComputation):
         :return: the value -> cost table
         """
         # If our variable has integrated costs, add them
-        if self.var_with_cost:
-            msg_costs = {d: self._v.cost_for_val(d) for d in self._v.domain}
-        else:
-            msg_costs = {d: 0 for d in self._v.domain}
+        msg_costs = {d: self.variable.cost_for_val(d) for d in self.variable.domain}
 
         sum_cost = 0
-        for d in self._v.domain:
+        for d in self.variable.domain:
             for f in [f for f in self.factors if f != factor_name and f in self._costs]:
                 f_costs = self._costs[f]
                 if d not in f_costs:
@@ -720,3 +594,5 @@ class VariableAlgo(VariableComputation):
             msg_costs = damped_costs
 
         return msg_costs
+
+
