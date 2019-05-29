@@ -30,8 +30,8 @@
 
 from pydcop.algorithms import ComputationDef, AlgorithmDef
 from pydcop.algorithms.maxsum import (
-    VariableComputation,
-    FactorComputation,
+    MaxSumVariableComputation,
+    MaxSumFactorComputation,
     build_computation,
     factor_costs_for_var,
     select_value,
@@ -57,7 +57,7 @@ def test_comp_creation():
     algo_def = AlgorithmDef.build_with_default_param("maxsum")
     comp_def = ComputationDef(comp_node, algo_def)
 
-    comp = FactorComputation(comp_def)
+    comp = MaxSumFactorComputation(comp_def)
     assert comp is not None
     assert comp.name == "c1"
     assert comp.factor == c1
@@ -66,10 +66,10 @@ def test_comp_creation():
     algo_def = AlgorithmDef.build_with_default_param("maxsum")
     comp_def = ComputationDef(comp_node, algo_def)
 
-    comp = VariableComputation(comp_def)
+    comp = MaxSumVariableComputation(comp_def)
     assert comp is not None
     assert comp.name == "v1"
-    assert comp.variable == v1
+    assert comp.variable.name == "v1"
     assert comp.factor_names == ["c1"]
 
 
@@ -96,8 +96,23 @@ def test_comp_creation_with_factory_method():
     comp = build_computation(comp_def)
     assert comp is not None
     assert comp.name == "v1"
-    assert comp.variable == v1
-    assert comp.factor_names == ["c1"]def test_select_value_no_cost_var():
+    assert comp.variable.name == "v1"
+    assert comp.factor_names == ["c1"]
+
+
+def test_compute_factor_cost_at_start():
+    d = Domain("d", "", ["R", "G"])
+    v1 = Variable("v1", d)
+    v2 = Variable("v2", d)
+    c1 = constraint_from_str("c1", "10 if v1 == v2 else 0", [v1, v2])
+
+    obtained = factor_costs_for_var(c1, v1, {}, "min")
+    assert obtained["R"] == 0
+    assert obtained["G"] == 0
+    assert len(obtained) == 2
+
+
+def test_select_value_no_cost_var():
     d = Domain("d", "", ["R", "G", "B"])
     v1 = Variable("v1", d)
 
