@@ -289,7 +289,10 @@ class SyncBBComputation(VariableComputation):
                 value, cost = next_value
                 best_val, best_bound = None, self.upper_bound
                 while True:
-                    if path_bound + cost < best_bound:
+                    if self.mode == "min" and path_bound + cost < best_bound:
+                        best_bound = path_bound + cost
+                        best_val = value
+                    elif self.mode == "max" and path_bound + cost > best_bound:
                         best_bound = path_bound + cost
                         best_val = value
 
@@ -354,7 +357,10 @@ class SyncBBComputation(VariableComputation):
             f"path: {current_path}, bound: {recv_msg.ub} at {t}"
         )
         var, val, cost = current_path[-1]
-        if recv_msg.ub < self.upper_bound:
+        if self.mode == "min" and recv_msg.ub < self.upper_bound:
+            self.upper_bound = recv_msg.ub
+            self.value_selection(val, self.upper_bound)
+        elif self.mode == "max" and recv_msg.ub > self.upper_bound:
             self.upper_bound = recv_msg.ub
             self.value_selection(val, self.upper_bound)
         assert var == self.variable.name
@@ -454,12 +460,11 @@ def get_next_assignment(
                 candidate_cost >= upper_bound or ass_cost + elt_cost >= upper_bound
             ):
                 break  # Try next value in domain.
-            elif mode == "max" and (
-                candidate_cost <= upper_bound or ass_cost + elt_cost <= upper_bound
-            ):
-                break  # Try next value in domain.
             else:
                 found = candidate, candidate_cost  # Check for next elt in path.
+        if mode == "max" and candidate_cost > upper_bound:
+            found = candidate, candidate_cost
+
         if found:
             return found
 

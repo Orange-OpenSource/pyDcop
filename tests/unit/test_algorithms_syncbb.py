@@ -210,7 +210,7 @@ def test_computations_message_at_start(toy_pb_computation_graph):
     comp_c.message_sender.assert_not_called()
 
 
-def test_solve(toy_pb):
+def test_solve_min(toy_pb):
 
     variables, constraints = toy_pb
 
@@ -218,6 +218,7 @@ def test_solve(toy_pb):
         name="toy",
         variables={v.name: v for v in variables},
         constraints={c.name: c for c in constraints},
+        objective="min"
     )
     dcop.add_agents(create_agents("a", [1, 2, 3, 4]))
 
@@ -225,6 +226,24 @@ def test_solve(toy_pb):
 
     # Note: this is supposed to be exactly the same pb as bellow
     assert assignment == {"vA": "G", "vB": "G", "vC": "G", "vD": "G"}
+
+
+def test_solve_max(toy_pb):
+
+    variables, constraints = toy_pb
+
+    dcop = DCOP(
+        name="toy",
+        variables={v.name: v for v in variables},
+        constraints={c.name: c for c in constraints},
+        objective="max"
+    )
+    dcop.add_agents(create_agents("a", [1, 2, 3, 4]))
+
+    assignment = solve(dcop, "syncbb", "oneagent")
+
+    # Note: this is supposed to be exactly the same pb as bellow
+    assert assignment == {"vA": "G", "vB": "R", "vC": "R", "vD": "G"}
 
 
 def test_solve_from_file(toy_pb):
