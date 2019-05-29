@@ -391,3 +391,26 @@ def costs_for_factor(
     #     msg_costs = damped_costs
 
     return msg_costs
+
+
+def approx_match(costs, prev_costs):
+    """
+    Check if a cost message match the previous message.
+
+    Costs are considered to match if the variation is bellow STABILITY_COEFF.
+
+    :param costs: costs as a dict val -> cost
+    :param prev_costs: previous costs as a dict val -> cost
+    :return: True if the cost match
+    """
+
+    for d, c in costs.items():
+        prev_c = prev_costs[d]
+        if prev_c != c:
+            delta = abs(prev_c - c)
+            if prev_c + c != 0:
+                if not ((2 * delta / abs(prev_c + c)) < STABILITY_COEFF):
+                    return False
+            else:
+                return False
+    return True

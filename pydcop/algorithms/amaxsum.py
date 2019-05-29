@@ -105,27 +105,6 @@ algo_params = [
 
 
 
-def approx_match(costs, prev_costs):
-    """
-    Check if a cost message match the previous message.
-
-    Costs are considered to match if the variation is bellow STABILITY_COEFF.
-
-    :param costs: costs as a dict val -> cost
-    :param prev_costs: previous costs as a dict val -> cost
-    :return: True if the cost match
-    """
-
-    for d, c in costs.items():
-        prev_c = prev_costs[d]
-        if prev_c != c:
-            delta = abs(prev_c - c)
-            if prev_c + c != 0:
-                if not ((2 * delta / abs(prev_c + c)) < STABILITY_COEFF):
-                    return False
-            else:
-                return False
-    return True
 
 
 class MaxSumFactorComputation(DcopComputation):
@@ -355,7 +334,7 @@ class MaxSumFactorComputation(DcopComputation):
         """
         prev_costs, count = self._prev_messages[v_name]
         if prev_costs is not None:
-            same = approx_match(costs, prev_costs)
+            same = maxsum.approx_match(costs, prev_costs)
             return same, count
         else:
             return False, 0
@@ -519,9 +498,9 @@ class MaxSumVariableComputation(VariableComputation):
         """
         prev_costs, count = self._prev_messages[f_name]
         if prev_costs is not None:
-            same = approx_match(costs, prev_costs)
+            same = maxsum.approx_match(costs, prev_costs)
             return same, count
         else:
             return False, 0
-  
+
 
