@@ -1,8 +1,10 @@
 name: graph coloring
 objective: max
-description: Example used for AAMAS 19 tutorial
-             Solution is GRRG
-             Cost is 53
+description: |
+  max version of the example used for AAMAS 19 tutorial
+  Only binary variables
+  Solution: G R R G
+  Cost: 53
 
 domains:
   colors:

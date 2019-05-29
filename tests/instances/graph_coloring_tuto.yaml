@@ -1,8 +1,10 @@
 name: graph coloring
 objective: min
-description: "Example used for AAMAS 19 tutorial
-              The solution is G G G G
-              with a cost of 12."
+description: |
+  Example used for AAMAS 19 tutorial
+  Only binary variables
+  Solution: G G G G
+  Cost: 12
 
 domains:
   colors:
