@@ -653,40 +653,7 @@ class VariableAlgo(VariableComputation):
         self.post_msg(factor_name, msg)
         return msg.size
 
-    def _select_value(self) -> Tuple[Any, float]:
-        """
 
-        Returns
-        -------
-        a Tuple containing the selected value and the corresponding cost for
-        this computation.
-        """
-
-        # If we have received costs from all our factor, we can select a
-        # value from our domain.
-        if self.var_with_cost:
-            # If our variable has it's own cost, take them into account
-            d_costs = {d: self._v.cost_for_val(d) for d in self._v.domain}
-        else:
-            d_costs = {d: 0 for d in self._v.domain}
-        for d in self._v.domain:
-            for f_costs in self._costs.values():
-                if d not in f_costs:
-                    # As infinite costs are not included in messages,
-                    # if there is not cost for this value it means the costs
-                    # is infinite and we can stop adding other costs.
-                    d_costs[d] = INFINITY if self.mode == "min" else -INFINITY
-                    break
-                d_costs[d] += f_costs[d]
-
-        from operator import itemgetter
-
-        if self.mode == "min":
-            optimal_d = min(d_costs.items(), key=itemgetter(1))
-        else:
-            optimal_d = max(d_costs.items(), key=itemgetter(1))
-
-        return optimal_d[0], optimal_d[1]
 
     def _match_previous(self, f_name, costs):
         """
