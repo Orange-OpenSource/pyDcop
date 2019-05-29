@@ -407,26 +407,13 @@ class MaxSumVariableComputation(VariableComputation):
         self.damping = comp_def.algo.params["damping"]
         self.logger.info("Running maxsum with damping %s", self.damping)
 
-    @property
-    def domain(self):
-        # Return a copy of the domain to make sure nobody modifies it.
-        return self._v.domain[:]
-
-    @property
-    def factors(self):
-        """
-        :return: a list containing the names of the factors which depend on
-        the variable managed by this algorithm.
-        """
-        return self._factors[:]
-
-    def footprint(self):
-        return computation_memory(self.computation_def.node)
-
     def on_start(self) -> None:
-        # Each variable with integrated costs sends his costs to the factors
-        # which depends on it.
-        # A variable with no integrated costs simply sends neutral costs
+        """
+        Startup handler for MaxSum variable computations.
+
+        At startup, a variable select an initial value and send its cost to the factors
+        it depends on.
+        """
 
         # select our initial value
         if self.variable.initial_value:
@@ -475,7 +462,7 @@ class MaxSumVariableComputation(VariableComputation):
         # similar to an unary factor and with an unary factor we would have
         # sent these costs back to the original sender:
         # factor -> variable -> unary_cost_factor -> variable -> factor
-        fs = self.factors
+        fs = self._factors.copy()
         # if not self.var_with_cost:
         fs.remove(factor_name)
 
