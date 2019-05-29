@@ -100,6 +100,8 @@ Implementation
 
 **Features**
 
+* Only supports **binary constraints** (it could easily be extended to n-ary conatraints,
+  pull requests are welcome !)
 * cycles reporting
 * no parameters
 * complete: terminates automatically (no need for ``timeout`` ``stop_cycle`` parameters.
