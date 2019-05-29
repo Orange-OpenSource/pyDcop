@@ -151,10 +151,8 @@ from pydcop.dcop.objects import Variable
 from pydcop.dcop.relations import assignment_cost, Constraint
 from pydcop.infrastructure.computations import (
     VariableComputation,
-    SynchronousComputationMixin,
     register,
     message_type,
-    ComputationException,
 )
 
 GRAPH_TYPE = "ordered_graph"
@@ -190,7 +188,6 @@ class SyncBBComputation(VariableComputation):
 
         self.next_var: VarName = node.get_next()
         self.previous_var: VarName = node.get_previous()
-        self.current_path: Path = None
         self.upper_bound = INFINITY if self.mode == "min" else -INFINITY
 
     def on_start(self) -> None:
@@ -209,6 +206,7 @@ class SyncBBComputation(VariableComputation):
                 f"At startup, first var {self.name} send path {path} to {self.next_var}"
             )
             self.post_msg(self.next_var, SyncBBForwardMessage(path, ub))
+            self.new_cycle()
 
     @register("terminate")
     def on_terminate_message(self, sender, _, t) -> None:
@@ -224,12 +222,12 @@ class SyncBBComputation(VariableComputation):
 
         """
         self.logger.debug(
-            f"Receiving terminate message at {self.variable.name} from {sender}: "
+            f"Receiving terminate message at {self.variable.name} from {sender} at {t}"
         )
         if self.next_var is not None:
             self.post_msg(self.next_var, SyncBBTerminateMessage())
+        self.new_cycle()
         self.finished()
-
 
     @register("forward")
     def on_forward_message(self, sender, recv_msg, t) -> None:
@@ -249,9 +247,8 @@ class SyncBBComputation(VariableComputation):
 
         self.logger.debug(
             f"Receiving forward message at {self.variable.name} from {sender}: "
-            f"path: {current_path}, bound: {ub}"
+            f"path: {current_path}, bound: {ub} at {t}"
         )
-        self.previous_path = current_path
 
         # Find a new assignment for our variable:
         next_value = get_next_assignment(
@@ -268,19 +265,20 @@ class SyncBBComputation(VariableComputation):
             if self.previous_var is None:
                 # We are back at the first variable in the ordering, terminate.
                 self.post_msg(self.next_var, SyncBBTerminateMessage())
+                self.new_cycle()
+
                 self.finished()
-                self.logger.info(
-                    f"Terminate at {self.variable.name}"
-                )
+                self.logger.info(f"Terminate at {self.variable.name}")
             else:
                 # Backtrack to previous variable, we cannot select a value for the
                 # variable with the partial assignment in current_path
-                msg = SyncBBBackwardMessage(self.previous_path, self.upper_bound)
+                msg = SyncBBBackwardMessage(current_path, self.upper_bound)
                 self.post_msg(self.previous_var, msg)
                 self.logger.info(
                     f"Backtracking to {self.previous_var } at {self.variable.name} : "
                     f"no possible value with path {current_path}"
                 )
+                self.new_cycle()
 
         else:
 
@@ -322,6 +320,7 @@ class SyncBBComputation(VariableComputation):
                     self.previous_var,
                     SyncBBBackwardMessage(current_path, self.upper_bound),
                 )
+                self.new_cycle()
             else:
                 value, cost = next_value
                 new_path = current_path.copy()
@@ -334,6 +333,7 @@ class SyncBBComputation(VariableComputation):
                 self.post_msg(
                     self.next_var, SyncBBForwardMessage(new_path, self.upper_bound)
                 )
+                self.new_cycle()
 
     @register("backward")
     def on_backward_msg(self, sender, recv_msg, t) -> None:
@@ -351,7 +351,7 @@ class SyncBBComputation(VariableComputation):
         current_path = recv_msg.current_path
         self.logger.debug(
             f"Receiving backward message at {self.variable.name} from {sender}: "
-            f"path: {current_path}, bound: {recv_msg.ub}"
+            f"path: {current_path}, bound: {recv_msg.ub} at {t}"
         )
         var, val, cost = current_path[-1]
         if recv_msg.ub < self.upper_bound:
@@ -379,6 +379,7 @@ class SyncBBComputation(VariableComputation):
             self.post_msg(
                 self.next_var, SyncBBForwardMessage(new_path, self.upper_bound)
             )
+            self.new_cycle()
         else:
             if self.previous_var is None:
                 # First variable in the ordering, and we could not find a possible value
@@ -389,6 +390,7 @@ class SyncBBComputation(VariableComputation):
                 )
                 self.finished()
                 self.post_msg(self.next_var, SyncBBTerminateMessage())
+                self.new_cycle()
             else:
                 # Could not find a possible value, backtrack further
                 self.logger.info(
@@ -399,6 +401,7 @@ class SyncBBComputation(VariableComputation):
                     self.previous_var,
                     SyncBBBackwardMessage(current_path[:-1], self.upper_bound),
                 )
+                self.new_cycle()
 
 
 def get_next_assignment(
