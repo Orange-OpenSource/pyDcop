@@ -712,6 +712,8 @@ class SynchronousComputationMixin:
             # Check if end of cycle, Call on cycle.
             if len(self._cycle_messages) == len(self.neighbors):
                 self._switch_cycle()
+            else:
+                self.logger.debug(f"on message from {sender}, cycle {self._current_cycle} not finished {self._cycle_messages} != {self.neighbors}")
         elif msg.cycle_id == self._current_cycle + 1:
             self._next_cycle_messages[sender] = (msg, t)
         else:
@@ -770,12 +772,16 @@ class SynchronousComputationMixin:
                 # message.cycle_id = self._current_cycle
                 self.post_msg(target, message)
                 remaining_neighbors.remove(target)
+        self.logger.debug(f"After cycle {self.current_cycle-1}, need to send sync msg to {remaining_neighbors}")
 
         # Now send a cycle synchronization message to all neighbors to which we did not
         # already send a algo-level message.
         for neighbor in remaining_neighbors:
             # Some messages might also have been sent using post_msg
             if neighbor not in self.cycle_message_sent:
+                self.logger.debug(
+                    f"After cycle {self.current_cycle - 1}, sync msg to {neighbor}")
+
                 self.post_msg(neighbor, SynchronizationMsg())
 
         self._cycle_messages = self._next_cycle_messages
