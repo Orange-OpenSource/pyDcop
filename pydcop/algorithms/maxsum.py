@@ -245,6 +245,30 @@ class MaxSumFactorComputation(SynchronousComputationMixin, DcopComputation):
         # A dict var_name -> (message, count)
         self._prev_messages = defaultdict(lambda: (None, 0))
 
+    def on_start(self):
+
+        # Only unary factors (leaf in the graph) needs to send their costs at
+        # init.Each leaf factor sends his costs to its only variable.
+        # When possible it is better to use a variable with integrated costs
+        # instead of a variable with an unary relation representing costs.
+        if len(self.variables) == 1:
+            self.logger.info(f"Sending init costs of unary factor {self.name}")
+            msg_debug = []
+            for v in self.variables:
+                costs_v = self._costs_for_var(v)
+                self.post_msg(v.name, MaxSumMessage(costs_v))
+                msg_debug.append((v.name, costs_v))
+
+            if self.logger.isEnabledFor(logging.DEBUG):
+                debug = f"Unary factor : init msg {self.name} \n"
+                for dest, msg in msg_debug:
+                    debug += f"  * {self.name} -> {dest} : {msg}\n"
+                self.logger.debug(debug + "\n")
+            else:
+                self.logger.info(
+                    f"Init messages for {self.name} to {[c for c, _ in msg_debug]}"
+                )
+
     @register("max_sum")
     def on_msg(self, variable_name, recv_msg, t):
         # No implementation here, simply used to declare the kind of message supported
