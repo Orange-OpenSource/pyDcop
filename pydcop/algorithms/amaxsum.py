@@ -118,6 +118,7 @@ class MaxSumFactorComputation(DcopComputation):
         super().__init__(comp_def.node.factor.name, comp_def)
         self.mode = comp_def.algo.mode
         self.factor = comp_def.node.factor
+        self.variables = self.factor.dimensions
 
         # costs : messages for our variables, used to store the content of the
         # messages received from our variables.
@@ -133,15 +134,6 @@ class MaxSumFactorComputation(DcopComputation):
         self._valid_assignments_cache = None
         self._valid_assignments()
 
-    @property
-    def variables(self):
-        """
-        :return: The list of variables objects the factor depends on.
-        """
-        return self.factor.dimensions
-
-    def footprint(self):
-        return computation_memory(self.computation_def.node)
 
     def on_start(self):
         # Only unary factors (leaf in the graph) needs to send their costs at
@@ -173,7 +165,6 @@ class MaxSumFactorComputation(DcopComputation):
         # Wait until we received costs from all our variables before sending
         # our own costs
         if len(self._costs) == len(self.factor.dimensions):
-            stable = True
             for v in self.variables:
                 if v.name != var_name:
                     costs_v = maxsum.factor_costs_for_var(self.factor, v, self._costs, self.mode)
