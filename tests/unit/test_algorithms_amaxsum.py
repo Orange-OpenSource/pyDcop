@@ -34,7 +34,6 @@ import unittest
 from unittest.mock import MagicMock
 
 from pydcop.algorithms.amaxsum import (
-    approx_match,
     MaxSumFactorComputation,
     computation_memory,
     VARIABLE_UNIT_SIZE,
@@ -43,7 +42,7 @@ from pydcop.algorithms.amaxsum import (
     HEADER_SIZE,
     UNIT_SIZE,
 )
-from pydcop.algorithms.maxsum import MaxSumMessage
+from pydcop.algorithms.maxsum import MaxSumMessage, approx_match, factor_costs_for_var
 from pydcop.computations_graph.factor_graph import (
     VariableComputationNode,
     FactorComputationNode,
@@ -53,97 +52,100 @@ from pydcop.dcop.relations import AsNAryFunctionRelation, relation_from_str
 from pydcop.utils.simple_repr import simple_repr, from_repr
 
 
-class MaxSumFactorAlgoTest(unittest.TestCase):
-    def test_init(self):
-        domain = list(range(10))
-        x1 = Variable("x1", domain)
-        x2 = Variable("x2", domain)
+def test_init():
+    domain = list(range(10))
+    x1 = Variable("x1", domain)
+    x2 = Variable("x2", domain)
 
-        @AsNAryFunctionRelation(x1, x2)
-        def phi(x1_, x2_):
-            return x1_ + x2_
+    @AsNAryFunctionRelation(x1, x2)
+    def phi(x1_, x2_):
+        return x1_ + x2_
 
-        comp_def = MagicMock()
-        comp_def.algo.algo = "amaxsum"
-        comp_def.algo.mode = "min"
-        comp_def.node.factor = phi
+    comp_def = MagicMock()
+    comp_def.algo.algo = "amaxsum"
+    comp_def.algo.mode = "min"
+    comp_def.node.factor = phi
 
-        f = MaxSumFactorComputation(comp_def=comp_def)
+    f = MaxSumFactorComputation(comp_def=comp_def)
 
-        self.assertEqual(f.name, "phi")
-        self.assertEqual(len(f.variables), 2)
+    assert f.name == "phi"
+    assert len(f.variables) == 2
 
-    def test_cost_for_1var(self):
-        domain = list(range(10))
-        x1 = Variable("x1", domain)
 
-        @AsNAryFunctionRelation(x1)
-        def cost(x1_):
-            return x1_ * 2
+def test_cost_for_1var():
+    domain = list(range(10))
+    x1 = Variable("x1", domain)
 
-        comp_def = MagicMock()
-        comp_def.algo.algo = "amaxsum"
-        comp_def.algo.mode = "min"
-        comp_def.node.factor = cost
-        f = MaxSumFactorComputation(comp_def=comp_def)
+    @AsNAryFunctionRelation(x1)
+    def cost(x1_):
+        return x1_ * 2
 
-        costs = f._costs_for_var(x1)
+    comp_def = MagicMock()
+    comp_def.algo.algo = "amaxsum"
+    comp_def.algo.mode = "min"
+    comp_def.node.factor = cost
+    f = MaxSumFactorComputation(comp_def=comp_def)
 
-        # in the max-sum algorithm, for an unary factor the costs is simply
-        # the result of the factor function
-        self.assertEqual(costs[0], 0)
-        self.assertEqual(costs[5], 10)
+    costs = factor_costs_for_var(cost, x1, f._costs, f.mode)
+    # costs = f._costs_for_var(x1)
 
-    def test_cost_for_1var_2(self):
+    # in the max-sum algorithm, for an unary factor the costs is simply
+    # the result of the factor function
+    assert costs[0] == 0
+    assert costs[5] == 10
 
-        # TODO test for min and max
 
-        domain = list(range(10))
-        x1 = Variable("x1", domain)
+def test_cost_for_1var_2():
 
-        @AsNAryFunctionRelation(x1)
-        def cost(x1):
-            return x1 * 2
+    # TODO test for min and max
 
-        comp_def = MagicMock()
-        comp_def.algo.algo = "amaxsum"
-        comp_def.algo.mode = "min"
-        comp_def.node.factor = cost
-        f = MaxSumFactorComputation(comp_def=comp_def)
+    domain = list(range(10))
+    x1 = Variable("x1", domain)
 
-        costs = f._costs_for_var(x1)
+    @AsNAryFunctionRelation(x1)
+    def cost(x1):
+        return x1 * 2
 
-        # in the maxsum algorithm, for an unary factor the costs is simply
-        # the result of the factor function
-        self.assertEqual(costs[0], 0)
-        self.assertEqual(costs[5], 10)
+    comp_def = MagicMock()
+    comp_def.algo.algo = "amaxsum"
+    comp_def.algo.mode = "min"
+    comp_def.node.factor = cost
+    f = MaxSumFactorComputation(comp_def=comp_def)
 
-    def test_cost_for_2var(self):
-        domain = list(range(10))
-        x1 = Variable("x1", domain)
-        domain = list(range(5))
-        x2 = Variable("x2", domain)
+    costs = factor_costs_for_var(cost, x1, f._costs, f.mode)
 
-        @AsNAryFunctionRelation(x1, x2)
-        def cost(x1_, x2_):
-            return abs((x1_ - x2_) / 2)
+    # in the maxsum algorithm, for an unary factor the costs is simply
+    # the result of the factor function
+    assert costs[0] == 0
+    assert costs[5] == 10
 
-        comp_def = MagicMock()
-        comp_def.algo.algo = "amaxsum"
-        comp_def.algo.mode = "min"
-        comp_def.node.factor = cost
-        f = MaxSumFactorComputation(comp_def=comp_def)
 
-        costs = f._costs_for_var(x1)
+def test_cost_for_2var():
+    domain = list(range(10))
+    x1 = Variable("x1", domain)
+    domain = list(range(5))
+    x2 = Variable("x2", domain)
 
-        # in this test, the factor did not receive any costs messages from
-        # other variables, this means it  only uses the factor function when
-        # calculating costs.
+    @AsNAryFunctionRelation(x1, x2)
+    def cost(x1_, x2_):
+        return abs((x1_ - x2_) / 2)
 
-        # x1 = 5, best val for x2 is 4, with cost = 0.5
-        self.assertEqual(costs[5], (5 - 4) / 2)
-        self.assertEqual(costs[9], (9 - 4) / 2)
-        self.assertEqual(costs[2], 0)
+    comp_def = MagicMock()
+    comp_def.algo.algo = "amaxsum"
+    comp_def.algo.mode = "min"
+    comp_def.node.factor = cost
+    f = MaxSumFactorComputation(comp_def=comp_def)
+
+    costs = factor_costs_for_var(cost, x1, f._costs, f.mode)
+
+    # in this test, the factor did not receive any costs messages from
+    # other variables, this means it  only uses the factor function when
+    # calculating costs.
+
+    # x1 = 5, best val for x2 is 4, with cost = 0.5
+    assert costs[5] == (5 - 4) / 2
+    assert costs[9] == (9 - 4) / 2
+    assert costs[2] == 0
 
 
 class VarDummy:

@@ -70,7 +70,7 @@ def test_comp_creation():
     assert comp is not None
     assert comp.name == "v1"
     assert comp.variable.name == "v1"
-    assert comp.factor_names == ["c1"]
+    assert comp.factors == ["c1"]
 
 
 def test_comp_creation_with_factory_method():
@@ -97,7 +97,7 @@ def test_comp_creation_with_factory_method():
     assert comp is not None
     assert comp.name == "v1"
     assert comp.variable.name == "v1"
-    assert comp.factor_names == ["c1"]
+    assert comp.factors == ["c1"]
 
 
 def test_compute_factor_cost_at_start():

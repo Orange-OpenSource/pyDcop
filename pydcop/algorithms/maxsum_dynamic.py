@@ -55,6 +55,11 @@ class DynamicFunctionFactorComputation(MaxSumFactorComputation):
      factor computation object with non-changing factors,
      if change_factor_function is never called it works the same.
 
+     FIXME
+     -----
+
+     This class does not work since the refactoring of maxsum implementation
+
      Parameters
      ----------
      factor: a factor object
@@ -96,7 +101,7 @@ class DynamicFunctionFactorComputation(MaxSumFactorComputation):
         # Dimensions are ok, change factor computation object and emit cost
         # messages
         self.factor = fn
-        return self._init_msg()
+        # return self._init_msg() # FIXME
 
     def __str__(self):
         return "Maxsum dynamic function Factor computation for " + self.factor.name
