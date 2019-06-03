@@ -274,6 +274,7 @@ def test_no_value_selection_at_start_when_not_root(three_variables_pb):
     assert not comp.is_root
     assert comp.current_value is None
     comp.start()
+    comp.message_sender.reset_mock()  # reset startup messages
 
     # at startup, only the root select a value and send it to its children
     # as x2 is not the root of the pseudo tree, it should not select a variable

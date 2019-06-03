@@ -736,6 +736,20 @@ class SynchronousComputationMixin:
         super(SynchronousComputationMixin, self).post_msg(target, msg, prio, on_error)
         self.cycle_message_sent.append(target)
 
+    def start(self):
+        super(SynchronousComputationMixin, self).start()
+
+        # Startup (on_start handler) is considered to be the cycle 0.
+        # After this cycle 0, send a synchronization message to all neighbors
+        # to which we did not already send a algo-level message.
+        for neighbor in list(self.neighbors):
+            # Some messages might also have been sent using post_msg
+            if neighbor not in self.cycle_message_sent:
+                self.post_msg(neighbor, SynchronizationMsg())
+
+        self._cycle_messages = self._next_cycle_messages
+        self._next_cycle_messages = {}
+
     def _switch_cycle(self):
         self.logger.debug(f"Running cycle {self._current_cycle}")
         self._current_cycle += 1
@@ -748,8 +762,8 @@ class SynchronousComputationMixin:
         messages = self.on_new_cycle(algo_message, self._current_cycle - 1)
 
         # For synchronization, we need to send messages to _all_ neighbors, even this
-        # implemented algorithms does not require some (or in many cases most) of these
-        # message.
+        # implemented algorithms does not require some (or in many cases, most) of these
+        # messages.
         remaining_neighbors = list(self.neighbors)
         if messages is not None:
             for target, message in messages:
