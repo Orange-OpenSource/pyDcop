@@ -34,7 +34,7 @@ import sys
 
 import pydcop.infrastructure.communication
 from pydcop import infrastructure
-from pydcop.algorithms import maxsum
+from pydcop.algorithms import amaxsum
 from pydcop.dcop import relations
 from pydcop.dcop.objects import Variable
 
@@ -109,24 +109,24 @@ def maxsum_smartlights_simple():
 
     # Create computation for factors and variables
     # Light 1
-    algo_l1 = maxsum.VariableAlgo(l1, [cost_l1.name, scene_rel.name])
-    algo_cost_l1 = maxsum.FactorAlgo(cost_l1)
+    algo_l1 = amaxsum.VariableAlgo(l1, [cost_l1.name, scene_rel.name])
+    algo_cost_l1 = amaxsum.FactorAlgo(cost_l1)
 
     # Light 2
-    algo_l2 = maxsum.VariableAlgo(l2, [cost_l2.name, scene_rel.name])
-    algo_cost_l2 = maxsum.FactorAlgo(cost_l2)
+    algo_l2 = amaxsum.VariableAlgo(l2, [cost_l2.name, scene_rel.name])
+    algo_cost_l2 = amaxsum.FactorAlgo(cost_l2)
 
     # Light 3
-    algo_l3 = maxsum.VariableAlgo(l3, [cost_l3.name, scene_rel.name,
-                                       rule_rel.name])
-    algo_cost_l3 = maxsum.FactorAlgo(cost_l3)
+    algo_l3 = amaxsum.VariableAlgo(l3, [cost_l3.name, scene_rel.name,
+                                        rule_rel.name])
+    algo_cost_l3 = amaxsum.FactorAlgo(cost_l3)
 
     # Scene
-    algo_y1 = maxsum.VariableAlgo(y1, [rule_rel.name, scene_rel.name])
-    algo_scene = maxsum.FactorAlgo(scene_rel)
+    algo_y1 = amaxsum.VariableAlgo(y1, [rule_rel.name, scene_rel.name])
+    algo_scene = amaxsum.FactorAlgo(scene_rel)
 
     #Rule
-    algo_rule = maxsum.FactorAlgo(rule_rel)
+    algo_rule = amaxsum.FactorAlgo(rule_rel)
 
     # Distribution of the computation on the three physical light-bulb nodes.
     # We have 9 computations to distribute on 3 agents, mapping the 3 light

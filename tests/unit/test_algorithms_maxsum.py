@@ -28,251 +28,100 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
-import json
-import unittest
-from unittest.mock import MagicMock
-
+from pydcop.algorithms import ComputationDef, AlgorithmDef
 from pydcop.algorithms.maxsum import (
-    approx_match,
-    FactorAlgo,
-    computation_memory,
-    VARIABLE_UNIT_SIZE,
-    FACTOR_UNIT_SIZE,
-    communication_load,
-    HEADER_SIZE,
-    UNIT_SIZE,
-    MaxSumMessage,
+    MaxSumVariableComputation,
+    MaxSumFactorComputation,
+    build_computation,
+    factor_costs_for_var,
+    select_value,
 )
-from pydcop.computations_graph.factor_graph import (
-    VariableComputationNode,
-    FactorComputationNode,
+from pydcop.computations_graph.factor_graph import build_computation_graph
+from pydcop.dcop.objects import (
+    Variable,
+    Domain,
+    VariableWithCostDict,
+    VariableWithCostFunc,
 )
-from pydcop.dcop.objects import Variable, VariableDomain
-from pydcop.dcop.relations import AsNAryFunctionRelation, relation_from_str
-from pydcop.utils.simple_repr import simple_repr, from_repr
+from pydcop.dcop.relations import constraint_from_str
 
 
-class MaxSumFactorAlgoTest(unittest.TestCase):
-    def test_init(self):
-        domain = list(range(10))
-        x1 = Variable("x1", domain)
-        x2 = Variable("x2", domain)
+def test_comp_creation():
+    d = Domain("d", "", ["R", "G"])
+    v1 = Variable("v1", d)
+    v2 = Variable("v2", d)
+    c1 = constraint_from_str("c1", "10 if v1 == v2 else 0", [v1, v2])
+    graph = build_computation_graph(None, constraints=[c1], variables=[v1, v2])
 
-        @AsNAryFunctionRelation(x1, x2)
-        def phi(x1_, x2_):
-            return x1_ + x2_
+    comp_node = graph.computation("c1")
+    algo_def = AlgorithmDef.build_with_default_param("maxsum")
+    comp_def = ComputationDef(comp_node, algo_def)
 
-        comp_def = MagicMock()
-        comp_def.algo.algo = "maxsum"
-        comp_def.algo.mode = "min"
-        f = FactorAlgo(phi, comp_def=comp_def)
+    comp = MaxSumFactorComputation(comp_def)
+    assert comp is not None
+    assert comp.name == "c1"
+    assert comp.factor == c1
 
-        self.assertEqual(f.name, "phi")
-        self.assertEqual(len(f.variables), 2)
+    comp_node = graph.computation("v1")
+    algo_def = AlgorithmDef.build_with_default_param("maxsum")
+    comp_def = ComputationDef(comp_node, algo_def)
 
-    def test_cost_for_1var(self):
-        domain = list(range(10))
-        x1 = Variable("x1", domain)
-
-        @AsNAryFunctionRelation(x1)
-        def cost(x1_):
-            return x1_ * 2
-
-        comp_def = MagicMock()
-        comp_def.algo.algo = "maxsum"
-        comp_def.algo.mode = "min"
-        f = FactorAlgo(cost, comp_def=comp_def)
-
-        costs = f._costs_for_var(x1)
-
-        # in the max-sum algorithm, for an unary factor the costs is simply
-        # the result of the factor function
-        self.assertEqual(costs[0], 0)
-        self.assertEqual(costs[5], 10)
-
-    def test_cost_for_1var_2(self):
-
-        # TODO test for min and max
-
-        domain = list(range(10))
-        x1 = Variable("x1", domain)
-
-        @AsNAryFunctionRelation(x1)
-        def cost(x1):
-            return x1 * 2
-
-        comp_def = MagicMock()
-        comp_def.algo.algo = "maxsum"
-        comp_def.algo.mode = "min"
-        f = FactorAlgo(cost, comp_def=comp_def)
-
-        costs = f._costs_for_var(x1)
-
-        # in the maxsum algorithm, for an unary factor the costs is simply
-        # the result of the factor function
-        self.assertEqual(costs[0], 0)
-        self.assertEqual(costs[5], 10)
-
-    def test_cost_for_2var(self):
-        domain = list(range(10))
-        x1 = Variable("x1", domain)
-        domain = list(range(5))
-        x2 = Variable("x2", domain)
-
-        @AsNAryFunctionRelation(x1, x2)
-        def cost(x1_, x2_):
-            return abs((x1_ - x2_) / 2)
-
-        comp_def = MagicMock()
-        comp_def.algo.algo = "maxsum"
-        comp_def.algo.mode = "min"
-        f = FactorAlgo(cost, comp_def=comp_def)
-
-        costs = f._costs_for_var(x1)
-
-        # in this test, the factor did not receive any costs messages from
-        # other variables, this means it  only uses the factor function when
-        # calculating costs.
-
-        # x1 = 5, best val for x2 is 4, with cost = 0.5
-        self.assertEqual(costs[5], (5 - 4) / 2)
-        self.assertEqual(costs[9], (9 - 4) / 2)
-        self.assertEqual(costs[2], 0)
+    comp = MaxSumVariableComputation(comp_def)
+    assert comp is not None
+    assert comp.name == "v1"
+    assert comp.variable.name == "v1"
+    assert comp.factor_names == ["c1"]
 
 
-class VarDummy:
-    def __init__(self, name):
-        self.name = name
-        self.current_value = None
-        self.current_cost = None
+def test_comp_creation_with_factory_method():
+    d = Domain("d", "", ["R", "G"])
+    v1 = Variable("v1", d)
+    v2 = Variable("v2", d)
+    c1 = constraint_from_str("c1", "10 if v1 == v2 else 0", [v1, v2])
+    graph = build_computation_graph(None, constraints=[c1], variables=[v1, v2])
+
+    comp_node = graph.computation("c1")
+    algo_def = AlgorithmDef.build_with_default_param("maxsum")
+    comp_def = ComputationDef(comp_node, algo_def)
+
+    comp = build_computation(comp_def)
+    assert comp is not None
+    assert comp.name == "c1"
+    assert comp.factor == c1
+
+    comp_node = graph.computation("v1")
+    algo_def = AlgorithmDef.build_with_default_param("maxsum")
+    comp_def = ComputationDef(comp_node, algo_def)
+
+    comp = build_computation(comp_def)
+    assert comp is not None
+    assert comp.name == "v1"
+    assert comp.variable.name == "v1"
+    assert comp.factor_names == ["c1"]
 
 
-class ApproxMatchTests(unittest.TestCase):
-    def test_match_exact(self):
-        c1 = {0: 0, 1: 0, 2: 0}
-        c2 = {0: 0, 1: 0, 2: 0}
+def test_compute_factor_cost_at_start():
+    d = Domain("d", "", ["R", "G"])
+    v1 = Variable("v1", d)
+    v2 = Variable("v2", d)
+    c1 = constraint_from_str("c1", "10 if v1 == v2 else 0", [v1, v2])
 
-        self.assertTrue(approx_match(c1, c2))
-
-    def test_nomatch(self):
-        c1 = {0: 0, 1: 0, 2: 0}
-        c2 = {0: 0, 1: 1, 2: 0}
-
-        self.assertFalse(approx_match(c1, c2))
-
-    def test_nomatch2(self):
-        c1 = {
-            0: -46.0,
-            1: -46.5,
-            2: -55.5,
-            3: -56.0,
-            4: -56.5,
-            5: -65.5,
-            6: -66.0,
-            7: -66.5,
-            8: -67.0,
-            9: -67.5,
-        }
-        c2 = {
-            0: 0.0,
-            1: 0.0,
-            2: 0.0,
-            3: 0.0,
-            4: 0.0,
-            5: 0.0,
-            6: 0.0,
-            7: 0.0,
-            8: 0.0,
-            9: 0.0,
-        }
-
-        self.assertFalse(approx_match(c1, c2))
+    obtained = factor_costs_for_var(c1, v1, {}, "min")
+    assert obtained["R"] == 0
+    assert obtained["G"] == 0
+    assert len(obtained) == 2
 
 
-class ComputationMemory(unittest.TestCase):
-    def test_variable_memory_no_neighbor(self):
-        d1 = VariableDomain("d1", "", [1, 2, 3, 5])
-        v1 = Variable("v1", d1)
+def test_select_value_no_cost_var():
+    d = Domain("d", "", ["R", "G", "B"])
+    v1 = Variable("v1", d)
 
-        vn1 = VariableComputationNode(v1, [])
+    selected, cost = select_value(v1, {}, "min")
+    assert selected in {"R", "G", "B"}
+    assert cost == 0
 
-        # If a variable has no neighbors, it does not need to keep any cost
-        # and thus requires no memory
-        self.assertEqual(computation_memory(vn1), 0)
+    v1 = VariableWithCostFunc("v1", [1, 2, 3], lambda v: (4 - v) / 10)
 
-    def test_variable_memory_one_neighbor(self):
-        d1 = VariableDomain("d1", "", [1, 2, 3, 5])
-        v1 = Variable("v1", d1)
-        f1 = relation_from_str("f1", "v1 * 0.5", [v1])
-
-        cv1 = VariableComputationNode(v1, ["f1"])
-        cf1 = FactorComputationNode(f1)
-
-        self.assertEqual(computation_memory(cv1), VARIABLE_UNIT_SIZE * 4)
-
-    def test_factor_memory_one_neighbor(self):
-        d1 = VariableDomain("d1", "", [1, 2, 3, 5])
-        v1 = Variable("v1", d1)
-        f1 = relation_from_str("f1", "v1 * 0.5", [v1])
-
-        cv1 = VariableComputationNode(v1, ["f1"])
-        cf1 = FactorComputationNode(f1)
-
-        self.assertEqual(computation_memory(cf1), FACTOR_UNIT_SIZE * 4)
-
-    def test_factor_memory_two_neighbor(self):
-        d1 = VariableDomain("d1", "", [1, 2, 3, 4, 5])
-        v1 = Variable("v1", d1)
-        d2 = VariableDomain("d1", "", [1, 2, 3])
-        v2 = Variable("v2", d2)
-        f1 = relation_from_str("f1", "v1 * 0.5 + v2", [v1, v2])
-
-        cv1 = VariableComputationNode(v1, ["f1"])
-        cv2 = VariableComputationNode(v2, ["f1"])
-        cf1 = FactorComputationNode(f1)
-
-        self.assertEqual(computation_memory(cf1), FACTOR_UNIT_SIZE * (5 + 3))
-
-    def test_variable_memory_two_neighbor(self):
-        d1 = VariableDomain("d1", "", [1, 2, 3, 5])
-        v1 = Variable("v1", d1)
-        cv1 = VariableComputationNode(v1, ["f1", "f2"])
-
-        self.assertEqual(computation_memory(cv1), VARIABLE_UNIT_SIZE * 4 * 2)
-
-
-class CommunicationCost(unittest.TestCase):
-    def test_variable_one_neighbors(self):
-        d1 = VariableDomain("d1", "", [1, 2, 3, 5])
-        v1 = Variable("v1", d1)
-        f1 = relation_from_str("f1", "v1 * 0.5", [v1])
-
-        cv1 = VariableComputationNode(v1, ["f1"])
-        cf1 = FactorComputationNode(f1)
-
-        # If a variable has no neighbors, it does not need to keep any cost
-        # and thus requires no memory
-        self.assertEqual(
-            communication_load(cv1, "f1"), HEADER_SIZE + UNIT_SIZE * len(v1.domain)
-        )
-        self.assertEqual(
-            communication_load(cf1, "v1"), HEADER_SIZE + UNIT_SIZE * len(v1.domain)
-        )
-
-
-class TestsMaxsumMessage(unittest.TestCase):
-    def test_serialize_repr(self):
-        # Make sure that even after serialization / deserialization,
-        # from_repr and simple_repr still produce equal messages.
-        # This has been causing problems with maxsum costs dict where key
-        # were integers
-
-        msg = MaxSumMessage({1: 10, 2: 20})
-        r = simple_repr(msg)
-        msg_json = json.dumps(r)
-
-        r2 = json.loads(msg_json)
-        msg2 = from_repr(r2)
-
-        self.assertEqual(msg, msg2)
+    selected, cost = select_value(v1, {}, "min")
+    assert selected == 3
+    assert cost == 0.1

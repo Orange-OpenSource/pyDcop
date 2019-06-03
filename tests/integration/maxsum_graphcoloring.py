@@ -32,7 +32,7 @@
 import logging
 import sys
 
-from pydcop.algorithms import maxsum
+from pydcop.algorithms import amaxsum
 from pydcop.dcop import relations
 from pydcop.dcop.objects import Variable
 from pydcop.infrastructure.agents import Agent
@@ -83,10 +83,10 @@ def distribute_agents(var_facts):
         # build the list of factors that depend on this variable
         f_for_variable = [f.name for f in factors if v.name in
                           [i.name for i in f.dimensions]]
-        v_a = maxsum.VariableAlgo(v, f_for_variable)
+        v_a = amaxsum.VariableAlgo(v, f_for_variable)
 
         # Algorithm for the factor
-        f_a = maxsum.FactorAlgo(f)
+        f_a = amaxsum.FactorAlgo(f)
 
         # Agent hosting the factor and variable
         a = Agent('a_'+str(i), comm)

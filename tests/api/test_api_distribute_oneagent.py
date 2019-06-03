@@ -38,7 +38,7 @@ from tests.api.instances_and_utils import dcop_graphcoloring_3
 def test_api_distribute_maxsum_oneagent():
     from pydcop.computations_graph import factor_graph
     from pydcop.distribution import oneagent
-    from pydcop.algorithms import maxsum
+    from pydcop.algorithms import amaxsum
 
     dcop = dcop_graphcoloring_3()
     # 5 constraints and 3 variables : we need 8 agents
@@ -47,8 +47,8 @@ def test_api_distribute_maxsum_oneagent():
 
     cg = factor_graph.build_computation_graph(dcop)
     dist = oneagent.distribute(cg, dcop.agents.values(),
-                               computation_memory=maxsum.computation_memory,
-                               communication_load=maxsum.communication_load)
+                               computation_memory=amaxsum.computation_memory,
+                               communication_load=amaxsum.communication_load)
 
     assert dist.is_hosted(['v1', 'v2', 'v3',
                            'cost_1', 'cost_2', 'cost_3',

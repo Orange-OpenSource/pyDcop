@@ -33,7 +33,7 @@ import logging
 
 import pydcop.infrastructure.communication
 from pydcop import infrastructure
-from pydcop.algorithms import maxsum
+from pydcop.algorithms import amaxsum
 from pydcop.dcop import relations
 from pydcop.dcop.objects import Variable
 
@@ -87,12 +87,12 @@ def distribue_agent_for_all(variables, factors):
                           [i.name for i in f.dimensions]]
 
         a = infrastructure.Agent('Var_' + v.name, comm)
-        a.add_computation(maxsum.VariableAlgo(v, f_for_variable))
+        a.add_computation(amaxsum.VariableAlgo(v, f_for_variable))
         node_agents.append(a)
 
     for f in factors:
         a = infrastructure.Agent('Fact_' + f.name, comm)
-        a.add_computation(maxsum.FactorAlgo(f))
+        a.add_computation(amaxsum.FactorAlgo(f))
         node_agents.append(a)
 
     return node_agents

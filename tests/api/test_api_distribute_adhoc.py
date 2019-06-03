@@ -38,7 +38,7 @@ from tests.api.instances_and_utils import dcop_graphcoloring_3
 def test_api_distribute_maxsum_adhoc():
     from pydcop.computations_graph import factor_graph
     from pydcop.distribution import adhoc
-    from pydcop.algorithms import maxsum
+    from pydcop.algorithms import amaxsum
 
     dcop = dcop_graphcoloring_3()
     agents = create_agents('a', [1, 2, 3], capacity=100)
@@ -46,8 +46,8 @@ def test_api_distribute_maxsum_adhoc():
 
     cg = factor_graph.build_computation_graph(dcop)
     dist = adhoc.distribute(cg, dcop.agents.values(),
-                            computation_memory=maxsum.computation_memory,
-                            communication_load=maxsum.communication_load)
+                            computation_memory=amaxsum.computation_memory,
+                            communication_load=amaxsum.communication_load)
 
     assert dist.is_hosted(['v1', 'v2', 'v3'])
 
