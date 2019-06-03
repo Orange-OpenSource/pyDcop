@@ -231,9 +231,11 @@ class MaxSumFactorComputation(SynchronousComputationMixin, DcopComputation):
     def __init__(self, comp_def: ComputationDef):
         assert comp_def.algo.algo == "maxsum"
         super().__init__(comp_def.node.factor.name, comp_def)
+        self.logger.warning(f"Neiborghs {self.neighbors}")
 
         self.mode = comp_def.algo.mode
         self.factor = comp_def.node.factor
+        self.variables = self.factor.dimensions
 
         # costs : messages for our variables, used to store the content of the
         # messages received from our variables.
@@ -276,8 +278,39 @@ class MaxSumFactorComputation(SynchronousComputationMixin, DcopComputation):
         pass
 
     def on_new_cycle(self, messages, cycle_id) -> Optional[List]:
-        pass
 
+        for sender, (message, t) in messages.items():
+            self._costs[sender] = message.costs
+
+        for v in self.variables:
+            costs_v = factor_costs_for_var(self.factor, v, self._costs, self.mode)
+            same, same_count = self._match_previous(v.name, costs_v)
+            if not same or same_count < SAME_COUNT:
+                self.logger.debug(
+                    f"Sending from factor {self.name} -> {v.name} : {costs_v}"
+                )
+                self.post_msg(v.name, MaxSumMessage(costs_v))
+                self._prev_messages[v.name] = costs_v, same_count + 1
+            else:
+                self.logger.debug(
+                    f"Not sending (same) from factor {self.name} -> {v.name} : {costs_v}"
+                )
+
+    def _match_previous(self, v_name, costs):
+        """
+        Check if a cost message for a variable v_name match the previous
+        message sent to that variable.
+
+        :param v_name: variable name
+        :param costs: costs sent to this factor
+        :return:
+        """
+        prev_costs, count = self._prev_messages[v_name]
+        if prev_costs is not None:
+            same = approx_match(costs, prev_costs)
+            return same, count
+        else:
+            return False, 0
 
 def factor_costs_for_var(factor: Constraint, variable: Variable, recv_costs, mode: str):
     """
@@ -365,9 +398,10 @@ class MaxSumVariableComputation(SynchronousComputationMixin, VariableComputation
         super().__init__(comp_def.node.variable, comp_def)
         assert comp_def.algo.algo == "maxsum"
         self.mode = comp_def.algo.mode
+        self.logger.warning(f"Neiborghs {self.neighbors}")
 
         # The list of factors (names) this variables is linked with
-        self.factor_names = [link.factor_node for link in comp_def.node.links]
+        self.factors = [link.factor_node for link in comp_def.node.links]
         # costs : this dict is used to store, for each value of the domain,
         # the associated cost sent by each factor this variable is involved
         # with. { factor : {domain value : cost }}
@@ -400,29 +434,30 @@ class MaxSumVariableComputation(SynchronousComputationMixin, VariableComputation
         if self.variable.initial_value is not None:
             self.value_selection(self.variable.initial_value)
         else:
-            self.value_selection(select_value(self.variable, self.costs, self.mode))
+            self.value_selection(*select_value(self.variable, self.costs, self.mode))
         self.logger.info(f"Initial value selected {self.current_value}")
 
         # Send our costs to the factors we depends on.
-        for f in self._factors:
-            costs_f = costs_for_factor(self.variable, f, self._factors, self._costs)
+        for f in self.factors:
+            costs_f = costs_for_factor(self.variable, f, self.factors, self.costs)
             self.logger.info(
                 f"Sending init msg from variable {self.name} to factor {f} : {costs_f}"
             )
             self.post_msg(f, MaxSumMessage(costs_f))
 
     def on_new_cycle(self, messages, cycle_id) -> Optional[List]:
-        for sender, (message, t) in messages:
-            self._costs[sender] = message.costs
+
+        for sender, (message, t) in messages.items():
+            self.costs[sender] = message.costs
 
         # select our value, based on new costs
-        self.value_selection(*select_value(self.variable, self._costs, self.mode))
+        self.value_selection(*select_value(self.variable, self.costs, self.mode))
 
         # Compute and send our own costs to  factors.
 
-        for f_name in self._factors:
+        for f_name in self.factors:
             costs_f = costs_for_factor(
-                self.variable, f_name, self._factors, self._costs
+                self.variable, f_name, self.factors, self.costs
             )
 
             same, same_count = self._match_previous(f_name, costs_f)
