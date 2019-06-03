@@ -74,3 +74,5 @@ target/
 # Pulp lp and sol files
 *pulp.lp
 *pulp.sol
+/.python-version
+/.vscode/settings.json
