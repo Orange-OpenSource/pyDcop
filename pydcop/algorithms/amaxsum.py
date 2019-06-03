@@ -32,16 +32,39 @@
 MaxSum: Belief-propagation DCOP algorithm
 -----------------------------------------
 
-Implementation of the MaxSum algorithm
+Max-Sum :cite:`farinelli_decentralised_2008` is an incomplete inference-based DCOP
+algorithm.
 
-We try to make as few assumption on the way the algorithm is run,
-and especially on the distribution of variables and factor on agents.
-In particular, we do not force here a factor and a variable to belong to
-the same agent and thus variables and factors are implemented completely
-independently.
-To run the Algorithm, factor and variable must be distributed on agents (
-who will 'run' them).
+This is a **asynchronous implementation** of Max-Sum,
+where factors and variable send messages
+every time they receive a message.
+For an synchronous implementation,
+see. :ref:`Max-Sum<implementation_reference_algorithms_maxsum>`
 
+
+
+
+Algorithm Parameters
+^^^^^^^^^^^^^^^^^^^^
+
+FIXME: damping
+FIXME: stability
+FIXME: infinity
+
+Example
+^^^^^^^
+
+::
+
+    pydcop solve -algo amaxsum  \\
+     -d adhoc graph_coloring_csp.yaml
+
+FIXME: add results
+
+See Also
+^^^^^^^^
+:ref:`Max-Sum<implementation_reference_algorithms_maxsum>`: an synchronous implementation of
+Max-Sum.
 
 
 """

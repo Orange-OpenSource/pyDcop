@@ -32,8 +32,38 @@
 MaxSum: Belief-propagation DCOP algorithm
 -----------------------------------------
 
-Synchronous implementation of the MaxSum algorithm
+Max-Sum :cite:`farinelli_decentralised_2008` is an incomplete inference-based DCOP
+algorithm.
 
+This is a **synchronous implementation** of Max-Sum, where messages are sent and received
+in cycles. For an asynchronous implementation,
+see. :ref:`A-Max-Sum<implementation_reference_algorithms_amaxsum>`
+
+
+Algorithm Parameters
+^^^^^^^^^^^^^^^^^^^^
+
+FIXME: stop_cycle
+FIXME: damping
+FIXME: stability
+FIXME: infinity
+
+
+Example
+^^^^^^^
+
+::
+
+    pydcop solve -algo maxsum  \\
+      --algo_param stop_cycle:30 \\
+     -d adhoc graph_coloring_csp.yaml
+
+FIXME: add results
+
+See Also
+^^^^^^^^
+:ref:`A-Max-Sum<implementation_reference_algorithms_amaxsum>`: an asynchronous implementation of
+Max-Sum.
 
 
 """

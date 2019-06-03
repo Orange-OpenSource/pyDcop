@@ -43,6 +43,7 @@ algorithm supported by pyDCOP.
   algorithms/mgm2
   algorithms/gdba
   algorithms/maxsum
+  algorithms/amaxsum
   algorithms/dpop
   algorithms/syncbb
 
