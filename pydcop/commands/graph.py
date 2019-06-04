@@ -101,7 +101,8 @@ import sys
 import yaml
 
 from pydcop.dcop.yamldcop import load_dcop_from_file
-from pydcop.utils.graphs import as_networkx_graph, display_graph
+from pydcop.utils.graphs import as_networkx_graph, display_graph, \
+    display_bipartite_graph
 
 logger = logging.getLogger("pydcop.cli.graph")
 
@@ -145,7 +146,10 @@ def run_cmd(args):
     dcop = load_dcop_from_file(dcop_yaml_file)
 
     if args.display:
-        display_graph(dcop.variables.values(), dcop.constraints.values())
+        if args.graph == "factor_graph":
+            display_bipartite_graph(dcop.variables.values(), dcop.constraints.values())
+        else:
+            display_graph(dcop.variables.values(), dcop.constraints.values())
 
     try:
         graph_module = import_module("pydcop.computations_graph.{}".format(args.graph))

@@ -129,7 +129,7 @@ def find_furthest_node(root_node, nodes):
 
 def as_networkx_graph(variables, relations):
     """
-    Build a network x graph object from variables and relations.
+    Build a networkx graph object from variables and relations.
 
     :param variables: a list of Variable objets
     :param relations: a list of Relation objects
@@ -145,6 +145,25 @@ def as_networkx_graph(variables, relations):
             graph.add_edge(*p)
     return graph
 
+
+def as_networkx_bipartite_graph(variables, relations):
+    """
+    Build a networkx graph object from variables and relations.
+
+    :param variables: a list of Variable objets
+    :param relations: a list of Relation objects
+    :return: a networkx graph object
+    """
+    graph = nx.Graph()
+
+    # One node for each variables
+    graph.add_nodes_from([v.name for v in variables], bipartite=0)
+    graph.add_nodes_from([r.name for r in relations], bipartite=1)
+
+    for r in relations:
+        for e in r.dimensions:
+            graph.add_edge(r.name, e.name)
+    return graph
 
 def display_graph(variables, relations):
     """
@@ -168,6 +187,33 @@ def display_graph(variables, relations):
     except ImportError:
         print('ERROR: cannot display graph, matplotlib is not installed')
 
+def display_bipartite_graph(variables, relations):
+    """
+    Display the variables and relation as a graph, using networkx and
+    matplotlib.
+
+    :param variables: a list of Variable objets
+    :param relations: a list of Relation objects
+    :return: a networkx graph object
+    """
+    graph = as_networkx_bipartite_graph(variables, relations)
+
+    # Do not crash if matplotlib is not installed
+    try:
+        import matplotlib.pyplot as plt
+        pos = nx.drawing.spring_layout(graph)
+        vars = set(n for n, d in graph.nodes(data=True) if d['bipartite'] == 0)
+        factors = set(graph) - vars
+        nx.draw_networkx_nodes(graph, pos=pos, with_labels=True, nodelist=vars,  node_shape="o", node_color="b", label="variables", alpha=0.5)
+        nx.draw_networkx_nodes(graph, pos=pos, with_labels=True, nodelist=factors,  node_shape="s", node_color="r", label="factors", alpha=0.5)
+        nx.draw_networkx_labels(graph, pos=pos)
+        nx.draw_networkx_edges(graph, pos=pos)
+        # nx.draw_random(graph)
+        # nx.draw_circular(graph)
+        # nx.draw_spectral(graph)
+        plt.show()
+    except ImportError:
+        print('ERROR: cannot display graph, matplotlib is not installed')
 
 def cycles_count(variables, relations):
 
