@@ -38,7 +38,7 @@ class Node(object):
     A generic Node for a bipartite graph
     """
 
-    def __init__(self, content, node_type=None,):
+    def __init__(self, content, node_type=None):
         """
 
         :param node_type: Type of node (for bi partite nodes)
@@ -56,9 +56,10 @@ class Node(object):
 
     def add_neighbors(self, node, directed=False):
         if node.type is not None and self.type == node.type:
-            raise ValueError('In a bipartite graph two nodes with the same '
-                             'type cannot be connected : {} - {}'.
-                             format(node, self))
+            raise ValueError(
+                "In a bipartite graph two nodes with the same "
+                "type cannot be connected : {} - {}".format(node, self)
+            )
         self.neighbors.append(node)
         if not directed:
             node.add_neighbors(self, directed=True)
@@ -68,11 +69,11 @@ def as_bipartite_graph(variables, relations):
     nodes = {}
 
     for v in variables:
-        n = Node(v, 'VARIABLE')
+        n = Node(v, "VARIABLE")
         nodes[v.name] = n
 
     for r in relations:
-        n = Node(r, 'CONSTRAINT')
+        n = Node(r, "CONSTRAINT")
         nodes[r.name] = n
         for v in r.dimensions:
             current_var_neighbors = [n.content for n in nodes[v.name].neighbors]
@@ -117,7 +118,7 @@ def find_furthest_node(root_node, nodes):
         for neighbor in current.neighbors:
             d = distances.get(neighbor.name, -1)
             if d == -1:
-                d = distances[current.name] +1
+                d = distances[current.name] + 1
                 if d > max_distance:
                     max_distance = d
                     furthest_node = neighbor
@@ -131,9 +132,16 @@ def as_networkx_graph(variables, relations):
     """
     Build a networkx graph object from variables and relations.
 
-    :param variables: a list of Variable objets
-    :param relations: a list of Relation objects
-    :return: a networkx graph object
+    Parameters
+    ----------
+    variables: list
+        a list of Variable objets
+    relations: list
+        a list of Relation objects
+
+    Returns
+    -------
+    a networkx graph object
     """
     graph = nx.Graph()
 
@@ -150,9 +158,16 @@ def as_networkx_bipartite_graph(variables, relations):
     """
     Build a networkx graph object from variables and relations.
 
-    :param variables: a list of Variable objets
-    :param relations: a list of Relation objects
-    :return: a networkx graph object
+    Parameters
+    ----------
+    variables: list
+        a list of Variable objets
+    relations: list
+        a list of Relation objects
+
+    Returns
+    -------
+    a networkx graph object
     """
     graph = nx.Graph()
 
@@ -165,47 +180,76 @@ def as_networkx_bipartite_graph(variables, relations):
             graph.add_edge(r.name, e.name)
     return graph
 
+
 def display_graph(variables, relations):
     """
     Display the variables and relation as a graph, using networkx and
     matplotlib.
 
-    :param variables: a list of Variable objets
-    :param relations: a list of Relation objects
-    :return: a networkx graph object
+    Parameters
+    ----------
+
+    variables: list
+        a list of Variable objets
+    relations: list
+        a list of Relation objects
     """
     graph = as_networkx_graph(variables, relations)
 
     # Do not crash if matplotlib is not installed
     try:
         import matplotlib.pyplot as plt
+
         nx.draw_networkx(graph, with_labels=True)
         # nx.draw_random(graph)
         # nx.draw_circular(graph)
         # nx.draw_spectral(graph)
         plt.show()
     except ImportError:
-        print('ERROR: cannot display graph, matplotlib is not installed')
+        print("ERROR: cannot display graph, matplotlib is not installed")
+
 
 def display_bipartite_graph(variables, relations):
     """
     Display the variables and relation as a graph, using networkx and
     matplotlib.
 
-    :param variables: a list of Variable objets
-    :param relations: a list of Relation objects
-    :return: a networkx graph object
+    Parameters
+    ----------
+    variables: list
+        a list of Variable objets
+    relations: list
+        a list of Relation objects
     """
     graph = as_networkx_bipartite_graph(variables, relations)
 
     # Do not crash if matplotlib is not installed
     try:
         import matplotlib.pyplot as plt
+
         pos = nx.drawing.spring_layout(graph)
-        vars = set(n for n, d in graph.nodes(data=True) if d['bipartite'] == 0)
-        factors = set(graph) - vars
-        nx.draw_networkx_nodes(graph, pos=pos, with_labels=True, nodelist=vars,  node_shape="o", node_color="b", label="variables", alpha=0.5)
-        nx.draw_networkx_nodes(graph, pos=pos, with_labels=True, nodelist=factors,  node_shape="s", node_color="r", label="factors", alpha=0.5)
+        variables = set(n for n, d in graph.nodes(data=True) if d["bipartite"] == 0)
+        factors = set(graph) - variables
+        nx.draw_networkx_nodes(
+            graph,
+            pos=pos,
+            with_labels=True,
+            nodelist=variables,
+            node_shape="o",
+            node_color="b",
+            label="variables",
+            alpha=0.5,
+        )
+        nx.draw_networkx_nodes(
+            graph,
+            pos=pos,
+            with_labels=True,
+            nodelist=factors,
+            node_shape="s",
+            node_color="r",
+            label="factors",
+            alpha=0.5,
+        )
         nx.draw_networkx_labels(graph, pos=pos)
         nx.draw_networkx_edges(graph, pos=pos)
         # nx.draw_random(graph)
@@ -213,7 +257,8 @@ def display_bipartite_graph(variables, relations):
         # nx.draw_spectral(graph)
         plt.show()
     except ImportError:
-        print('ERROR: cannot display graph, matplotlib is not installed')
+        print("ERROR: cannot display graph, matplotlib is not installed")
+
 
 def cycles_count(variables, relations):
 
