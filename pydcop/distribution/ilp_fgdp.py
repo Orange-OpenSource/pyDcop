@@ -86,6 +86,51 @@ def distribute(computation_graph: ComputationGraph,
                                  computation_memory, communication_load)
 
 
+def distribution_cost(distribution: Distribution,
+                      computation_graph: ComputationGraph,
+                      agentsdef: Iterable[AgentDef],
+                      computation_memory: Callable[[ComputationNode], float],
+                      communication_load: Callable[[ComputationNode, str],
+                                                   float]) -> float:
+    """
+    Compute the cost for a distribution.
+
+    In this model, the cost only includes the communication costs based on message size.
+
+    Parameters
+    ----------
+    distribution
+    computation_graph
+    agentsdef
+    computation_memory
+    communication_load
+
+    Returns
+    -------
+
+    """
+    # No hosting and route cost here, as this distribution only takes message size
+    # into account:
+    # route = route_fonc(agentsdef)
+    # hosting_cost = hosting_cost_func(agentsdef)
+
+
+    comm = 0
+    agt_names = [a.name for a in agentsdef]
+    for l in computation_graph.links:
+        # As we support hypergraph, we may have more than 2 ends to a link
+        for c1, c2 in combinations(l.nodes, 2):
+            if distribution.agent_for(c1) != distribution.agent_for(c2):
+                edge_cost = communication_load(computation_graph.computation(c1), c2)
+                logger.debug(f"edge cost between {c1} and {c2} :  {edge_cost}")
+                comm += edge_cost
+            else:
+                logger.debug(f"On same agent, no edge cost between {c1} and {c2}")
+
+    # This distribution model only takes communication cost into account.
+    # cost = RATIO_HOST_COMM * comm + (1-RATIO_HOST_COMM) * hosting
+    return comm, comm, 0
+
 def distribute_remove(secp, current_distribution, removed_device):
     # TODO à implémenter !
     # FIXME : only take neighbors agents as variable ?
