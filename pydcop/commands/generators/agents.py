@@ -64,16 +64,16 @@ Options
 ``--mode <generation_mode>``
   Agents generation mode. When 'variables' is used, one agent is generated for each
   variable in the problem and and the '--dcop_files' option is required.
-  When using 'count', the '--count' is required is required
+  When using 'count', the '--count' option is required.
 
 ``--capacity <capacity>``
-  The capacity of agents. All agents will have the same capacity
+  The capacity of agents. All agents will have the same capacity.
 
 ``--count <agents_count>``
   Number of agents to generate. Must be given when using the ``--mode count`` option.
 
 ``--dcop_files <dcop files>``
-  the problem agents are created for. It can be given as one or several files, which
+  The problem agents are created for. It can be given as one or several files, which
   content will be appended before parsing.
 
 ``--agent_prefix <agent_prefix>``
