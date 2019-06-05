@@ -30,10 +30,20 @@
 
 
 """
-Distribution heuristic based on hosting costs and communication cost.
+Distribution heuristic based on hosting costs and communication cost,
+while respecting agents' capacity.
 
 Greedy algorithm:
 We place first the computation with the highest footprint.
+
+When placing a computation we select an agent that has enough capacity left
+to host this computation and has the smallest aggregated hosting and communication cost
+incurred by hosting the computation on that agent, according to the computations that
+have been already distributed.
+
+This means that the first computations (with biggest footprint) are mostly placed based
+on their hosting cost, as most other computations are not distributed yet and we cannot
+evaluate their communication cost.
 
 """
 import logging
@@ -167,6 +177,30 @@ def candidate_hosts(
     communication_load: Callable[[ComputationNode, str], float],
     mapping: Dict[str, str],
 ):
+    """
+    Build a list of candidate agents for a computation.
+
+    The list includes agents that have enough capacity to host this computation
+    and is sorted by cost (cheapest cost) where cost is the aggregated
+    hosting and communication cost incurred by hosting the computation on that agent,
+    according to the computation that have been already distributed.
+    This means that the first computations are mostly placed depending on their
+    hosting cost, as most other computations are not distributed yet and we cannot
+    evaluate their communication cost.
+
+    Parameters
+    ----------
+    computation
+    footprint
+    computations
+    agents
+    communication_load
+    mapping
+
+    Returns
+    -------
+
+    """
     candidates = []
     for agt in agents:
         # Compute remaining capacity for agt, to check if it as enough place
