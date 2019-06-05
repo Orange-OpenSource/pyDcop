@@ -70,7 +70,7 @@ Graph structures:
 Problems:
 
 * Graph coloring, with pseudo-hard constraint where a cost of 10000 is incurred
-  for neighbors sharing the same color and 0 otherwise. These constraint can
+  for neighbors sharing the same color and 0 otherwise. These constraints can
   be expressed intentionally or extensively.
 * Weighted, or soft graph coloring, with soft constraints where the cost of a
   join assignment between two neighbors is a random cost, always expressed
