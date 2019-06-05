@@ -43,7 +43,7 @@ Problem generator for benchmarks.
 
 
 The ``generate`` command is still a work in progress,
-tt currently generate problems for the following types:
+it currently generate problems for the following types:
 
 .. toctree::
    :maxdepth: 1
@@ -51,6 +51,7 @@ tt currently generate problems for the following types:
    generate/graphcoloring
    generate/meetingscheduling
    generate/ising
+   generate/secp
 
 
 Planned

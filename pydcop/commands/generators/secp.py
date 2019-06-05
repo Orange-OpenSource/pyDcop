@@ -1,4 +1,87 @@
+# BSD-3-Clause License
+#
+# Copyright 2018 Orange
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors
+#    may be used to endorse or promote products derived from this software
+#    without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+"""
+.. _pydcop_commands_generate_scep:
 
+
+pydcop generate secp
+====================
+
+Generate a SECP.
+
+Synopsis
+--------
+::
+
+    pydcop generate secp
+                      --lights <lights_counts>
+                      --models <models_counts>
+                      --rules <rules_count>
+                      --capacity <capacity>
+                      [--max_model_size <max_model_size>]
+
+Description
+-----------
+
+Generate a DCOP representing a SECP.
+
+
+Options
+-------
+
+``--lights <lights_counts>``
+  Number of lights in the SECP.
+
+``--models <models_counts>``
+  Number of models in the SECP.
+
+``--rules <rules_counts>``
+  Number of rules in the SECP.
+
+``--capacity <capacity>``
+  capacity of an agent
+
+``--max_model_size <max_model_size>``
+  The maximum number of lights involved in a SECP.
+
+
+
+
+Examples
+========
+
+Generating a DCOP for a SECP with 10 lights, 3 models and 2 rules.::
+
+  pydcop generate secp --lights 10 --models 3 --rules 2
+
+"""
 import logging
 import os
 from random import randint, sample, choice, random
@@ -7,6 +90,7 @@ from pydcop.dcop.dcop import DCOP
 from pydcop.dcop.objects import Domain, Variable, AgentDef
 from pydcop.dcop.relations import constraint_from_str
 from pydcop.dcop.yamldcop import dcop_yaml
+
 
 logger = logging.getLogger("pydcop.generate")
 
@@ -136,6 +220,24 @@ def build_models(light_domain, lights, max_model_size, model_count):
 
 
 def build_rules(rule_count, lights_var, models_var):
+    """
+    Build a set of rules for the given lights and models.
+
+    A rule set a target for some lights and or models.
+
+    Rule depends at random (0.7 probability) from a model and lights
+    or from lights only.
+
+    Parameters
+    ----------
+    rule_count
+    lights_var
+    models_var
+
+    Returns
+    -------
+    A dict containing the rules, indexed by their name.
+    """
     # Rules : one constraint with a target for a model or a light
     # Example:
     #   function: 10 * (abs(mv_livingroom - 5) + abs(mv_kitchen - 4))
