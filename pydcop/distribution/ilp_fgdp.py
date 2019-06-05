@@ -30,7 +30,9 @@
 
 
 import logging
-from typing import List, Iterable
+from collections import defaultdict
+from itertools import combinations
+from typing import List, Iterable, Dict, Callable
 
 from pulp import LpMinimize, LpVariable, LpProblem, LpBinary, lpSum, \
     GLPK_CMD, value, LpStatusOptimal
@@ -40,7 +42,7 @@ from pydcop.dcop.objects import AgentDef
 
 logger = logging.getLogger('distribution.ilpfgdp')
 
-from pydcop.computations_graph.objects import ComputationGraph
+from pydcop.computations_graph.objects import ComputationGraph, ComputationNode
 from pydcop.distribution.objects import Distribution, DistributionHints, \
     ImpossibleDistributionException
 
@@ -50,6 +52,11 @@ IL-FGDP distribution
 
 FGDP : Factor Graph distribution problem
 => only work with factor graphs !
+
+
+This distribution model only takes communication cost into account, and only through 
+message size (i.e. there is no specific cost associated with a given route).  
+
 
 Designed for an article for OPTMAS 2017 (best paper) 
 
@@ -80,9 +87,16 @@ def distribute(computation_graph: ComputationGraph,
 
     agents = list(agentsdef)
 
-    hints = DistributionHints() if hints is None else hints
+    # In order to remove (latter on) distribution hints, we interpret
+    # hosting costs of 0 as a "must host" relationship
+    must_host = defaultdict(lambda : [])
+    for agent in agentsdef:
+        for comp in computation_graph.node_names():
+            if agent.hosting_cost(comp) == 0:
+                must_host[agent.name].append(comp)
+    logger.debug(f"Must host: {must_host}")
 
-    return factor_graph_lp_model(computation_graph, agents, hints,
+    return factor_graph_lp_model(computation_graph, agents, must_host,
                                  computation_memory, communication_load)
 
 
@@ -146,7 +160,7 @@ def distribute_add(secp, new_device, current_distribution,
 
 def factor_graph_lp_model(cg: ComputationsFactorGraph,
                           agents: List[AgentDef],
-                          hints: DistributionHints=None,
+                          must_host: Dict[str, List],
                           computation_memory=None,
                           communication_load=None):
     """
@@ -169,8 +183,7 @@ def factor_graph_lp_model(cg: ComputationsFactorGraph,
     agents = list(agents)
     agents_names = [a.name for a in agents]
 
-    fixed_dist = Distribution({a.name: hints.must_host(a.name)
-                               for a in agents})
+    fixed_dist = Distribution(must_host)
 
     # Only keep computations for which we actually need to find an agent.
     vars_to_host = [v.name for v in variables
@@ -203,7 +216,7 @@ def factor_graph_lp_model(cg: ComputationsFactorGraph,
     # Each agent must host at least one computation:
     # We only need this constraints for agents that do not already host a
     # computation:
-    empty_agents = [a for a in agents_names if not hints.must_host(a)]
+    empty_agents = [a for a in agents_names if not must_host[a]]
     for k in empty_agents:
         pb += lpSum([xs[(i, k)] for i in vars_to_host]) + \
               lpSum([fs[(j, k)] for j in facs_to_host]) >= 1, \
@@ -214,7 +227,7 @@ def factor_graph_lp_model(cg: ComputationsFactorGraph,
         # Decrease capacity for already hosted computations
         capacity = a.capacity - \
                    sum([_computation_memory_in_cg(c, cg, computation_memory)
-                        for c in hints.must_host(a.name)])
+                        for c in must_host[a.name]])
 
         pb += lpSum([_computation_memory_in_cg(i, cg, computation_memory) *
                      xs[(i, a.name)] for i in vars_to_host]) \
