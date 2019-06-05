@@ -260,7 +260,7 @@ def run_cmd(args):
         dist = distribution.mapping()
 
         if cost_module:
-            cost, _, _ = cost_module.distribution_cost(
+            cost, comm, hosting = cost_module.distribution_cost(
                 distribution,
                 cg,
                 dcop.agents.values(),
@@ -280,6 +280,8 @@ def run_cmd(args):
             },
             "distribution": dist,
             "cost": cost,
+            "communication_cost": comm,
+            "hosting_cost": hosting,
         }
         if args.output is not None:
             with open(args.output, encoding="utf-8", mode="w") as fo:
