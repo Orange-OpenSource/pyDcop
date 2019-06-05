@@ -26,7 +26,9 @@ def parser_secp(subparser):
     parser.add_argument(
         "-c", "--capacity", type=int, default=None, help="agent's capacity"
     )
-
+    parser.add_argument(
+        "--max_model_size", type=int, default=3, help="maximum number of lights involved in a model"
+    )
 
 def generate_secp(args):
     logger.info("Generate SECP %s", args)
@@ -34,7 +36,7 @@ def generate_secp(args):
     model_count = args.models
     rule_count = args.rules
     capacity = args.capacity
-    max_model_size = 3
+    max_model_size = args.max_model_size
 
     light_domain = Domain("light", "light", range(0, 5))
 
