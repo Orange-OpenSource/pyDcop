@@ -46,13 +46,18 @@ Synopsis
                       --rules <rules_count>
                       --capacity <capacity>
                       [--max_model_size <max_model_size>]
+                      [--max_rule_size <max_rule_size>]
 
 Description
 -----------
 
 Generate a DCOP representing a SECP.
 
-
+* Each light has a random efficiency factor used to generate it's cost function.
+* Each model involves at random from at most `max_model_size` lights.
+* Each rule involves at random for at most `max_rule_size` models and lights and
+  sets a random target value for each of these elements.
+  
 Options
 -------
 
@@ -69,9 +74,10 @@ Options
   capacity of an agent
 
 ``--max_model_size <max_model_size>``
-  The maximum number of lights involved in a SECP.
+  The maximum number of lights involved in a model.
 
-
+``--max_rule_size <max_rule_size>``
+  The maximum number of elements (lights and models) involved in a rule.
 
 
 Examples
@@ -113,6 +119,10 @@ def parser_secp(subparser):
     parser.add_argument(
         "--max_model_size", type=int, default=3, help="maximum number of lights involved in a model"
     )
+    parser.add_argument(
+        "--max_rule_size", type=int, default=4, help="maximum number of elements involved in a rule"
+    )
+
 
 def generate_secp(args):
     logger.info("Generate SECP %s", args)
@@ -121,6 +131,7 @@ def generate_secp(args):
     rule_count = args.rules
     capacity = args.capacity
     max_model_size = args.max_model_size
+    max_rule_size = args.max_rule_size
 
     light_domain = Domain("light", "light", range(0, 5))
 
@@ -130,7 +141,7 @@ def generate_secp(args):
         light_domain, lights_var, max_model_size, model_count
     )
 
-    rules_constraints = build_rules(rule_count, lights_var, models_var)
+    rules_constraints = build_rules(rule_count, lights_var, models_var, max_rule_size)
 
     # Agents : one for each light
     agents = build_agents(lights_var, capacity)
@@ -219,20 +230,24 @@ def build_models(light_domain, lights, max_model_size, model_count):
     return models_var, models
 
 
-def build_rules(rule_count, lights_var, models_var):
+def build_rules(rule_count, lights_var, models_var, max_rule_size):
     """
     Build a set of rules for the given lights and models.
 
     A rule set a target for some lights and or models.
 
-    Rule depends at random (0.7 probability) from a model and lights
-    or from lights only.
+    Rule depends at random for at most `max_rule_size` models and lights.
 
     Parameters
     ----------
-    rule_count
-    lights_var
-    models_var
+    rule_count: int
+        number of rule to generate
+    lights_var: list of string
+        names of light variables
+    models_var: list of string
+        names of model variables
+    max_rule_size: int
+        maximum number of element involved in a rule.
 
     Returns
     -------
@@ -244,36 +259,40 @@ def build_rules(rule_count, lights_var, models_var):
     all_variables = list(lights_var.values()) + list(models_var.values())
     rules_constraints = {}
     for k in range(rule_count):
+        # set rule size
+        max_size = min(max_rule_size, len(models_var) + len(lights_var))
+        rule_size = randint(1, max_size)
 
-        if random() < 0.7:
-            # model based rule
-            max_size = min(4, len(models_var))
-            rule_size = randint(1, max_size)
-            rules_models = sample(list(models_var), rule_size)
-            model_expression_parts = []
-            for model_var in rules_models:
-                target = randint(0, 9)
-                model_expression_part = "abs({} - {} )".format(model_var, target)
-                model_expression_parts.append(model_expression_part)
+        # A rule sets targets for lights and models.
+        # it is represented by a function that returns a distance to these targets.
+        # "10 * (abs(l3 - 4) + abs(m0 - 6 ) + abs(m2 - 4 ) )"
 
-            model_expression = " + ".join(model_expression_parts)
-            rule_expression = "10 * ( {} )".format(model_expression)
-            rule = constraint_from_str(
-                "r_{}".format(k),
-                expression=rule_expression,
-                all_variables=all_variables,
-            )
-        else:
-            # light based rule
+        # Lights in the rule
+        # Example: "abs(l3 - 4)"
+        lights_count = randint(0, rule_size)
+        rules_lights = sample(list(lights_var), lights_count)
+        expression_parts = []
+        for light_var in rules_lights:
             target = randint(0, 9)
-            light = choice(list(lights_var))
-            rule_expression = "10 * abs({} - {})".format(light, target)
-            rule = constraint_from_str(
-                "r_{}".format(k),
-                expression=rule_expression,
-                all_variables=all_variables,
-            )
+            light_expression_part = f"abs({light_var} - {target} )"
+            expression_parts.append(light_expression_part)
 
+        # Models in the rule
+        # Example:  "abs(m0 - 6 ) + abs(m2 - 4 )"
+        models_count = rule_size - lights_count
+        rules_models = sample(list(models_var), models_count)
+        for model_var in rules_models:
+            target = randint(0, 9)
+            model_expression_part = f"abs({model_var} - {target} )"
+            expression_parts.append(model_expression_part)
+
+        expression = " + ".join(expression_parts)
+        rule_expression = f"10 * ({expression})"
+        rule = constraint_from_str(
+            f"r_{k}",
+            expression=rule_expression,
+            all_variables=all_variables,
+        )
         rules_constraints[rule.name] = rule
 
     return rules_constraints
