@@ -145,6 +145,8 @@ Example output::
 import logging
 from importlib import import_module
 import sys
+import time
+
 import yaml
 
 from pydcop.algorithms import list_available_algorithms, load_algorithm_module
@@ -246,6 +248,7 @@ def run_cmd(args):
         communication_load = algo_module.communication_load
 
     try:
+        start_t = time.time()
         distribution = dist_module.distribute(
             cg,
             dcop.agents.values(),
@@ -253,6 +256,7 @@ def run_cmd(args):
             computation_memory=computation_memory,
             communication_load=communication_load,
         )
+        duration = time.time() - start_t
         dist = distribution.mapping()
 
         if cost_module:
@@ -272,6 +276,7 @@ def run_cmd(args):
                 "dcop": args.dcop_files,
                 "graph": graph_type,
                 "algo": args.algo,
+                "duration": duration
             },
             "distribution": dist,
             "cost": cost,
