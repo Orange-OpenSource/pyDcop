@@ -1,11 +1,43 @@
+"""
+File format for `pydcop batch` command
 
+The batch command is used to specify a set of pydcop command
+that will be run.
 
+The two base elements in these files are 'Sets' and 'Batches':
 
+* Sets defines the input files and number of time a command must be run.
+  for example, if a `set` uses `iteration: 5` it will be run 5 times
+  for each of the commands defines by each of the `batch` in the `batches` section.
+
+* Batches defines the command that will be run for each set
+
+Stop at any command error
+  full output un cmd_error.log (in the directory in which the command is run, see current_dir)
+
+TODO: arret et reprise en cours de batch
+  progress file : lists all commands and execution times
+  rename as done_<...> when the full batch as run
+
+TODO: for each element, mandatory or optional
+
+"""
 
 sets:
+  """
+  The element `sets` is simply a list of named 'set' element (i.e. a dictionary).
+  Each element in set must have a unique name ('set1', 'set2' or anything else more meaningful)
+  and is a dictionary that can contain the following keys:
+  * iterations
+  * path
+  * file_re
+  * extras_files
+  """
+
   set1:
     # 'path' can be a directory or a glob expression that will be is used to find the input files
-    # for the command:
+    # for the command.
+
     # You can use '~' in this path, it will be expanded to the user's home directory.
     # see set3 for an example with a directory
     path: /path/set1/*.yaml
@@ -26,7 +58,7 @@ sets:
     # Files in <path> matching this regular expression will e used as input parameters
     # for the batches.
     # The python regular expression syntax is used. You can define match subgroup.
-    # You MUSt use named groups to access them from extras_path entries.
+    # You MUST use named groups to access them from extras_path entries.
     # Named group can also be used in batch definition
     file_re: coloring_random_(?P<num>.+)_dcop.yaml
 
@@ -34,9 +66,15 @@ sets:
     # the commands after a file matched with file_re.
     # It is a list of file names, which may includes match subgroup from the regexp
     # in 'file_re'.
+    # These files must be in the same directory as the file matched by file_re
     extras_files:
       - coloring_random_{num}_dcop_agts.yaml
 
+"""
+When using the  'parallel: <num>', <num> commands will be run in parallel.
+This can make the batch faster overall but may result in individual commands running slower,
+use with caution !
+"""
 parallel: 2
 
 global_options:
