@@ -239,6 +239,9 @@ class ComputationGraph(object):
             links.update(l for l in n.links)
         return links
 
+    def node_names(self):
+        return [n.name for n in self.nodes]
+
     def computation(self, node_name: str)-> ComputationNode:
         """Return a computation node from its name.
 
