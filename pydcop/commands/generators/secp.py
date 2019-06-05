@@ -57,7 +57,7 @@ Generate a DCOP representing a SECP.
 * Each model involves at random from at most `max_model_size` lights.
 * Each rule involves at random for at most `max_rule_size` models and lights and
   sets a random target value for each of these elements.
-  
+
 Options
 -------
 
@@ -75,9 +75,11 @@ Options
 
 ``--max_model_size <max_model_size>``
   The maximum number of lights involved in a model.
+  Defaults to 3.
 
 ``--max_rule_size <max_rule_size>``
   The maximum number of elements (lights and models) involved in a rule.
+  Defaults to 3.
 
 
 Examples
@@ -120,7 +122,7 @@ def parser_secp(subparser):
         "--max_model_size", type=int, default=3, help="maximum number of lights involved in a model"
     )
     parser.add_argument(
-        "--max_rule_size", type=int, default=4, help="maximum number of elements involved in a rule"
+        "--max_rule_size", type=int, default=3, help="maximum number of elements involved in a rule"
     )
 
 
