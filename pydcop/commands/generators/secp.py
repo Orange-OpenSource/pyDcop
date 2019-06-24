@@ -146,7 +146,7 @@ def generate_secp(args):
     rules_constraints = build_rules(rule_count, lights_var, models_var, max_rule_size)
 
     # Agents : one for each light
-    agents = build_agents(lights_var, capacity)
+    agents = build_agents(lights_var, lights_cost, capacity)
 
     # Force
     # * each light variable to be hosted on the corresponding agent
@@ -175,10 +175,11 @@ def generate_secp(args):
         print(dcop_yaml(dcop))
 
 
-def build_agents(lights_var, capacity=None):
+def build_agents(lights_vars, lights_costs, capacity=None):
     agents = {}
-    for light_var in lights_var:
-        hosting_costs = {light_var: 0}
+    for light_var, light_cost in zip(lights_vars, lights_costs):
+        hosting_costs = {light_var: 0, light_cost: 0}
+        logger.debug(f"Creating agent for {light_var} with hosting {hosting_costs}")
         if capacity:
             agt = AgentDef(
                 "a{}".format(light_var),
