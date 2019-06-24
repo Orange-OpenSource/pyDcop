@@ -68,7 +68,7 @@ from pydcop.distribution.objects import Distribution, ImpossibleDistributionExce
 
 logger = logging.getLogger("pydcop.generate")
 
-RATIO_HOST_COMM = 0.5
+RATIO_HOST_COMM = 0.8
 
 
 def generate_iot(args):

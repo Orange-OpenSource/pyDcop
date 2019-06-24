@@ -74,7 +74,7 @@ Options
   The distribution algorithm (``oneagent``, ``adhoc``, ``ilp_fgdp``, etc.,
   see :ref:`concepts_distribution`).
 
-``--cost <distribution_method_for_cost>``
+        ``--cost <distribution_method_for_cost>``
   A distribution method that can be used to evaluate the cost of a
   distribution. If not given, defaults to ``<distribution_method>``. If the
   distribution method does not define cost, a cost None will be returned in
@@ -179,14 +179,26 @@ def set_parser(subparsers):
     parser.add_argument(
         "-d",
         "--distribution",
-        choices=["oneagent", "adhoc", "ilp_fgdp", "ilp_compref", "heur_comhost"],
+        choices=[
+            "oneagent",
+            "adhoc",
+            "ilp_fgdp",
+            "ilp_compref",
+            "heur_comhost",
+            "gh_secp_cgdp",
+            "gh_secp_fgdp",
+            "oilp_secp_fgdp",
+            "oilp_secp_cgdp",
+            "oilp_cgdp",
+            "gh_cgdp",
+        ],
         required=True,
         help="Algorithm for distributing the computation " "graph.",
     )
 
     parser.add_argument(
         "--cost",
-        choices=["ilp_compref"],
+        choices=["ilp_compref", "oilp_secp_fgdp", "oilp_secp_cgdp", "oilp_cgdp"],
         default=None,
         help="algorithm for computing the cost of the " "distribution.",
     )
@@ -268,7 +280,7 @@ def run_cmd(args):
                 communication_load=communication_load,
             )
         else:
-            cost = None
+            cost, comm, hosting = None, None, None
 
         result = {
             "inputs": {
@@ -276,7 +288,7 @@ def run_cmd(args):
                 "dcop": args.dcop_files,
                 "graph": graph_type,
                 "algo": args.algo,
-                "duration": duration
+                "duration": duration,
             },
             "distribution": dist,
             "cost": cost,

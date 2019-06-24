@@ -73,7 +73,7 @@ logger = logging.getLogger('distribution.ilp_compref')
 # Weight factors when aggregating communication costs and hosting costs in the
 # objective function.
 # the global objective is built as Comm_cost * RATIO + Hosting_cost * (1-RATIO)
-RATIO_HOST_COMM = 0.5
+RATIO_HOST_COMM = 0.8
 
 
 def distribute(computation_graph: ComputationGraph,

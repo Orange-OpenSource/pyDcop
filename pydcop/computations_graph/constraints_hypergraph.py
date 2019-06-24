@@ -31,8 +31,7 @@
 
 from typing import Iterable
 
-from pydcop.computations_graph.objects import ComputationNode, \
-    ComputationGraph, Link
+from pydcop.computations_graph.objects import ComputationNode, ComputationGraph, Link
 from pydcop.dcop.dcop import DCOP, Variable
 from pydcop.dcop.relations import find_dependent_relations, Constraint
 
@@ -68,15 +67,17 @@ class VariableComputationNode(ComputationNode):
 
     """
 
-    def __init__(self, variable: Variable, constraints: Iterable[Constraint],
-                 name: str =None)-> None:
+    def __init__(
+        self, variable: Variable, constraints: Iterable[Constraint], name: str = None
+    ) -> None:
         if name is None:
             name = variable.name
         links = []
         for c in constraints:
-            links.append(ConstraintLink(name=c.name,
-                                        nodes=[v.name for v in c.dimensions]))
-        super().__init__(name, 'VariableComputationNode', links=links)
+            links.append(
+                ConstraintLink(name=c.name, nodes=[v.name for v in c.dimensions])
+            )
+        super().__init__(name, "VariableComputationNode", links=links)
         self._variable = variable
         self._constraints = constraints
 
@@ -91,25 +92,26 @@ class VariableComputationNode(ComputationNode):
     def __eq__(self, other):
         if type(other) != VariableComputationNode:
             return False
-        if self.variable == other.variable \
-           and self.constraints == other.constraints:
+        if self.variable == other.variable and self.constraints == other.constraints:
             return True
         return False
 
     def __str__(self):
-        return 'VariableComputationNode({})'.format(self._variable.name)
+        return "VariableComputationNode({})".format(self._variable.name)
 
     def __repr__(self):
-        return 'VariableComputationNode({}, {})'.format(self._variable,
-                                                        self.constraints)
+        return "VariableComputationNode({}, {})".format(
+            self._variable, self.constraints
+        )
 
     def __hash__(self):
-        return hash((self._name, self._node_type, self.variable,
-                     tuple(self.constraints)))
+        return hash(
+            (self._name, self._node_type, self.variable, tuple(self.constraints))
+        )
 
 
 class ConstraintLink(Link):
-    """Link between two nodes in a constraint hyper-graph
+    """Link between nodes in a constraint hyper-graph
 
     Parameters
     ----------
@@ -121,19 +123,19 @@ class ConstraintLink(Link):
 
     """
 
-    def __init__(self, name: str, nodes: Iterable[str])-> None:
-        super().__init__(nodes, link_type='constraint_link')
+    def __init__(self, name: str, nodes: Iterable[str]) -> None:
+        super().__init__(nodes, link_type="constraint_link")
         self._name = name
 
     @property
-    def name(self)-> str:
+    def name(self) -> str:
         return self._name
 
     def __str__(self):
-        return 'ConstraintLink({})'.format(self._name)
+        return "ConstraintGraphLink({})".format(self._name)
 
     def __repr__(self):
-        return 'ConstraintLink({}, {})'.format(self._name, self.nodes)
+        return "ConstraintGraphLink({}, {})".format(self._name, self.nodes)
 
     def __eq__(self, other):
         if super().__eq__(other) and self.name == other.name:
@@ -158,9 +160,8 @@ class ComputationConstraintsHyperGraph(ComputationGraph):
 
     """
 
-    def __init__(self, nodes: Iterable[VariableComputationNode])-> None:
-        super().__init__(nodes=nodes,
-                         graph_type='ConstraintHyperGraph')
+    def __init__(self, nodes: Iterable[VariableComputationNode]) -> None:
+        super().__init__(nodes=nodes, graph_type="ConstraintHyperGraph")
 
     def density(self) -> float:
         # Whats the correct definition of density for hypergraphs ?
@@ -172,10 +173,11 @@ class ComputationConstraintsHyperGraph(ComputationGraph):
         return 2 * e / (v * (v - 1))
 
 
-def build_computation_graph(dcop: DCOP=None,
-                            variables: Iterable[Variable]=None,
-                            constraints: Iterable[Constraint]=None,
-                            )-> ComputationConstraintsHyperGraph:
+def build_computation_graph(
+    dcop: DCOP = None,
+    variables: Iterable[Variable] = None,
+    constraints: Iterable[Constraint] = None,
+) -> ComputationConstraintsHyperGraph:
     """
     Build a computation hyper graph for the DCOP.
 
@@ -211,16 +213,18 @@ def build_computation_graph(dcop: DCOP=None,
     computations = []
     if dcop is not None:
         if constraints or variables is not None:
-            raise ValueError('Cannot use both dcop and constraints / '
-                             'variables parameters')
+            raise ValueError(
+                "Cannot use both dcop and constraints / " "variables parameters"
+            )
         for v in dcop.variables.values():
-            var_constraints = find_dependent_relations(
-                v, dcop.constraints.values())
+            var_constraints = find_dependent_relations(v, dcop.constraints.values())
             computations.append(VariableComputationNode(v, var_constraints))
     else:
         if constraints is None or variables is None:
-            raise ValueError('Constraints AND variables parameters must be '
-                             'provided wgen not building the graph from a dcop')
+            raise ValueError(
+                "Constraints AND variables parameters must be "
+                "provided when not building the graph from a dcop"
+            )
         for v in variables:
             var_constraints = find_dependent_relations(v, constraints)
             computations.append(VariableComputationNode(v, var_constraints))
