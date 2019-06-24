@@ -106,7 +106,7 @@ def distribute(
                 )
                 # search for the cost factor, if any, and host it on the same agent.
                 for factor in factor_computations[:]:
-                    if variable in factor:
+                    if f"c_{variable}" == factor:
                         mapping[agent.name].append(factor)
                         factor_computations.remove(factor)
                     agents_capa[agent.name] -= computation_memory(
@@ -199,7 +199,6 @@ def fg_secp_ilp(
     # alpha_ijk : binary variable indicating if  x_i and f_j are both on a_k.
     alphas = _build_alphaijk_binvars(cg, agents_names)
     logger.debug(f"alpha_ijk {alphas}")
-
 
     # LP problem with objective function (total communication cost).
     pb = LpProblem("distribution", LpMinimize)

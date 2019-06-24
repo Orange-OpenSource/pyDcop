@@ -129,7 +129,7 @@ def distribute(
                 )
                 # search for the cost factor, if any, and host it on the same agent.
                 for factor in factor_computations[:]:
-                    if variable in factor:
+                    if f"c_{variable}" == factor:
                         mapping[agent.name].append(factor)
                         factor_computations.remove(factor)
                     agents_capa[agent.name] -= computation_memory(
@@ -140,7 +140,7 @@ def distribute(
                         f"Not enough capacity on {agent} to hosts actuator {variable}: {agents_capa[agent.name]}"
                     )
                 break
-    logger.info(f"Actuator variables - agents: {dict(mapping)}")
+    logger.info(f"Actuator computations - agents: {dict(mapping)}")
     logger.info(f"Remaining capacity: {dict(agents_capa)}")
 
     # now find computations for physical models and variables variables.
@@ -150,7 +150,7 @@ def distribute(
     models = []
     for model_var in model_variables:
         for fact in factor_computations:
-            if model_var in fact:
+            if f"c_{model_var}" == fact:
                 models.append((model_var, fact))
                 factor_computations.remove(fact)
 
@@ -176,7 +176,7 @@ def distribute(
         mapping[selected].append(model_var)
         mapping[selected].append(model_fac)
         agents_capa[selected] -= footprint
-    logger.debug(f"All models hosted: {mapping}")
+    logger.debug(f"All models hosted: {dict(mapping)}")
     logger.debug(f"Remaining capacity: {agents_capa}")
 
     # And rules at last:
