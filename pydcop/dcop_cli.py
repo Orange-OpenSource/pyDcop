@@ -73,6 +73,11 @@ def main():
                         help='timeout for running the command , '
                              'if not specified run until finished or stop '
                              'with ctrl-c.')
+    parser.add_argument('--strict_timeout', default=0, type=int,
+                        help='timeout for running the command , '
+                             'if not specified run until finished or stop '
+                             'with ctrl-c.')
+
     parser.add_argument('--output', type=str,
                         help='output file')
     parser.add_argument('--log', type=str,
@@ -108,11 +113,20 @@ def main():
                       functools.partial(_on_force_exit, args.on_force_exit))
 
     if hasattr(args, 'func'):
-        if args.timeout:
+        if args.timeout or args.strict_timeout:
             if hasattr(args, 'on_timeout'):
                 global cli_timer
-                cli_timer = Timer(args.timeout+TIMEOUT_SLACK, _on_timeout,
-                                  [args.on_timeout])
+
+                if args.strict_timeout:
+                    # print(f"Starting strict timeout timer {args.strict_timeout}")
+                    cli_timer = Timer(args.strict_timeout, _on_timeout,
+                                      [args.on_timeout])
+                elif args.timeout:
+                    # the timeout slack is used to properly shutdown running threads
+                    # print(f"Starting timeout timer {args.timeout}")
+                    cli_timer = Timer(args.timeout + TIMEOUT_SLACK, _on_timeout,
+                                      [args.on_timeout])
+
                 cli_timer.daemon = True
                 cli_timer.start()
                 args.func(args, cli_timer, args.timeout)
