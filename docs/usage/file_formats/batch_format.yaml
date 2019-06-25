@@ -44,6 +44,13 @@ sets:
     # 'iterations' (optional) defines the number of time the command will be executed for each file
     # that match the path glob expression or regexp
     iterations: 3
+
+    # If a set contains an entry "env" (which must be a dictionnary), the content of
+    # this dictionnary will be added to the set of key that can be used for expansion
+    # in batches definitions.
+    env:
+      key: value
+
   set2:
     # For command that do not have an input file, like for example generate, you
     # can simply give a number if iteration, with no path:
