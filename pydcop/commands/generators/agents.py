@@ -138,7 +138,7 @@ def init_cli_parser(parent_parser):
         "When using 'count', '--count' is required",
     )
 
-    parser.add_argument("--dcop_files", type=str, nargs="+", help="dcop file(s)")
+    parser.add_argument("--dcop_files", type=str, nargs="+", default=None, help="dcop file(s)")
 
     parser.add_argument("--count", type=int, help="Number of agents")
 
@@ -178,8 +178,14 @@ def init_cli_parser(parent_parser):
         help="Default routes cost, mandatory when using --routes",
     )
 
+    parser.add_argument(
+        "dcop_files_end", type=str, nargs="+", metavar="FILE", help="dcop file(s)", default=None
+    )
 
 def generate(args):
+    if not args.dcop_files and args.dcop_files_end:
+        args.dcop_files = args.dcop_files_end
+
     check_args(args)
 
     variables = []
