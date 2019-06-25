@@ -87,6 +87,7 @@ Passing the computation distribution::
 import logging
 import sys
 import multiprocessing
+import time
 import threading
 import traceback
 from importlib import import_module
@@ -156,7 +157,7 @@ def set_parser(subparsers):
 orchestrator = None
 
 
-def run_cmd(args, timer: Timer, timeout):
+def run_cmd(args, timer: Timer = None, timeout= None):
     logger.debug("Distribution replicas : %s", args)
     global orchestrator
 
@@ -208,20 +209,35 @@ def run_cmd(args, timer: Timer, timeout):
 
     try:
         orchestrator.deploy_computations()
+        start_t = time.time()
         orchestrator.start_replication(args.ktarget)
         orchestrator.wait_ready()
-        orchestrator.stop_agents(5)
-        orchestrator.stop()
-        timer.cancel()
+        # print(f" Replication Metrics {orchestrator.replication_metrics()}")
+        metrics = orchestrator.replication_metrics()
+        msg_count, msg_size = 0,0
+        for a in metrics:
+            msg_count +=  metrics[a]["count_ext_msg"]
+            msg_size +=  metrics[a]["size_ext_msg"]
+        # print(f" Count: {msg_count} - Size {msg_size}")
+        duration = time.time() - start_t
+        if timer:
+            timer.cancel()
         rep_dist = {
             c: list(hosts) for c, hosts in orchestrator.mgt.replica_hosts.items()
         }
+        orchestrator.stop_agents(5)
+        orchestrator.stop()
         result = {
             "inputs": {
                 "dcop": args.dcop_files,
                 "algo": args.algo,
                 "replication": args.replication,
                 "k": args.ktarget,
+            },
+            "metrics": {
+                "duration": duration,
+                "msg_size": msg_size,
+                "msg_count": msg_count,
             },
             "replica_dist": rep_dist,
         }

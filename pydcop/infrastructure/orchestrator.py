@@ -311,6 +311,9 @@ class Orchestrator(object):
     def end_metrics(self):
         return self.mgt.global_metrics('END', self.mgt.last_agt_stop_time)
 
+    def replication_metrics(self):
+        return self.mgt._replication_metrics
+
     def wait_ready(self):
         """Blocks until the Orchestrator is ready to perform another action.
 
@@ -387,7 +390,7 @@ RunAgentMessage = message_type('run_computations', ['computations'])
 ReplicateComputationsMessage = message_type('replication', ['k'])
 
 ComputationReplicatedMessage = message_type('replicated',
-                                            ['agent', 'replica_hosts'])
+                                            ['agent', 'replica_hosts', 'metrics'])
 
 PauseMessage = message_type('pause_computations', ['computations'])
 
@@ -626,6 +629,7 @@ class AgentsMgt(MessagePassingComputation):
         self._current_cycle = 0
         self._agt_cycle_metrics = defaultdict(lambda: {})
         self._agent_cycle_values = defaultdict(lambda: {})
+        self._replication_metrics = {}
         # used to detect the end of a cycle
         self._computation_cycle = defaultdict(lambda: set())
 
@@ -779,6 +783,8 @@ class AgentsMgt(MessagePassingComputation):
             self.logger.info('Agent %s(%s) has finished replicating its '
                              'computations : %s - waiting for %s',
                              msg.agent, sender, msg, waited)
+            # self._agent_cycle_values[self._current_cycle]
+            self._replication_metrics[msg.agent] = msg.metrics
             if not waited:
                 self.logger.info('All computations have been replicated')
                 self.ready_to_run.set()
