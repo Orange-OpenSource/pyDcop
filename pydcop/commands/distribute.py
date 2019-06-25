@@ -143,6 +143,9 @@ Example output::
 """
 
 import logging
+import os
+import threading
+import traceback
 from importlib import import_module
 import sys
 import time
@@ -163,6 +166,7 @@ def set_parser(subparsers):
 
     parser = subparsers.add_parser("distribute", help="distribute a static dcop")
     parser.set_defaults(func=run_cmd)
+    parser.set_defaults(on_timeout=on_timeout)
 
     parser.add_argument(
         "dcop_files", type=str, nargs="+", metavar="FILE", help="dcop file(s)"
@@ -215,7 +219,7 @@ def set_parser(subparsers):
     )
 
 
-def run_cmd(args):
+def run_cmd(args, timer=None, timeout=None):
     logger.debug('dcop command "distribute" with arguments {} '.format(args))
 
     dcop_yaml_files = args.dcop_files
@@ -271,6 +275,9 @@ def run_cmd(args):
         duration = time.time() - start_t
         dist = distribution.mapping()
 
+        if timer:
+            timer.cancel()
+
         if cost_module:
             cost, comm, hosting = cost_module.distribution_cost(
                 distribution,
@@ -302,10 +309,21 @@ def run_cmd(args):
         sys.exit(0)
 
     except ImpossibleDistributionException as e:
+        if timer:
+            timer.cancel()
         result = {"status": "FAIL", "error": str(e)}
         print(yaml.dump(result))
         sys.exit(2)
 
+
+def on_timeout():
+    print("TIMEOUT when distributing")
+    logger.info("cli timeout when distributing")
+    for th in threading.enumerate():
+        print(th)
+        traceback.print_stack(sys._current_frames()[th.ident])
+    os._exit(2)
+    # sys.exit(2)
 
 def load_distribution_module(dist):
     dist_module = None
