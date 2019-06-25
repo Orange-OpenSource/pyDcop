@@ -186,6 +186,11 @@ class UCSReplicateMessage(Message):
     def hosts(self) -> List[AgentName]:
         return self._hosts
 
+    @property
+    def size(self):
+        table_size = sum(len(p) for _, p in self._paths)
+        return len(self.hosts) + len(self._visited) + len(self._rq_path)
+
     def __str__(self):
         return "UCSReplicateMessage({}, {}, {}, {}, {})".format(
             self.computation_def.name,
