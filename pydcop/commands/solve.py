@@ -579,7 +579,8 @@ def on_timeout():
     logger.debug("stop orchestrator on cli timeout ")
     orchestrator.stop()
     _results("TIMEOUT")
-    sys.exit(0)
+    # sys.exit(0)
+    os._exit(2)
 
 
 def on_force_exit(sig, frame):
@@ -589,6 +590,7 @@ def on_force_exit(sig, frame):
     orchestrator.stop_agents(5)
     orchestrator.stop()
     _results("STOPPED")
+    os._exit(2)
 
 
 import numpy as np
