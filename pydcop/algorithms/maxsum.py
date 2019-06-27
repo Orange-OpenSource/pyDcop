@@ -43,10 +43,23 @@ see. :ref:`A-Max-Sum<implementation_reference_algorithms_amaxsum>`
 Algorithm Parameters
 ^^^^^^^^^^^^^^^^^^^^
 
-FIXME: stop_cycle
-FIXME: damping
-FIXME: stability
-FIXME: infinity
+**damping**
+  amount of dumping [0-1]
+
+**damping_nodes**
+  nodes that apply damping to messages: "vars", "factors", "both" or "none"
+
+**stability**
+  stability detection coefficient
+
+**noise**
+  noise level for variable
+
+**start_messages**
+  nodes that initiate messages : "leafs", "leafs_vars", "all"
+
+
+FIXME: add support for stop_cycle
 
 
 Example
@@ -89,11 +102,6 @@ from pydcop.infrastructure.computations import (
 
 GRAPH_TYPE = "factor_graph"
 logger = logging.getLogger("pydcop.maxsum")
-
-# Avoid using symbolic infinity as it is currently not correctly
-# (de)serialized
-# INFINITY = float('inf')
-INFINITY = 100000
 
 SAME_COUNT = 4
 
@@ -201,6 +209,17 @@ def communication_load(
     )
 
 
+algo_params = [
+    AlgoParameterDef("damping", "float", None, 0.5),
+    AlgoParameterDef(
+        "damping_nodes", "str", ["vars", "factors", "both", "none"], "both"
+    ),
+    AlgoParameterDef("stability", "float", None, STABILITY_COEFF),
+    AlgoParameterDef("noise", "float", None, 0.01),
+    AlgoParameterDef("start_messages", "str", ["leafs", "leafs_vars", "all"], "leafs"),
+]
+
+
 class MaxSumMessage(Message):
     def __init__(self, costs: Dict):
         super().__init__("max_sum", None)
@@ -274,6 +293,12 @@ class MaxSumFactorComputation(SynchronousComputationMixin, DcopComputation):
         # variable to an associated cost.
         self._costs: Dict[VarName, Dict[VarVal:Cost]] = {}
 
+        self.damping = comp_def.algo.params["damping"]
+        self.damping_nodes = comp_def.algo.params["damping_nodes"]
+        self.stability_coef = comp_def.algo.params["stability"]
+        self.start_messages = comp_def.algo.params["start_messages"]
+        self.logger.info(f"Running maxsum with params: {comp_def.algo.params}")
+
         # A dict var_name -> (message, count)
         self._prev_messages = defaultdict(lambda: (None, 0))
 
@@ -283,22 +308,23 @@ class MaxSumFactorComputation(SynchronousComputationMixin, DcopComputation):
         # init.Each leaf factor sends his costs to its only variable.
         # When possible it is better to use a variable with integrated costs
         # instead of a variable with an unary relation representing costs.
-        if len(self.variables) == 1:
-            self.logger.info(f"Sending init costs of unary factor {self.name}")
-            msg_debug = []
+        if len(self.variables) == 1 and self.start_messages in ["leafs", "leafs_vars"]:
             for v in self.variables:
-                costs_v = self._costs_for_var(v)
+                costs_v = factor_costs_for_var(
+                    self.factor, v, self._costs, self.mode
+                )
                 self.post_msg(v.name, MaxSumMessage(costs_v))
-                msg_debug.append((v.name, costs_v))
-
-            if self.logger.isEnabledFor(logging.DEBUG):
-                debug = f"Unary factor : init msg {self.name} \n"
-                for dest, msg in msg_debug:
-                    debug += f"  * {self.name} -> {dest} : {msg}\n"
-                self.logger.debug(debug + "\n")
-            else:
                 self.logger.info(
-                    f"Init messages for {self.name} to {[c for c, _ in msg_debug]}"
+                    f"Sending init messages from factor {self.name} -> {v.name} : {costs_v}"
+                )
+        elif self.start_messages == "all":
+            for v in self.variables:
+                costs_v = factor_costs_for_var(
+                    self.factor, v, self._costs, self.mode
+                )
+                self.post_msg(v.name, MaxSumMessage(costs_v))
+                self.logger.info(
+                    f"Sending init messages from factor {self.name} -> {v.name} : {costs_v}"
                 )
 
     @register("max_sum")
@@ -307,6 +333,9 @@ class MaxSumFactorComputation(SynchronousComputationMixin, DcopComputation):
         # by this computation
         pass
 
+    def footprint(self) -> float:
+        return computation_memory(self.computation_def.node)
+
     def on_new_cycle(self, messages, cycle_id) -> Optional[List]:
 
         for sender, (message, t) in messages.items():
@@ -314,33 +343,40 @@ class MaxSumFactorComputation(SynchronousComputationMixin, DcopComputation):
 
         for v in self.variables:
             costs_v = factor_costs_for_var(self.factor, v, self._costs, self.mode)
-            same, same_count = self._match_previous(v.name, costs_v)
-            if not same or same_count < SAME_COUNT:
+            prev_costs, count = self._prev_messages[v.name]
+
+            # Apply damping to computed costs:
+            if self.damping_nodes in ["factors", "both"]:
+                costs_v = apply_damping(
+                    costs_v, prev_costs, self.damping
+                )
+
+            # Check if there was enough change to send the message
+            if not approx_match(
+                    costs_v, prev_costs, self.stability_coef
+            ):
+                # Not same as previous : send
                 self.logger.debug(
-                    f"Sending from factor {self.name} -> {v.name} : {costs_v}"
+                    f"Sending first time from factor {self.name} -> {v.name} : {costs_v}"
                 )
                 self.post_msg(v.name, MaxSumMessage(costs_v))
-                self._prev_messages[v.name] = costs_v, same_count + 1
-            else:
+                self._prev_messages[v.name] = costs_v, 1
+
+            elif count < SAME_COUNT:
+                # Same as previous, but not yet sent SAME_COUNT times: send
                 self.logger.debug(
-                    f"Not sending (same) from factor {self.name} -> {v.name} : {costs_v}"
+                    f"Sending {count} time from variable {self.name} -> {v.name} : {costs_v}"
+                )
+                self.post_msg(v.name, MaxSumMessage(costs_v))
+                self._prev_messages[v.name] = costs_v, count + 1
+            else:
+                # Same and already sent SAME_COUNT times: no-send
+                self.logger.debug(
+                    f"Not sending (similar) from {self.name} -> {v.name} : {costs_v}"
                 )
 
-    def _match_previous(self, v_name, costs):
-        """
-        Check if a cost message for a variable v_name match the previous
-        message sent to that variable.
+        return None
 
-        :param v_name: variable name
-        :param costs: costs sent to this factor
-        :return:
-        """
-        prev_costs, count = self._prev_messages[v_name]
-        if prev_costs is not None:
-            same = approx_match(costs, prev_costs)
-            return same, count
-        else:
-            return False, 0
 
 def factor_costs_for_var(factor: Constraint, variable: Variable, recv_costs, mode: str):
     """
@@ -351,11 +387,6 @@ def factor_costs_for_var(factor: Constraint, variable: Variable, recv_costs, mod
     * d is a value of the domain of the variable v
     * mincost is the minimum value of f when the variable v take the
       value d
-
-    :param variable: the variable we want to send the costs to
-    :return: a mapping { value => cost}
-    where value is all the values from the domain of 'variable'
-    costs is the cost when 'variable'  == 'value'
 
     Parameters
     ----------
@@ -384,14 +415,11 @@ def factor_costs_for_var(factor: Constraint, variable: Variable, recv_costs, mod
         # cost (a) = f(a) + sum( costvar())
         # where costvar is the cost received from our other variables
 
-        mode_opt = INFINITY if mode == "min" else -INFINITY
-        optimal_value = mode_opt
+        optimal_value = float("inf") if mode == "min" else -float("inf")
 
         for assignment in generate_assignment_as_dict(other_vars):
             assignment[variable.name] = d
             f_val = factor(**assignment)
-            if f_val == INFINITY:
-                continue
 
             sum_cost = 0
             # sum of the costs from all other variables
@@ -400,11 +428,7 @@ def factor_costs_for_var(factor: Constraint, variable: Variable, recv_costs, mod
                     continue
                 if another_var in recv_costs:
                     if var_value not in recv_costs[another_var]:
-                        # If there is no cost for this value, it means it
-                        #  is infinite (as infinite cost are not included
-                        # in messages) and we can stop adding costs.
-                        sum_cost = mode_opt
-                        break
+                        continue
                     sum_cost += recv_costs[another_var][var_value]
                 else:
                     # we have not received yet costs from variable v
@@ -417,21 +441,29 @@ def factor_costs_for_var(factor: Constraint, variable: Variable, recv_costs, mod
 
                 optimal_value = current_val
 
-        if optimal_value != mode_opt:
-            costs[d] = optimal_value
+        costs[d] = optimal_value
 
     return costs
 
 
 class MaxSumVariableComputation(SynchronousComputationMixin, VariableComputation):
+    """
+
+    """
+
     def __init__(self, comp_def: ComputationDef):
         super().__init__(comp_def.node.variable, comp_def)
         assert comp_def.algo.algo == "maxsum"
         self.mode = comp_def.algo.mode
-        self.logger.warning(f"Neiborghs {self.neighbors}")
+        self.damping = comp_def.algo.params["damping"]
+        self.damping_nodes = comp_def.algo.params["damping_nodes"]
+        self.stability_coef = comp_def.algo.params["stability"]
+        self.start_messages = comp_def.algo.params["start_messages"]
+        self.logger.info(f"Running maxsum with params: {comp_def.algo.params}")
 
         # The list of factors (names) this variables is linked with
         self.factors = [link.factor_node for link in comp_def.node.links]
+
         # costs : this dict is used to store, for each value of the domain,
         # the associated cost sent by each factor this variable is involved
         # with. { factor : {domain value : cost }}
@@ -440,18 +472,18 @@ class MaxSumVariableComputation(SynchronousComputationMixin, VariableComputation
         # to store previous messages, necessary to detect convergence
         self._prev_messages = defaultdict(lambda: (None, 0))
 
-        # TODO: restore support for damping
-        # self.damping = comp_def.algo.params["damping"]
-        # self.logger.info("Running maxsum with damping %s", self.damping)
-
         # Add noise to the variable, on top of cost if needed
-        # TODO: make this configurable through parameters
-        self._variable = VariableNoisyCostFunc(
-            self.variable.name,
-            self.variable.domain,
-            cost_func=lambda x: self.variable.cost_for_val(x),
-            initial_value=self.variable.initial_value,
-        )
+        if comp_def.algo.params["noise"] != 0:
+            self.logger.info(
+                f"Adding noise on variable {comp_def.algo.params['noise']}"
+            )
+            self._variable = VariableNoisyCostFunc(
+                self.variable.name,
+                self.variable.domain,
+                cost_func=lambda x: self.variable.cost_for_val(x),
+                initial_value=self.variable.initial_value,
+                noise_level=comp_def.algo.params["noise"],
+            )
 
     @register("max_sum")
     def on_msg(self, variable_name, recv_msg, t):
@@ -467,13 +499,27 @@ class MaxSumVariableComputation(SynchronousComputationMixin, VariableComputation
             self.value_selection(*select_value(self.variable, self.costs, self.mode))
         self.logger.info(f"Initial value selected {self.current_value}")
 
-        # Send our costs to the factors we depends on.
-        for f in self.factors:
-            costs_f = costs_for_factor(self.variable, f, self.factors, self.costs)
-            self.logger.info(
-                f"Sending init msg from variable {self.name} to factor {f} : {costs_f}"
+        if len(self.factors) == 1 and self.start_messages == "leafs":
+            # Only send costs if we are a leaf:
+            single_factor = self.factors[0]
+            costs_f = costs_for_factor(
+                self.variable, single_factor, self.factors, self.costs
             )
-            self.post_msg(f, MaxSumMessage(costs_f))
+            self.logger.info(
+                f"Sending init msg from leaf variable {self.name} to single factor {single_factor} : {costs_f}"
+            )
+            self.post_msg(single_factor, MaxSumMessage(costs_f))
+
+        elif self.start_messages in ["leafs_vars", "all"]:
+            # in "leafs_vars" mode, send our costs to all the factors we depends on.
+            for f in self.factors:
+                costs_f = costs_for_factor(
+                    self.variable, f, self.factors, self.costs
+                )
+                self.logger.info(
+                    f"Sending init msg from variable {self.name} to factor {f} : {costs_f}"
+                )
+                self.post_msg(f, MaxSumMessage(costs_f))
 
     def on_new_cycle(self, messages, cycle_id) -> Optional[List]:
 
@@ -486,22 +532,35 @@ class MaxSumVariableComputation(SynchronousComputationMixin, VariableComputation
         # Compute and send our own costs to  factors.
 
         for f_name in self.factors:
-            costs_f = costs_for_factor(
-                self.variable, f_name, self.factors, self.costs
-            )
+            costs_f = costs_for_factor(self.variable, f_name, self.factors, self.costs)
+            prev_costs, count = self._prev_messages[f_name]
 
-            same, same_count = self._match_previous(f_name, costs_f)
-            if not same or same_count < SAME_COUNT:
+            # Apply damping to computed costs:
+            if self.damping_nodes in ["vars", "both"]:
+                costs_f = apply_damping(costs_f, prev_costs, self.damping)
+
+            # Check if there was enough change to send the message
+            if not approx_match(costs_f, prev_costs, self.stability_coef):
+                # Not same as previous : send
                 self.logger.debug(
-                    f"Sending from variable {self.name} -> {f_name} : {costs_f}"
+                    f"Sending first time from variable {self.name} -> {f_name} : {costs_f}"
                 )
                 self.post_msg(f_name, MaxSumMessage(costs_f))
-                self._prev_messages[f_name] = costs_f, same_count + 1
+                self._prev_messages[f_name] = costs_f, 1
 
+            elif count < SAME_COUNT:
+                # Same as previous, but not yet sent SAME_COUNT times: send
+                self.logger.debug(
+                    f"Sending {count} time from variable {self.name} -> {f_name} : {costs_f}"
+                )
+                self.post_msg(f_name, MaxSumMessage(costs_f))
+                self._prev_messages[f_name] = costs_f, count + 1
             else:
+                # Same and already sent SAME_COUNT times: no-send
                 self.logger.debug(
                     f"Not sending (similar) from {self.name} -> {f_name} : {costs_f}"
                 )
+        return None
 
     def _match_previous(self, f_name, costs):
         """
@@ -514,37 +573,43 @@ class MaxSumVariableComputation(SynchronousComputationMixin, VariableComputation
         """
         prev_costs, count = self._prev_messages[f_name]
         if prev_costs is not None:
-            same = approx_match(costs, prev_costs)
+            same = approx_match(costs, prev_costs, self.stability_coef)
             return same, count
         else:
             return False, 0
 
 
-def select_value(variable: Variable, costs: Dict, mode: str) -> Tuple[Any, float]:
+def select_value(
+    variable: Variable, costs: Dict[str, Dict], mode: str
+) -> Tuple[Any, float]:
     """
-    select the value for `variable` with the best cost / reward (depending on `mode`)
+    Select the value for `variable` with the best cost / reward (depending on `mode`)
 
+    Parameters
+    ----------
+    variable: Variable
+        the variable for which we need to select a value
+    costs: Dict
+        a dict { factorname : { value : costs}} representing the cost messages received from factors
+    mode: str
+        min or max
     Returns
     -------
-    a Tuple containing the selected value and the corresponding cost for
-    this computation.
+    Tuple:
+        a Tuple containing the selected value and the corresponding cost for
+        this computation.
     """
 
-    # If we have received costs from all our factor, we can select a
-    # value from our domain.
+    # Select a value from the domain, based on the variable cost and
+    # the costs received from neighbor factors
     d_costs = {d: variable.cost_for_val(d) for d in variable.domain}
     for d in variable.domain:
         for f_costs in costs.values():
-            if d not in f_costs:
-                # As infinite costs are not included in messages,
-                # if there is not cost for this value it means the costs
-                # is infinite and we can stop adding other costs.
-                d_costs[d] = INFINITY if mode == "min" else -INFINITY
-                break
             d_costs[d] += f_costs[d]
 
     from operator import itemgetter
 
+    # print(f" ### On selecting value for {variable.name} : {d_costs}")
     if mode == "min":
         optimal_d = min(d_costs.items(), key=itemgetter(1))
     else:
@@ -585,39 +650,40 @@ def costs_for_factor(
 
     sum_cost = 0
     for d in variable.domain:
-        for f in [f for f in factors if f != factor and f in costs]:
+        for f in factors:
+            if f == factor or f not in costs:
+                continue
+            # [f for f in factors if f != factor and f in costs]:
             f_costs = costs[f]
             if d not in f_costs:
-                msg_costs[d] = INFINITY
-                break
+                continue
             c = f_costs[d]
             sum_cost += c
             msg_costs[d] += c
 
     # Experimentally, when we do not normalize costs the algorithm takes
     # more cycles to stabilize
-    # return {d: c for d, c in msg_costs.items() if c != INFINITY}
+    # return {d: c for d, c in msg_costs.items() }
 
     # Normalize costs with the average cost, to avoid exploding costs
     avg_cost = sum_cost / len(msg_costs)
     normalized_msg_costs = {
-        d: c - avg_cost for d, c in msg_costs.items() if c != INFINITY
+        d: c - avg_cost for d, c in msg_costs.items()
     }
-    msg_costs = normalized_msg_costs
 
-    # FIXME: restore damping support
-    # prev_costs, count = self._prev_messages[factor]
-    # damped_costs = {}
-    # if prev_costs is not None:
-    #     for d, c in msg_costs.items():
-    #         damped_costs[d] = self.damping * prev_costs[d] + (1 - self.damping) * c
-    #     self.logger.warning("damping : replace %s with %s", msg_costs, damped_costs)
-    #     msg_costs = damped_costs
-
-    return msg_costs
+    return normalized_msg_costs
 
 
-def approx_match(costs, prev_costs):
+def apply_damping(costs_f, prev_costs, damping):
+    damped_costs = {}
+    if prev_costs is not None:
+        for d, c in costs_f.items():
+            damped_costs[d] = damping * prev_costs[d] + (1 - damping) * c
+        return damped_costs
+    return costs_f
+
+
+def approx_match(costs, prev_costs, stability_coef):
     """
     Check if a cost message match the previous message.
 
@@ -627,14 +693,27 @@ def approx_match(costs, prev_costs):
     :param prev_costs: previous costs as a dict val -> cost
     :return: True if the cost match
     """
+    if prev_costs is None:
+        return False
 
     for d, c in costs.items():
         prev_c = prev_costs[d]
         if prev_c != c:
             delta = abs(prev_c - c)
             if prev_c + c != 0:
-                if not ((2 * delta / abs(prev_c + c)) < STABILITY_COEFF):
+                if not ((2 * delta / abs(prev_c + c)) < stability_coef):
                     return False
             else:
                 return False
     return True
+
+
+def _valid_assignments(constraint: Constraint, infinity_value):
+    """
+    Return a list of all valid assignments for the Constraint
+    """
+    valid_assignments = []
+    for assignment in generate_assignment_as_dict(constraint.dimensions[:]):
+        if abs(constraint(**assignment)) != infinity_value:
+            valid_assignments.append(assignment)
+    return valid_assignments
