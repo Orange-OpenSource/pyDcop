@@ -205,6 +205,8 @@ def build_models(light_domain, lights, max_model_size, model_count):
     # Example:
     #   function: 0 if 0.7 * l_d1 + 0.5 * l_d2 + 0.3 * l_lv3 == mv_desk else
     #             1000
+    # function: '0 if 10 * abs(m0 - ( 0.2 * l1 + 0.5 * l2 + 0.8 * l3 )) < 3 else 1000'
+
     models = {}
     models_var = {}
     for j in range(model_count):
@@ -220,7 +222,7 @@ def build_models(light_domain, lights, max_model_size, model_count):
             # model_lights.append((model_light, impact))
             # model_light.
         light_expression = " + ".join(light_expression_parts)
-        model_expression = "0 if {} == {} else 10000 ".format(
+        model_expression = f"0 if 10* abs({model_var.name} - ({light_expression})) < 5 else 10000 ".format(
             light_expression, model_var.name
         )
         model = constraint_from_str(
@@ -276,7 +278,7 @@ def build_rules(rule_count, lights_var, models_var, max_rule_size):
         rules_lights = sample(list(lights_var), lights_count)
         expression_parts = []
         for light_var in rules_lights:
-            target = randint(0, 9)
+            target = randint(0, 4)
             light_expression_part = f"abs({light_var} - {target} )"
             expression_parts.append(light_expression_part)
 
@@ -285,7 +287,7 @@ def build_rules(rule_count, lights_var, models_var, max_rule_size):
         models_count = rule_size - lights_count
         rules_models = sample(list(models_var), models_count)
         for model_var in rules_models:
-            target = randint(0, 9)
+            target = randint(0, 4)
             model_expression_part = f"abs({model_var} - {target} )"
             expression_parts.append(model_expression_part)
 
