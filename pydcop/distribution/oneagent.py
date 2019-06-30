@@ -91,7 +91,8 @@ def distribute(computation_graph: ComputationGraph,
                agentsdef: Iterable[AgentDef],
                hints: DistributionHints=None,
                computation_memory=None,
-               communication_load=None)-> Distribution:
+               communication_load=None,
+               timeout= None)-> Distribution:
     """
     Simplistic distribution method: each computation is hosted on agent 
     agent and each agent host a single computation.

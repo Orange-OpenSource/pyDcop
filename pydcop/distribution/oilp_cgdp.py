@@ -47,6 +47,7 @@ References:
 
 """
 import logging
+import time
 from itertools import combinations
 from typing import Iterable, Callable
 
@@ -60,7 +61,7 @@ from pulp import (
     GLPK_CMD,
     lpSum,
     LpAffineExpression,
-)
+    LpStatusUndefined)
 
 from pydcop.computations_graph.objects import ComputationGraph, ComputationNode, Link
 from pydcop.dcop.objects import AgentDef
@@ -85,6 +86,7 @@ def distribute(
     hints: DistributionHints = None,
     computation_memory=None,
     communication_load=None,
+    timeout=600,  # Max 10 min
 ) -> Distribution:
     """
 
@@ -115,6 +117,7 @@ def distribute(
             route_f,
             msg_load_f,
             hosting_cost_f,
+            timeout=timeout
         )
     )
 
@@ -157,7 +160,10 @@ def ilp_cgdp(
     route: Callable[[str, str], float],
     msg_load: Callable[[str, str], float],
     hosting_cost: Callable[[str, str], float],
+    timeout=600, # Max 10 min
 ):
+    start_t = time.time()
+
     agt_names = [a.name for a in agentsdef]
     pb = LpProblem("oilp_cgdp", LpMinimize)
 
@@ -246,11 +252,17 @@ def ilp_cgdp(
             "Computation {} hosted".format(c),
         )
 
+    # the timeout for the solver must be minored by the time spent to build the pb:
+    remaining_time = round(timeout - (time.time() - start_t)) -2
     # solve using GLPK
-    status = pb.solve(solver=GLPK_CMD(keepFiles=1, msg=False, options=["--pcost"]))
+    status = pb.solve(solver=GLPK_CMD(keepFiles=0, msg=False, options=["--pcost", "--tmlim", str(remaining_time)]))
+
+    if status == LpStatusUndefined:
+        # Generally means we have reach the timeout.
+        raise TimeoutError(f"Could not find solution in {timeout}")
 
     if status != LpStatusOptimal:
-        raise ImpossibleDistributionException("No possible optimal" " distribution ")
+        raise ImpossibleDistributionException(f"No possible optimal distribution {status}")
     logger.debug("GLPK cost : %s", pulp.value(pb.objective))
 
     mapping = {}

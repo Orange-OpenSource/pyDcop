@@ -41,6 +41,7 @@ the DCOP:
 
 """
 import logging
+import time
 from collections import defaultdict
 from itertools import combinations
 from typing import Iterable, List, Dict, Callable
@@ -74,6 +75,7 @@ def distribute(
     hints=None,
     computation_memory: Callable[[ComputationNode], float] = None,
     communication_load: Callable[[ComputationNode, str], float] = None,
+    timeout=600,  # Max 10 min
 ) -> Distribution:
     if computation_memory is None or communication_load is None:
         raise ImpossibleDistributionException(
@@ -176,7 +178,9 @@ def fg_secp_ilp(
     already_assigned: Distribution,
     computation_memory: Callable[[ComputationNode], float],
     communication_load: Callable[[ComputationNode, str], float],
+    timeout=600,  # Max 10 min
 ) -> Distribution:
+    start_t = time.time()
 
     variables = [n for n in cg.nodes if n.type == "VariableComputation"]
     factors = [n for n in cg.nodes if n.type == "FactorComputation"]
@@ -303,12 +307,11 @@ def fg_secp_ilp(
                 else:
                     pb += alphas[((i, j), k)] == 0
 
+    # the timeout for the solver must be minored by the time spent to build the pb:
+    remaining_time = round(timeout - (time.time() - start_t)) - 2
+
     # Now solve our LP
-    # status = pb.solve(GLPK_CMD())
-    # status = pb.solve(GLPK_CMD(mip=1))
-    # status = pb.solve(GLPK_CMD(mip=0, keepFiles=1,
-    #                                options=['--simplex', '--interior']))
-    status = pb.solve(GLPK_CMD(keepFiles=0, msg=False, options=["--pcost"]))
+    status = pb.solve(GLPK_CMD(keepFiles=0, msg=False, options=["--pcost",  "--tmlim", str(remaining_time)]))
 
     if status != LpStatusOptimal:
         raise ImpossibleDistributionException("No possible optimal" " distribution ")
