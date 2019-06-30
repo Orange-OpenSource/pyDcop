@@ -121,15 +121,17 @@ def main():
                     # print(f"Starting strict timeout timer {args.strict_timeout}")
                     cli_timer = Timer(args.strict_timeout, _on_timeout,
                                       [args.on_timeout])
+                    timeout = args.strict_timeout
                 elif args.timeout:
                     # the timeout slack is used to properly shutdown running threads
                     # print(f"Starting timeout timer {args.timeout}")
                     cli_timer = Timer(args.timeout + TIMEOUT_SLACK, _on_timeout,
                                       [args.on_timeout])
+                    timeout = args.timeout
 
                 cli_timer.daemon = True
                 cli_timer.start()
-                args.func(args, cli_timer, args.timeout)
+                args.func(args, cli_timer, timeout)
             else:
                 print('Command {}, does not support the global timeout '
                       'parameter'.format(args))
