@@ -90,7 +90,7 @@ Options
   Default hosting cost, mandatory when using ``--hosting name_mapping``
 
 ``--routes <route_cost_mode>``
-  Mode of generation for route costs, one of ``None``, ``uniform.
+  Mode of generation for route costs, one of ``None``, ``uniform`` or ``graph``.
   When using ``uniform``, all routes have the same cost, given with ``-routes_default``
 
 ``--routes_default <routes_default>``
@@ -102,7 +102,7 @@ Examples
 Simply generate 10 agents with a 100 capacity. Note that we do not pass a DCOP
 file in that case::
 
-  pydcop generate agents --count 10 --capacity 100
+  pydcop generate agents --mode count --count 10 --capacity 100
 
 Generate agents, one for each variable, and hosting costs::
 
@@ -179,7 +179,8 @@ def init_cli_parser(parent_parser):
     )
 
     parser.add_argument(
-        "dcop_files_end", type=str, nargs="+", metavar="FILE", help="dcop file(s)", default=None
+        "dcop_files_end", type=str, nargs="*", metavar="FILE", 
+        help="dcop file(s)", default=None,
     )
 
 def generate(args):
