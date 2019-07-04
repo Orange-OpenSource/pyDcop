@@ -284,6 +284,8 @@ def run_cmd(args, timer=None, timeout=None):
     try:
         global start_t
         start_t = time.time()
+        if not timeout:
+            timeout = 3600
         # Warning: some methods may not honor the timeout parameter
         distribution = dist_module.distribute(
             cg,
