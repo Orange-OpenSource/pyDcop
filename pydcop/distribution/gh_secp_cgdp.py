@@ -62,6 +62,7 @@ from collections import defaultdict
 
 from pydcop.computations_graph.objects import ComputationGraph, ComputationNode
 from pydcop.dcop.objects import AgentDef
+from pydcop.distribution import oilp_secp_fgdp, oilp_secp_cgdp
 from pydcop.distribution.objects import (
     DistributionHints,
     Distribution,
@@ -122,6 +123,21 @@ def distribute(
 
     return Distribution({a: list(mapping[a]) for a in mapping})
 
+
+def distribution_cost(
+    distribution: Distribution,
+    computation_graph: ComputationGraph,
+    agentsdef: Iterable[AgentDef],
+    computation_memory: Callable[[ComputationNode], float],
+    communication_load: Callable[[ComputationNode, str], float],
+) -> float:
+    return oilp_secp_cgdp.distribution_cost(
+        distribution,
+        computation_graph,
+        agentsdef,
+        computation_memory,
+        communication_load,
+    )
 
 def find_candidates(agents_capa: Dict[str,int], comp: str, footprint: float, mapping: Dict, neighbors: Iterable[str]):
     # Candidate : agents with enough capacity, that host at least

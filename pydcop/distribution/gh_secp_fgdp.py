@@ -78,6 +78,7 @@ from pydcop.computations_graph.factor_graph import (
 )
 from pydcop.computations_graph.objects import ComputationGraph, ComputationNode
 from pydcop.dcop.objects import AgentDef
+from pydcop.distribution import oilp_secp_fgdp
 from pydcop.distribution.objects import (
     DistributionHints,
     Distribution,
@@ -195,3 +196,19 @@ def distribute(
         agents_capa[selected] -= footprint
 
     return Distribution({a: list(mapping[a]) for a in mapping})
+
+
+def distribution_cost(
+    distribution: Distribution,
+    computation_graph: ComputationGraph,
+    agentsdef: Iterable[AgentDef],
+    computation_memory: Callable[[ComputationNode], float],
+    communication_load: Callable[[ComputationNode, str], float],
+) -> float:
+    return oilp_secp_fgdp.distribution_cost(
+        distribution,
+        computation_graph,
+        agentsdef,
+        computation_memory,
+        communication_load,
+    )
