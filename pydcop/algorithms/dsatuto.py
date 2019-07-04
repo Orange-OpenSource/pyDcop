@@ -82,6 +82,7 @@ class DsaTutoComputation(SynchronousComputationMixin, VariableComputation):
         super().__init__(computation_definition.node.variable, computation_definition)
 
         assert computation_definition.algo.algo == "dsatuto"
+        self.mode = computation_definition.algo.mode
 
         self.constraints = computation_definition.node.constraints
 
