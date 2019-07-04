@@ -290,7 +290,7 @@ def set_parser(subparsers):
     )
 
 
-DISTRIBUTION_METHODS = (["oneagent", "adhoc", "ilp_fgdp", "heur_comhost"],)
+DISTRIBUTION_METHODS = (["oneagent", "adhoc", "ilp_fgdp", "heur_comhost", "oilp_secp_fgdp", "gh_secp_fgdp", "gh_secp_cgdp", "oilp_cgdp", "gh_cgdp"],)
 
 orchestrator = None
 start_time = 0
@@ -409,7 +409,7 @@ def run_cmd(args, timer=None, timeout=None):
 
     csv_cb = prepare_metrics_files(args.run_metrics, args.end_metrics, collect_on)
 
-    if args.distribution in ["oneagent", "adhoc", "ilp_fgdp", "heur_comhost"]:
+    if args.distribution in DISTRIBUTION_METHODS:
         dist_module, algo_module, graph_module = _load_modules(
             args.distribution, args.algo
         )
