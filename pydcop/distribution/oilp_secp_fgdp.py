@@ -111,9 +111,9 @@ def distribute(
                     if f"c_{variable}" == factor:
                         mapping[agent.name].append(factor)
                         factor_computations.remove(factor)
-                    agents_capa[agent.name] -= computation_memory(
-                        computation_graph.computation(factor)
-                    )
+                        agents_capa[agent.name] -= computation_memory(
+                            computation_graph.computation(factor)
+                        )
                 if agents_capa[agent.name] < 0:
                     raise ImpossibleDistributionException(
                         f"Not enough capacity on {agent} to hosts actuator {variable}: {agents_capa[agent.name]}"
