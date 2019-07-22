@@ -308,6 +308,7 @@ end_metrics = None
 timeout_stopped = False
 output_file = None
 
+DISTRIBUTION_METHODS = ["oneagent", "adhoc", "ilp_fgdp", "heur_comhost", "oilp_secp_fgdp", "gh_secp_fgdp", "gh_secp_cgdp", "oilp_cgdp", "gh_cgdp"]
 
 def run_cmd(args, timer=None, timeout=None):
     logger.debug('dcop command "run" with arguments {}'.format(args))
@@ -332,7 +333,7 @@ def run_cmd(args, timer=None, timeout=None):
     logger.info("loading dcop from {}".format(args.dcop_files))
     dcop = load_dcop_from_file(args.dcop_files)
 
-    if args.distribution in ["oneagent", "adhoc", "ilp_fgdp", "heur_comhost"]:
+    if args.distribution in DISTRIBUTION_METHODS:
         dist_module, algo_module, graph_module = _load_modules(
             args.distribution, args.algo
         )
