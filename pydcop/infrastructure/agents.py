@@ -1322,7 +1322,28 @@ class ResilientAgent(Agent):
             self.logger.info('All repair computations have finished, '
                              'selected computation : %s',
                              selected_computations)
-            self._on_repair_done(selected_computations)
+
+            metrics = self.metrics()
+            print(f" metrics repair {self.name} - {metrics}")
+            repair_metrics = {'count_ext_msg' : {}, 'size_ext_msg': {} , 'cycles' :{}}
+
+            for c in self._repair_computations.values():
+                c_name = c.computation.name
+                if c_name in metrics['count_ext_msg']:
+                    repair_metrics['count_ext_msg'][c_name] = metrics['count_ext_msg'][c_name]
+                else:
+                    repair_metrics['count_ext_msg'][c_name] = 0
+                if c_name in metrics['size_ext_msg']:
+                    repair_metrics['size_ext_msg'][c_name] = metrics['size_ext_msg'][c_name]
+                else:
+                    repair_metrics['size_ext_msg'][c_name] = 0
+                if c_name in metrics['cycles']:
+                    repair_metrics['cycles'][c_name] = metrics['cycles'][c_name]
+                else:
+                    repair_metrics['cycles'][c_name] = 0
+
+            print(f" {self.name} : metrics after repair  {repair_metrics}")
+            self._on_repair_done(selected_computations, repair_metrics)
 
             if selected_computations:
                 self.logger.info('Re-replicate newly activated computations '

@@ -434,7 +434,7 @@ ComputationFinishedMessage = message_type(
 AgentRemovedMessage = message_type('agent_removed', [])
 
 RepairDoneMessage = message_type('repair_done',
-                                 ['agent', 'selected_computations'])
+                                 ['agent', 'selected_computations', 'metrics'])
 
 class RepairRunMessage(Message):
     """
@@ -1067,6 +1067,7 @@ class AgentsMgt(MessagePassingComputation):
                           f'selected {msg.selected_computations}')
         try:
             current_agt_state = self._agts_state[msg.agent]
+            self.repair_metrics[msg.agent] = msg.metrics
         except KeyError:
             self.logger.error('Unexpected repair done message from agent %s '
                               'with no registered state %s : %s',

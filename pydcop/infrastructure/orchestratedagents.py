@@ -170,9 +170,9 @@ class OrchestratedAgent(ResilientAgent):
         # Overwritten from ResilientAgent
         self._mgt_computation.on_replication_done(replica_hosts)
 
-    def _on_repair_done(self, selected_computation: List[str]):
+    def _on_repair_done(self, selected_computation: List[str], metrics):
         # Overwritten from ResilientAgent
-        self._mgt_computation.on_repair_done(selected_computation)
+        self._mgt_computation.on_repair_done(selected_computation, metrics)
 
 
 class OrchestrationComputation(MessagePassingComputation):
@@ -335,9 +335,9 @@ class OrchestrationComputation(MessagePassingComputation):
             ComputationFinishedMessage(self.agent.name, computation)
         )
 
-    def on_repair_done(self, selected_computation: List[str]):
+    def on_repair_done(self, selected_computation: List[str], metrics):
         self.send_to_orchestrator(
-            RepairDoneMessage(self.agent.name, selected_computation)
+            RepairDoneMessage(self.agent.name, selected_computation, metrics)
         )
 
     def on_replication_done(self, replica_hosts: Dict[str, Set[str]]):
