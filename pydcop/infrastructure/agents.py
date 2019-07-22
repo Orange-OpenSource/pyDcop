@@ -719,7 +719,7 @@ class Agent(object):
         else:
             total_t = perf_counter() - self._run_t
             activity_ratio = self.t_active / (total_t)
-        own_computations = { c.name for c in self.computations()}
+        own_computations = { c.name for c in self.computations(include_technical=True)}
         m = {
             'count_ext_msg': {k: v
                               for k, v in self._messaging.count_ext_msg.items()
