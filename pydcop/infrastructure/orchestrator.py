@@ -27,8 +27,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-
 import threading
 from queue import Queue
 from time import perf_counter
@@ -42,10 +40,12 @@ import time
 import yaml
 
 from pydcop.algorithms import AlgorithmDef, ComputationDef
+from pydcop.commands.distribute import load_algo_module
 from pydcop.dcop.relations import filter_assignment_dict
 from pydcop.computations_graph.objects import ComputationGraph
 from pydcop.dcop.dcop import DCOP
 from pydcop.dcop.scenario import Scenario
+from pydcop.distribution import gh_cgdp
 from pydcop.distribution.objects import Distribution
 from pydcop.infrastructure.agents import Agent, AgentException
 from pydcop.infrastructure.communication import CommunicationLayer, MSG_MGT
@@ -581,6 +581,7 @@ class AgentsMgt(MessagePassingComputation):
         self.discovery = self._orchestrator_agent.discovery
 
         self._algo = algo
+        self._algo_module = load_algo_module(algo.algo)
         self.graph = cg
         self._dcop = dcop
         self.infinity = infinity
@@ -637,6 +638,8 @@ class AgentsMgt(MessagePassingComputation):
         self._computation_status = {n.name : '' for n in self.graph.nodes}
 
         self.dist_count = 0
+
+        self.repair_metrics = {}
 
     @property
     def type(self):
@@ -1053,6 +1056,7 @@ class AgentsMgt(MessagePassingComputation):
                     'Agent %s ready for repair with computations %s, '
                     'all agents ready, sending repair_run to %s', msg.agent,
                     msg.computations, ready)
+                self.repair_start = time.perf_counter()
                 for agt in ready:
                     self._send_mgt_msg(agt, RepairRunMessage())
                     self._agts_state[agt] = 'repair_run'
@@ -1084,20 +1088,24 @@ class AgentsMgt(MessagePassingComputation):
                                  msg.agent, waited)
             else:
                 done_time = perf_counter() - self.start_time
-
+                repair_duration = time.perf_counter() - self.repair_start
                 # Restore all repair agents to running state
                 for a in self._agts_state:
                     if self._agts_state[a] == 'repair_done':
                         self._agts_state[a] = "running"
 
-
-                d = time.perf_counter() - self.start_profile
-                # Now that the reparation process is finished, resume,
+                # Now that the reparation process is finished, dump metrics and resume
                 # all computation from the original dcop
-                self.logger.info('Repair done on agent %s, all agents done, '
-                                 'resuming computations',
-                                 msg.agent)
 
+                # Check if all orphaned computations have been re-hosted.
+                lost_orphaned = [c for c, s in self._comps_state.items()
+                                 if s is None]
+                repair_status = "OK"
+                if lost_orphaned:
+                    self.logger.error('Repair process is finished but they '
+                                      'are still some orphaned computations !'
+                                      ' %s', lost_orphaned)
+                    repair_status = "KO"
                 # Dump current distribution
                 dist = {a: self.discovery.agent_computations(a)
                         for a in self.discovery.agents()}
@@ -1105,33 +1113,43 @@ class AgentsMgt(MessagePassingComputation):
                     'inputs': {
                         'dist_algo': 'repair',
                     },
+                    "duration": repair_duration,
                     'distribution': dist,
+                    "metrics": self.repair_metrics,
+                    "status" : repair_status
                 }
+
+                try:
+                    cost, comm, hosting = gh_cgdp.distribution_cost(
+                        Distribution(dist),
+                        self.graph,
+                        self._dcop.agents.values(), #AgentDef s
+                        computation_memory=self._algo_module.computation_memory,
+                        communication_load=self._algo_module.communication_load,
+                    )
+                    result["cost"] = cost
+                    result["communication_cost"] = comm
+                    result["hosting_cost"] = hosting
+                except Exception as e:
+                    self.logger.error("Could not distribute ")
+                    cost, comm, hosting = None, None, None
+                    result["cost"] = None
+                    result["communication_cost"] = None
+                    result["hosting_cost"] = None
+                    result["cost_error"] = str (e)
+
                 f_name = 'evtdist_{}.yaml'.format(self.dist_count)
                 with open(f_name, mode='w', encoding='utf-8') as f:
                     f.write(yaml.dump(result))
+
+               # Resume all computation now that everything is ok
+                self.logger.info('Repair done on agent %s, all agents done, '
+                                 'resuming computations',
+                                 msg.agent)
                 if not self._orchestrator.repair_only:
                     self._request_resume()
                 self.dist_count += 1
-
-                # Check if all orphaned computations have been re-hosted.
-                lost_orphaned = [c for c, s in self._comps_state.items()
-                                 if s is None]
-                if lost_orphaned:
-                    self.logger.error('Repair process is finished but they '
-                                      'are still some orphaned computations !'
-                                      ' %s', lost_orphaned)
-                    # Dump repair time
-                    f_name = 'repair.yaml'
-                    with open(f_name, mode='a', encoding='utf-8') as f:
-                        f.write(f"{self.dist_count}, {self.removal_time}, {done_time}, "
-                                f"{d}, FAILED\n")
-                else:
-                    # Dump repair time
-                    f_name = 'repair.yaml'
-                    with open(f_name, mode='a', encoding='utf-8') as f:
-                        f.write(f"{self.dist_count}, {self.removal_time}, {done_time},"
-                                f"{d}, OK\n")
+                self.repair_metrics.clear()
 
     def _request_pause(self, agents=None):
         if agents is None:
