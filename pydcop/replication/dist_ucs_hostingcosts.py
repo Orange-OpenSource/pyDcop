@@ -41,8 +41,11 @@ from typing import List, Dict, Tuple, Set, Iterable, Union
 
 from pydcop.algorithms import ComputationDef
 from pydcop.infrastructure.agents import Agent
-from pydcop.infrastructure.computations import MessagePassingComputation, Message, \
-    register
+from pydcop.infrastructure.computations import (
+    MessagePassingComputation,
+    Message,
+    register,
+)
 from pydcop.infrastructure.discovery import Discovery, Address
 from pydcop.replication.path_utils import (
     Node,
@@ -289,12 +292,16 @@ class UCSReplication(MessagePassingComputation):
         self.agent = agent
         self.agt_name = agent.name
         self.agent_def = agent.agent_def
-        self.computations = {}  # type: Dict[ComputationName, Tuple[ComputationDef, float]]
+        self.computations = (
+            {}
+        )  # type: Dict[ComputationName, Tuple[ComputationDef, float]]
         self.discovery = discovery
         self.k_target = k_target
 
         # Replicas hosted by this agent (with their footprint):
-        self._hosted_replicas = {}  # type: Dict[ComputationName, Tuple[AgentName, float]]
+        self._hosted_replicas = (
+            {}
+        )  # type: Dict[ComputationName, Tuple[AgentName, float]]
 
         # Computation definitions for the replica hosted by this agent
         self.replicas = {}  # type: Dict[ComputationName, ComputationDef]
@@ -1109,8 +1116,30 @@ class UCSReplication(MessagePassingComputation):
         ]
         for rq in lost_rqs:
             self.logger.warning("Lost request %s : %s", rq, self._pending_requests[rq])
-            # TODO: fake answer for pending request
-            self._pending_requests.pop(rq)
+            rq_agt, rq_comp = rq
+            # send a fake answer for pending request, to avoid blocking replication
+            (
+                budget,
+                spent,
+                rq_path,
+                paths,
+                visited,
+                comp_def,
+                footprint,
+                replica_count,
+                hosts,
+            ) = self._pending_requests[rq]
+            self.on_replicate_answer(
+                budget,
+                spent,
+                rq_path,
+                paths,
+                visited,
+                comp_def,
+                footprint,
+                replica_count,
+                hosts,
+            )
 
         pass
 
