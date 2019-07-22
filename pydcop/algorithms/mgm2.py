@@ -246,7 +246,7 @@ class Mgm2OfferMessage(Message):
 
     @property
     def size(self):
-        return 3 * len(self._offers)
+        return max(1, 3 * len(self._offers))
 
     def _simple_repr(self):
         r = {
