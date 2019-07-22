@@ -61,7 +61,7 @@ from pulp import (
     GLPK_CMD,
     lpSum,
     LpAffineExpression,
-    LpStatusUndefined)
+    LpStatusUndefined, PulpSolverError)
 
 from pydcop.computations_graph.objects import ComputationGraph, ComputationNode, Link
 from pydcop.dcop.objects import AgentDef
@@ -255,8 +255,10 @@ def ilp_cgdp(
     # the timeout for the solver must be minored by the time spent to build the pb:
     remaining_time = round(timeout - (time.time() - start_t)) -2
     # solve using GLPK
-    status = pb.solve(solver=GLPK_CMD(keepFiles=0, msg=False, options=["--pcost", "--tmlim", str(remaining_time)]))
-
+    try:
+        status = pb.solve(solver=GLPK_CMD(keepFiles=0, msg=False, options=["--pcost", "--tmlim", str(remaining_time)]))
+    except PulpSolverError as pse:
+        raise ImpossibleDistributionException(f"Pulp error {pse}", pse)
     if status == LpStatusUndefined:
         # Generally means we have reach the timeout.
         raise TimeoutError(f"Could not find solution in {timeout}")
