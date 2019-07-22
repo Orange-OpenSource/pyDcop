@@ -407,7 +407,7 @@ def run_cmd(args, timer=None, timeout=None):
         orchestrator.deploy_computations()
         orchestrator.start_replication(args.ktarget)
         if orchestrator.wait_ready():
-            orchestrator.run(scenario, timeout=timeout)
+            orchestrator.run(scenario, timeout=timeout, repair_only=True)
             if timer:
                 timer.cancel()
             if not timeout_stopped:
