@@ -159,7 +159,7 @@ class ADsaComputation(VariableComputation):
         if self._tick_handle:
             self.remove_periodic_action(self._tick_handle)
         else:
-            self.logger.error(
+            self.logger.warning(
                 f"Stopping a adsa computation {self.variable} that never really started ! "
                 "no _tick_handle"
             )
