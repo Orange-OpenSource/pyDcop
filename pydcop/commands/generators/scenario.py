@@ -125,13 +125,23 @@ def init_cli_parser(parent_parser):
     )
 
     parser.add_argument(
-        "--dcop_files", type=str, nargs="+", required=True, help="dcop file(s)"
+        "--dcop_files", type=str, nargs="+", required=False,  help="dcop file(s)"
+    )
+    parser.add_argument(
+        "dcop_files_end", type=str, nargs="*", metavar="FILE",
+        help="dcop file(s)", default=None,
     )
 
 
 def generate(args):
     logger.info("loading dcop from {}".format(args.dcop_files))
-    dcop = load_dcop_from_file(args.dcop_files)
+
+    if args.dcop_files:
+        dcop_files = args.dcop_files
+    elif args.dcop_files_end:
+        dcop_files = args.dcop_files_end
+
+    dcop = load_dcop_from_file(dcop_files)
     agents = list(dcop.agents)
 
     scenario = generate_scenario(
