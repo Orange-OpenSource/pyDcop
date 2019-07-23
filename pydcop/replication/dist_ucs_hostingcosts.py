@@ -46,7 +46,7 @@ from pydcop.infrastructure.computations import (
     Message,
     register,
 )
-from pydcop.infrastructure.discovery import Discovery, Address
+from pydcop.infrastructure.discovery import Discovery, Address, UnknownComputation
 from pydcop.replication.path_utils import (
     Node,
     Path,
@@ -1067,7 +1067,8 @@ class UCSReplication(MessagePassingComputation):
     def _replicate_on_agent_lost(self, agent: AgentName):
         """
         Re-launch replication for computation which had a replica hosted on
-        a removed agent
+        a removed agent.
+
         Parameters
         ----------
         agent: AgentName
@@ -1106,7 +1107,13 @@ class UCSReplication(MessagePassingComputation):
                             self._replica_hosts[removed_replica],
                         )
                 else:
-                    self.replicate(missing_replica, removed_replica)
+                    try:
+                        self.replicate(missing_replica, removed_replica)
+                    except UnknownComputation :
+                        # Avoid crashing if the computation is not known at the moment
+                        # This can happen (and is perfectly valid) if we are currently
+                        # repairing this computation.
+                        pass
 
     def _answer_lost_requests(self, agent: AgentName):
         lost_rqs = [
