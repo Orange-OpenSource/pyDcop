@@ -1350,9 +1350,12 @@ class ResilientAgent(Agent):
                                  'on  %s : %s , level %s', self.name,
                                  selected_computations,
                                  self._replication_level)
-                self.replication_comp.replicate(self._replication_level,
-                                                selected_computations)
-
+                try:
+                    self.replication_comp.replicate(self._replication_level,
+                                                    selected_computations)
+                except UnknownComputation:
+                    # avoid crashing if one of the neighbor comp is not repaired yet
+                    pass
                 self.logger.info('Starting newly activated computations on '
                                  '%s : %s ', self.name,
                                  selected_computations)
