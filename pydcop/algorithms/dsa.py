@@ -277,6 +277,8 @@ class DsaComputation(VariableComputation):
 
     @register("dsa_value")
     def _on_value_msg(self, variable_name, recv_msg, t):
+        if not self._running:
+            return 
         if variable_name not in self.current_cycle:
             self.current_cycle[variable_name] = recv_msg.value
             self.logger.debug(
@@ -326,6 +328,7 @@ class DsaComputation(VariableComputation):
             # Check if this was the last cycle
             if self.stop_cycle and self.cycle_count >= self.stop_cycle:
                 self.finished()
+                self.stop()
                 return
 
             self.post_to_all_neighbors(DsaMessage(self.current_value))
