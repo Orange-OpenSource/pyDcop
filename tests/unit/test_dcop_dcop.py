@@ -29,7 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from pydcop.dcop.dcop import DCOP
+from pydcop.dcop.dcop import DCOP, filter_dcop
 from pydcop.dcop.objects import Variable, VariableDomain, AgentDef, \
     create_agents
 from pydcop.dcop.relations import constraint_from_str
@@ -85,3 +85,63 @@ def test_dcop_add_agents_from_dict():
     assert dcop.agent('a1').name == 'a1'
     assert dcop.agent('a2').name == 'a2'
     assert dcop.agent('a3').name == 'a3'
+
+
+def test_filter_dcop():
+    dcop = DCOP()
+
+    d = VariableDomain('test', 'test' , values=range(10))
+
+    v1 = Variable('v1', d)
+    v2 = Variable('v2', d)
+    v3 = Variable('v3', d)
+
+    dcop += 'c1', '0 if v1 != v2 else 1000', [v1, v2]
+    dcop.add_variable(v3)
+    assert dcop.variables == {'v1': v1, 'v2': v2, "v3": v3}
+
+    filtered = filter_dcop(dcop)
+
+    assert filtered.variables == {'v1': v1, 'v2': v2}
+
+def test_filter_dcop_unary_constraint():
+    dcop = DCOP()
+
+    d = VariableDomain('test', 'test' , values=range(10))
+
+    v1 = Variable('v1', d)
+    v2 = Variable('v2', d)
+    v3 = Variable('v3', d)
+
+    dcop += 'c1', '0 if v1 != v2 else 1000', [v1, v2]
+    # unary constraint on V3
+    dcop += 'c2', 'v3 * 0.5', [v3]
+    assert dcop.variables == {'v1': v1, 'v2': v2, "v3": v3}
+
+    filtered = filter_dcop(dcop)
+
+    # v3 is only involved in unary constraints c2 => v3 and c2 should be gone
+    assert filtered.variables == {'v1': v1, 'v2': v2}
+    assert "c2" not in filtered.constraints
+
+def test_filter_dcop_unary_constraint_accepted():
+    dcop = DCOP()
+
+    d = VariableDomain('test', 'test' , values=range(10))
+
+    v1 = Variable('v1', d)
+    v2 = Variable('v2', d)
+    v3 = Variable('v3', d)
+    v4 = Variable('v4', d)
+
+    dcop += 'c1', '0 if v1 != v2 else 1000', [v1, v2]
+    # unary constraint on V3
+    dcop += 'c2', 'v3 * 0.5', [v3]
+    dcop.add_variable(v4)
+
+    filtered = filter_dcop(dcop, accept_unary=False)
+
+    # c2 and v3 must stay here, as we accept unary constraints, but v4 must be gone
+    assert "v3" in filtered.variables
+    assert "c2" in filtered.constraints
+    assert "v4"  not in filtered.variables

@@ -365,3 +365,58 @@ def solution_cost(relations, variables, assignment, infinity):
             else:
                 cost_hard += 1
     return cost_hard, cost_soft
+
+
+def filter_dcop(dcop: DCOP, accept_unary=False):
+    """
+    Filters out variables that are not involved in any constraint.
+
+    Returns a new dcop.
+
+    Parameters
+    ----------
+    dcop: DCOP
+        a dcop
+    accept_unary: boolean
+        if True, keeps variables only involved in binary constraints
+
+    Returns
+    -------
+    DCOP:
+        a dcop that only contains variables involved in at least one
+        constraints (non unary, depending on mode)
+    """
+    variables_alone = set(dcop.variables)
+
+    # find variables that are not involved in any constraint:
+    for c in dcop.constraints.values():
+        scope = set(v.name for v in c.dimensions)
+        if len(scope) == 1:
+            if accept_unary:
+                variables_alone = variables_alone - set(v.name for v in c.dimensions)
+            else:
+                continue
+        else:
+            variables_alone = variables_alone - set(v.name for v in c.dimensions)
+
+    # If we found alone variables, remove their unary constrint if any
+    if not accept_unary:
+        keep_constraints = {}
+        for c_name, c in dcop.constraints.items():
+            scope = set(v.name for v in c.dimensions)
+            if len(scope) == 1 and scope.issubset(variables_alone):
+                continue
+            keep_constraints[c_name] = c
+    else:
+        keep_constraints = dcop.constraints
+
+    variables = {k: v for k, v in dcop.variables.items()
+                 if k not in variables_alone}
+    filtered = DCOP( dcop.name,
+                 dcop.objective, dcop.description,
+                 dcop.domains,
+                 variables,
+                 keep_constraints,
+                 dcop.agents)
+    return filtered
+
