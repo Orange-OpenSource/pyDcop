@@ -243,7 +243,7 @@ class Orchestrator(object):
         self._mgt_method('_orchestrator_start_replication', k_target)
 
     def run(self, scenario: Scenario=None,
-            timeout: Optional[float]=None):
+            timeout: Optional[float]=None, repair_only=False):
         """Run the DCOP, with a scenario if given.
 
         When `run()` is called, the orchestrator asks all orchestrated agents to
@@ -261,6 +261,7 @@ class Orchestrator(object):
             itself, must be stopped.
 
         """
+        self.repair_only = repair_only
         self.logger.info('Waiting until agents are ready to run')
         self.mgt.ready_to_run.wait()
         self.logger.info('Requesting agents to run')
@@ -937,7 +938,8 @@ class AgentsMgt(MessagePassingComputation):
             if agt == 'orchestrator':
                 continue
             computations = self.initial_dist.computations_hosted(agt)
-            self._send_mgt_msg(agt, RunAgentMessage(computations))
+            if not self._orchestrator.repair_only:
+                self._send_mgt_msg(agt, RunAgentMessage(computations))
             self._agts_state[agt] = 'running'
 
     def _orchestrator_start_replication(self, msg, *_):
@@ -956,7 +958,8 @@ class AgentsMgt(MessagePassingComputation):
         self.logger.debug('Scenario event from : %s',  msg)
 
         # Pause the current dcop before injecting the event
-        self._request_pause()
+        if not self._orchestrator.repair_only:
+            self._request_pause()
 
         evt = msg.content
         leaving_agents = []
