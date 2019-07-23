@@ -184,6 +184,7 @@ from pydcop.commands._utils import (
     collect_tread,
     add_csvline,
 )
+from pydcop.dcop.dcop import filter_dcop
 from pydcop.dcop.yamldcop import load_dcop_from_file, load_scenario_from_file
 from pydcop.distribution.yamlformat import load_dist_from_file
 from pydcop.infrastructure.run import run_local_thread_dcop, run_local_process_dcop
@@ -332,6 +333,8 @@ def run_cmd(args, timer=None, timeout=None):
     global dcop
     logger.info("loading dcop from {}".format(args.dcop_files))
     dcop = load_dcop_from_file(args.dcop_files)
+
+    dcop = filter_dcop(dcop)
 
     if args.distribution in DISTRIBUTION_METHODS:
         dist_module, algo_module, graph_module = _load_modules(
