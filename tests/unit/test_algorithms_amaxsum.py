@@ -36,13 +36,15 @@ from unittest.mock import MagicMock
 from pydcop.algorithms.amaxsum import (
     MaxSumFactorComputation,
     computation_memory,
+    communication_load,
+)
+from pydcop.algorithms.maxsum import (
+    MaxSumMessage, approx_match, factor_costs_for_var,
     VARIABLE_UNIT_SIZE,
     FACTOR_UNIT_SIZE,
-    communication_load,
     HEADER_SIZE,
     UNIT_SIZE,
 )
-from pydcop.algorithms.maxsum import MaxSumMessage, approx_match, factor_costs_for_var
 from pydcop.computations_graph.factor_graph import (
     VariableComputationNode,
     FactorComputationNode,
@@ -160,13 +162,14 @@ class ApproxMatchTests(unittest.TestCase):
         c1 = {0: 0, 1: 0, 2: 0}
         c2 = {0: 0, 1: 0, 2: 0}
 
-        self.assertTrue(approx_match(c1, c2))
+        self.assertTrue(approx_match(c1, c2, 0.1))
 
     def test_nomatch(self):
         c1 = {0: 0, 1: 0, 2: 0}
         c2 = {0: 0, 1: 1, 2: 0}
 
-        self.assertFalse(approx_match(c1, c2))
+        self.assertFalse(approx_match(c1, c2, 0.1))
+
 
     def test_nomatch2(self):
         c1 = {
@@ -194,7 +197,9 @@ class ApproxMatchTests(unittest.TestCase):
             9: 0.0,
         }
 
-        self.assertFalse(approx_match(c1, c2))
+        self.assertFalse(approx_match(c1, c2, 0.1))
+
+
 
 
 class ComputationMemory(unittest.TestCase):
