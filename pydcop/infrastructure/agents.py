@@ -841,7 +841,7 @@ class Agent(object):
         if self._start_t is not None :
             for cb, (p, last_t) in list(self._periodic_cb.items()):
                 if ct - last_t >= p:
-                    self.logger.info('periodic cb %s, %s %s ', cb, ct, last_t)
+                    # self.logger.debug('periodic cb %s, %s %s ', cb, ct, last_t)
                     # Must update the cb entry BEFORE calling the cb, in case
                     # the cb attemps to modify (e.g. remove) it's own entry by
                     # calling remove_periodic_action
