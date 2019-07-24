@@ -998,7 +998,9 @@ class AgentsMgt(MessagePassingComputation):
             # If the departed agent was not hosting any computation, simply resume the
             # system
             self.logger.info("No orphaned computation, resuming computations ")
-            self._request_resume()
+            self._dump_repair_metrics("OK", 0)
+            if not self._orchestrator.repair_only:
+                self._request_resume()
             return
 
         orphaned_replicas = {o: self.discovery.replica_agents(o) for o in
@@ -1106,42 +1108,43 @@ class AgentsMgt(MessagePassingComputation):
                                       'are still some orphaned computations !'
                                       ' %s', lost_orphaned)
                     repair_status = "KO"
-                # Dump current distribution
-                dist = {a: self.discovery.agent_computations(a)
-                        for a in self.discovery.agents()}
-                result = {
-                    'inputs': {
-                        'dist_algo': 'repair',
-                    },
-                    "duration": repair_duration,
-                    'distribution': dist,
-                    "metrics": self.repair_metrics,
-                    "status" : repair_status
-                }
+                # # Dump current distribution
+                # dist = {a: self.discovery.agent_computations(a)
+                #         for a in self.discovery.agents()}
+                # result = {
+                #     'inputs': {
+                #         'dist_algo': 'repair',
+                #     },
+                #     "duration": repair_duration,
+                #     'distribution': dist,
+                #     "metrics": self.repair_metrics,
+                #     "status" : repair_status
+                # }
+                #
+                # try:
+                #     cost, comm, hosting = gh_cgdp.distribution_cost(
+                #         Distribution(dist),
+                #         self.graph,
+                #         self._dcop.agents.values(), #AgentDef s
+                #         computation_memory=self._algo_module.computation_memory,
+                #         communication_load=self._algo_module.communication_load,
+                #     )
+                #     result["cost"] = cost
+                #     result["communication_cost"] = comm
+                #     result["hosting_cost"] = hosting
+                # except Exception as e:
+                #     self.logger.error("Could not distribute ")
+                #     cost, comm, hosting = None, None, None
+                #     result["cost"] = None
+                #     result["communication_cost"] = None
+                #     result["hosting_cost"] = None
+                #     result["cost_error"] = str (e)
+                #
+                # f_name = 'evtdist_{}.yaml'.format(self.dist_count)
+                # with open(f_name, mode='w', encoding='utf-8') as f:
+                #     f.write(yaml.dump(result))
 
-                try:
-                    cost, comm, hosting = gh_cgdp.distribution_cost(
-                        Distribution(dist),
-                        self.graph,
-                        self._dcop.agents.values(), #AgentDef s
-                        computation_memory=self._algo_module.computation_memory,
-                        communication_load=self._algo_module.communication_load,
-                    )
-                    result["cost"] = cost
-                    result["communication_cost"] = comm
-                    result["hosting_cost"] = hosting
-                except Exception as e:
-                    self.logger.error("Could not distribute ")
-                    cost, comm, hosting = None, None, None
-                    result["cost"] = None
-                    result["communication_cost"] = None
-                    result["hosting_cost"] = None
-                    result["cost_error"] = str (e)
-
-                f_name = 'evtdist_{}.yaml'.format(self.dist_count)
-                with open(f_name, mode='w', encoding='utf-8') as f:
-                    f.write(yaml.dump(result))
-
+                self._dump_repair_metrics(repair_status, repair_duration)
 
                # Resume all computation now that everything is ok
                 self.logger.info('Repair done on agent %s, all agents done, '
@@ -1151,6 +1154,43 @@ class AgentsMgt(MessagePassingComputation):
                     self._request_resume()
                 self.dist_count += 1
                 self.repair_metrics.clear()
+
+    def _dump_repair_metrics(self, repair_status, repair_duration ):
+        # Dump current distribution
+        dist = {a: self.discovery.agent_computations(a)
+                for a in self.discovery.agents()}
+        result = {
+            'inputs': {
+                'dist_algo': 'repair',
+            },
+            "duration": repair_duration,
+            'distribution': dist,
+            "metrics": self.repair_metrics,
+            "status": repair_status
+        }
+
+        try:
+            cost, comm, hosting = gh_cgdp.distribution_cost(
+                Distribution(dist),
+                self.graph,
+                self._dcop.agents.values(),  # AgentDef s
+                computation_memory=self._algo_module.computation_memory,
+                communication_load=self._algo_module.communication_load,
+            )
+            result["cost"] = cost
+            result["communication_cost"] = comm
+            result["hosting_cost"] = hosting
+        except Exception as e:
+            self.logger.error("Could not distribute ")
+            cost, comm, hosting = None, None, None
+            result["cost"] = None
+            result["communication_cost"] = None
+            result["hosting_cost"] = None
+            result["cost_error"] = str(e)
+
+        f_name = 'evtdist_{}.yaml'.format(self.dist_count)
+        with open(f_name, mode='w', encoding='utf-8') as f:
+            f.write(yaml.dump(result))
 
     def _request_pause(self, agents=None):
         if agents is None:
