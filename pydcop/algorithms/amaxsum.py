@@ -165,6 +165,9 @@ class MaxSumFactorComputation(DcopComputation):
         # When resuming a computation, send messages as for start
         if paused:
             return
+        # flushing cost table when resuming
+        self._costs.clear()
+        self._prev_messages.clear()
         if len(self.variables) == 1 and self.start_messages in ["leafs", "leafs_vars"]:
             for v in self.variables:
                 costs_v = maxsum.factor_costs_for_var(
@@ -172,7 +175,7 @@ class MaxSumFactorComputation(DcopComputation):
                 )
                 self.post_msg(v.name, maxsum.MaxSumMessage(costs_v))
                 self.logger.info(
-                    f"Sending init messages from factor {self.name} -> {v.name} : {costs_v}"
+                    f"Sending resume messages from factor {self.name} -> {v.name} : {costs_v}"
                 )
         elif self.start_messages == "all":
             for v in self.variables:
@@ -181,7 +184,7 @@ class MaxSumFactorComputation(DcopComputation):
                 )
                 self.post_msg(v.name, maxsum.MaxSumMessage(costs_v))
                 self.logger.info(
-                    f"Sending init messages from factor {self.name} -> {v.name} : {costs_v}"
+                    f"Sending resume messages from factor {self.name} -> {v.name} : {costs_v}"
                 )
 
     @register("max_sum")
@@ -331,7 +334,12 @@ class MaxSumVariableComputation(VariableComputation):
         # When resuming a computation, send messages as for start
         if paused:
             return
+
+        # test flush cost table when resuming
+        self._costs.clear()
+        self._prev_messages.clear()
         if len(self._factors) == 1 and self.start_messages == "leafs":
+
             # Only send costs if we are a leaf:
             single_factor = self._factors[0]
             costs_f = maxsum.costs_for_factor(
@@ -343,6 +351,7 @@ class MaxSumVariableComputation(VariableComputation):
             self.post_msg(single_factor, maxsum.MaxSumMessage(costs_f))
 
         elif self.start_messages in ["leafs_vars", "all"]:
+            self.logger.warning(f"Resuming computation {self.name}, send costs ")
             # in "leafs_vars" mode, send our costs to all the factors we depends on.
             for f in self._factors:
                 costs_f = maxsum.costs_for_factor(

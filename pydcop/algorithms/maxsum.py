@@ -338,6 +338,7 @@ class MaxSumFactorComputation(SynchronousComputationMixin, DcopComputation):
 
     def on_new_cycle(self, messages, cycle_id) -> Optional[List]:
 
+        # Collect costs messages from neighbor variables for this cycle (aka iteration)
         for sender, (message, t) in messages.items():
             self._costs[sender] = message.costs
 
@@ -523,6 +524,7 @@ class MaxSumVariableComputation(SynchronousComputationMixin, VariableComputation
 
     def on_new_cycle(self, messages, cycle_id) -> Optional[List]:
 
+        # Collect costs messages from neighbor factors for this cycle (aka iteration)
         for sender, (message, t) in messages.items():
             self.costs[sender] = message.costs
 
