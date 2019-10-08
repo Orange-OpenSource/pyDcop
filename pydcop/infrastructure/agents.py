@@ -400,13 +400,13 @@ class Agent(object):
         for c in list(self._computations.values()):
             if computations is None:
                 if c.is_running:
-                    self.logger.debug('Do not start computation %s, already '
+                    self.logger.debug(f'Do not start computation {c.name}, already '
                                       'running')
                 else:
                     c.start()
             elif c.name in computations:
                 if c.is_running:
-                    self.logger.debug('Do not start computation %s, already '
+                    self.logger.debug(f'Do not start computation {c.name}, already '
                                       'running')
                 else:
                     c.start()

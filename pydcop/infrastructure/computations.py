@@ -381,8 +381,8 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
             # priority so that we handle them before new messages.
             self._msg_sender(src, self.name, msg, 19)
         self.logger.debug(
-            "On startup, injecting %s pending " "messages received before start",
-            pending_msg_count,
+            f"On starting {self.name}, injecting {pending_msg_count} pending messages"
+            f" received before start"
         )
 
     def stop(self):
@@ -509,7 +509,7 @@ class MessagePassingComputation(object, metaclass=ComputationMetaClass):
                 self._msg_handlers[msg.type](sender, msg, t)
         else:
             self.logger.debug(
-                f"Storing message from {sender} {msg} . "
+                f"Storing message from {sender} to {self.name} {msg} . "
                 f"paused {self.is_paused}, running {self._running}"
             )
             self._paused_messages_recv.append((sender, msg, t))
