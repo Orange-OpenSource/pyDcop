@@ -279,7 +279,7 @@ def graph_diameter(variables, relations):
     """
     diams = []
     g = as_networkx_graph(variables, relations)
-    components = nx.connected_component_subgraphs(g)
+    components  = (g.subgraph(c).copy() for c in nx.connected_components(g))
     for c in components:
         diams.append(nx.diameter(c))
 
