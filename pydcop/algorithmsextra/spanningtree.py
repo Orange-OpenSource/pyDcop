@@ -228,7 +228,6 @@ class SpanningTreeComputation(MessagePassingComputation):
                     self.name, self.level, self.fragment_identity, self.state
                 ),
             )
-
             # Increase the number of neighbors in FIND state for each neighbor
             # we flip to that state, in order to be able to check later if we received
             # all their responses.
@@ -240,10 +239,12 @@ class SpanningTreeComputation(MessagePassingComputation):
     def test(self):
         self.logger.debug(f"Test `BASIC` adjacent edges on {self.name}")
         basic_edges = [
-            n for n, label in self.neighbors_labels.items() if label == EdgeLabel.BASIC
+            (self.neighbors_weights[n], n)
+            for n, label in self.neighbors_labels.items()
+            if label == EdgeLabel.BASIC
         ]
         if basic_edges:
-            _, min_edge = min((self.neighbors_weights[n], n) for n in basic_edges)
+            _, min_edge = min(basic_edges)
             self.logger.debug(
                 f"Found lowest weight basec edge {min_edge}, send test on id "
             )
@@ -293,7 +294,9 @@ class SpanningTreeComputation(MessagePassingComputation):
                     f"test from same level {msg} on {self.name} {self.level} {self.fragment_identity}"
                 )
                 if self.neighbors_labels[msg.sender] == EdgeLabel.BASIC:
-                    self.logger.debug(f"Label edge {msg.sender} - {self.name} as `REJECTED`")
+                    self.logger.debug(
+                        f"Label edge {msg.sender} - {self.name} as `REJECTED`"
+                    )
                     self.neighbors_labels[msg.sender] = EdgeLabel.REJECTED
                 if self.test_edge != msg.sender:
                     self.logger.debug(f"Reject test from {msg.sender} on {self.name}")
