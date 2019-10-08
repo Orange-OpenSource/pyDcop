@@ -124,6 +124,7 @@ def test_filter_dcop_unary_constraint():
     assert filtered.variables == {'v1': v1, 'v2': v2}
     assert "c2" not in filtered.constraints
 
+
 def test_filter_dcop_unary_constraint_accepted():
     dcop = DCOP()
 
@@ -139,7 +140,7 @@ def test_filter_dcop_unary_constraint_accepted():
     dcop += 'c2', 'v3 * 0.5', [v3]
     dcop.add_variable(v4)
 
-    filtered = filter_dcop(dcop, accept_unary=False)
+    filtered = filter_dcop(dcop, accept_unary=True)
 
     # c2 and v3 must stay here, as we accept unary constraints, but v4 must be gone
     assert "v3" in filtered.variables
