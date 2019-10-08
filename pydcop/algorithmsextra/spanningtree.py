@@ -44,11 +44,12 @@ from pydcop.infrastructure.computations import (
 )
 
 
-class State(Enum):
-    SLEEPING = 1
-    FIND = 2
-    FOUND = 3
-    DONE = 4
+class NodeState(Enum):
+    """ States for nodes of the graph"""
+
+    SLEEPING = 1  # The node is currently not participating in th algorithm (yet)
+    FIND = 2  # Currently looking for the min/max weight outer edge for the fragment
+    FOUND = 3  # the min/max weight edge has been found
 
 
 class EdgeLabel(Enum):
@@ -84,7 +85,7 @@ class SpanningTreeComputation(MessagePassingComputation):
         self.mode = mode
         self.neighbors_weights = {n: w for n, w in neighbors}
         self.neighbors_labels = {n: EdgeLabel.BASIC for n, w in neighbors}
-        self.state = State.SLEEPING
+        self.state = NodeState.SLEEPING
         self.level = None
         self.find_count = None
         self.fragment_identity = None  # FIXME: id is weight and edge in our case
@@ -108,7 +109,8 @@ class SpanningTreeComputation(MessagePassingComputation):
         #         self.wakeup()
 
     def wakeup(self):
-        if self.state != State.SLEEPING:
+        """Wakeup make a single node a fragment of level 0."""
+        if self.state != NodeState.SLEEPING:
             self.logger.error(f"Cannot wake up when not sleeping at {self.name}")
             raise ComputationException("Cannot wake up when not sleeping")
         # find best out edge
@@ -126,7 +128,7 @@ class SpanningTreeComputation(MessagePassingComputation):
         # except
         self.neighbors_labels[best_edge] = EdgeLabel.BRANCH
         self.level = 0
-        self.state = State.FOUND
+        self.state = NodeState.FOUND
         self.find_count = 0
         self.post_msg(best_edge, ConnectMessage(self.name, 0))
         # Now we wait from a message from `best_edge`
@@ -149,7 +151,7 @@ class SpanningTreeComputation(MessagePassingComputation):
         """
         self.logger.debug(f"On connect on {self.name}  - {msg}")
 
-        if self.state == State.SLEEPING:
+        if self.state == NodeState.SLEEPING:
             self.wakeup()
         if msg.level < self.level:  # FIXME : elsif ?
             # Connect from a lower-level fragment
@@ -161,7 +163,7 @@ class SpanningTreeComputation(MessagePassingComputation):
                     self.name, self.level, self.fragment_identity, self.state
                 ),
             )
-            if self.state == State.FIND:
+            if self.state == NodeState.FIND:
                 self.find_count += 1
         else:
             if self.neighbors_labels[msg.sender] == EdgeLabel.BASIC:
@@ -177,7 +179,7 @@ class SpanningTreeComputation(MessagePassingComputation):
                 # New
                 self.post_msg(
                     msg.sender,
-                    InitiateMessage(self.name, self.level + 1, new_id, State.FIND),
+                    InitiateMessage(self.name, self.level + 1, new_id, NodeState.FIND),
                 )
 
     @register("initiate")
@@ -222,9 +224,9 @@ class SpanningTreeComputation(MessagePassingComputation):
             # Increase the number of neighbors in FIND state for each neighbor
             # we flip to that state, in order to be able to check later if we received
             # all their responses.
-            if self.state == State.FIND:
+            if self.state == NodeState.FIND:
                 self.find_count += 1
-        if self.state == State.FIND:
+        if self.state == NodeState.FIND:
             self.test()
 
     def test(self):
@@ -267,7 +269,7 @@ class SpanningTreeComputation(MessagePassingComputation):
 
         """
         self.logger.debug(f"On test msg on {self.name} : {msg}")
-        if self.state == State.SLEEPING:
+        if self.state == NodeState.SLEEPING:
             self.wakeup()
 
         if self.level < msg.level:
@@ -314,7 +316,7 @@ class SpanningTreeComputation(MessagePassingComputation):
             f"Report {self.name} find {self.find_count}  - {self.test_edge}"
         )
         if self.find_count == 0 and self.test_edge is None:
-            self.state = State.FOUND
+            self.state = NodeState.FOUND
             self.post_msg(self.in_branch, ReportMessage(self.name, self.best_weight))
 
     @register("report")
@@ -333,7 +335,7 @@ class SpanningTreeComputation(MessagePassingComputation):
                 self.best_edge = msg.sender
                 self.report()
         else:
-            if self.state == State.FIND:
+            if self.state == NodeState.FIND:
                 # Postpone message:
                 self.logger.debug(f"Postponing on {self.name} msg {msg}")
                 self.post_msg(self.name, msg)
@@ -345,7 +347,7 @@ class SpanningTreeComputation(MessagePassingComputation):
                     if msg.weight == self.best_weight and msg.weight == float("inf"):
                         # handle termination
                         self.logger.info(f"Finished on  {self.name} msg {msg}")
-                        self.state = State.DONE
+                        self.state = NodeState.DONE
                         self.stop()
                     else:
                         self.logger.debug(

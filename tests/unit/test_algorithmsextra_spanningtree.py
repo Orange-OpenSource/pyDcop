@@ -43,7 +43,6 @@ import networkx as nx
 
 from pydcop.algorithmsextra.spanningtree import (
     SpanningTreeComputation,
-    State,
     EdgeLabel,
 )
 from pydcop.infrastructure.agents import Agent
