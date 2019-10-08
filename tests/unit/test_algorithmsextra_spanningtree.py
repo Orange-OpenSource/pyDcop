@@ -77,9 +77,7 @@ def build_computation(edges):
 
 def run_agents(agents, duration):
     for a in agents.values():
-        a.start()
-    for a in agents.values():
-        a.run()
+        a.start(run_computations=True)
 
     sleep(duration)  # let the system run for 1 second
 
@@ -142,7 +140,7 @@ def test_3_nodes_as_loop():
     """
     Three nodes, three edges
     * minimum weight spanning tree
-    * the spanning tree must exlude the most expensive edge
+    * the spanning tree must exclude the most expensive edge
     * single spontaneous waking up node
 
     """
