@@ -203,15 +203,15 @@ def test_problem_with_non_binary_constraints_raises_exception():
     g = build_computation_graph(None, constraints=[c1], variables=[v1, v2, v3])
     with pytest.raises(ComputationException) as comp_exc:
         get_computation_instance(g, "v1")
-    assert f" with arity {3}" in str(comp_exc)
+    assert f" with arity {3}" in str(comp_exc.value)
 
     with pytest.raises(ComputationException) as comp_exc:
         get_computation_instance(g, "v3")
-    assert f" with arity {3}" in str(comp_exc)
+    assert f" with arity {3}" in str(comp_exc.value)
 
     with pytest.raises(ComputationException) as comp_exc:
         get_computation_instance(g, "v2")
-    assert f" with arity {3}" in str(comp_exc)
+    assert f" with arity {3}" in str(comp_exc.value)
 
 
 def test_create_computations(toy_pb):

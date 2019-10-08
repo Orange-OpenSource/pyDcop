@@ -382,7 +382,7 @@ def test_receiving_duplicate_message_fails():
     # Receiving a second message from the same neighbor and for the same cycle: error.
     with pytest.raises(ComputationException) as comp_exception:
         c.on_message("bar", msgbar2, 42)
-    assert "two messages from bar" in str(comp_exception)
+    assert "two messages from bar" in str(comp_exception.value)
 
 
 def test_receiving_out_of_order_messages_fails():
@@ -396,7 +396,7 @@ def test_receiving_out_of_order_messages_fails():
     # Receiving a message for an unexpected cycle: error.
     with pytest.raises(ComputationException) as comp_exception:
         c.on_message("bar", msgbar2, 42)
-    assert "but received message for cycle 3" in str(comp_exception)
+    assert "but received message for cycle 3" in str(comp_exception.value)
 
 
 def test_receiving_message_from_unknown_computation_fails():
@@ -410,7 +410,7 @@ def test_receiving_message_from_unknown_computation_fails():
     # Receiving a message for an unexpected cycle: error.
     with pytest.raises(ComputationException) as comp_exception:
         c.on_message("wrong", msgbar2, 42)
-    assert f"a message from wrong" in str(comp_exception)
+    assert f"a message from wrong" in str(comp_exception.value)
 
 
 def test_cycle_id_is_added_when_using_post_msg():
