@@ -73,7 +73,7 @@ def test_building_algodef_with_default_params():
 
     a = AlgorithmDef.build_with_default_param("amaxsum")
 
-    assert a.params["damping"] == 0
+    assert a.params["damping"] == 0.5
 
 
 def test_building_algodef_with_provided_and_default_params():
