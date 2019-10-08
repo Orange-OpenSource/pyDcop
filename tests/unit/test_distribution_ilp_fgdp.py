@@ -33,16 +33,15 @@ import unittest
 from collections import namedtuple
 
 from pydcop.algorithms import amaxsum as ms
-from pydcop.algorithms.amaxsum import communication_load, computation_memory, \
-    VARIABLE_UNIT_SIZE
+from pydcop.algorithms.amaxsum import communication_load, computation_memory
+from pydcop.algorithms.maxsum import VARIABLE_UNIT_SIZE
 from pydcop.computations_graph.factor_graph import ComputationsFactorGraph, \
     VariableComputationNode, FactorComputationNode, FactorGraphLink
 from pydcop.dcop.objects import Variable, VariableDomain, AgentDef
 from pydcop.dcop.relations import relation_from_str
 from pydcop.distribution.ilp_fgdp import distribute, _build_alphaijk_binvars, \
     _objective_function, _computation_memory_in_cg
-from pydcop.distribution.objects import DistributionHints, \
-    ImpossibleDistributionException
+from pydcop.distribution.objects import ImpossibleDistributionException
 
 Agent = namedtuple('Agent', ['name'])
 
@@ -97,10 +96,13 @@ class TestDistributionLPFactorGraphWithHints(unittest.TestCase):
         cf1 = FactorComputationNode(f1)
         cg = ComputationsFactorGraph([cv1], [cf1])
 
-        hints = DistributionHints(must_host={'a1': ['v1']})
+        a1 = AgentDef("a1", capacity=200,  default_hosting_cost=1,
+                 hosting_costs={"v1" : 0})
+
+        a2 = AgentDef("a2", capacity=200,  default_hosting_cost=1)
 
         agent_mapping = distribute(cg, [a1, a2],
-                                   hints=hints,
+                                   hints=None,
                                    computation_memory=ms.computation_memory,
                                    communication_load=ms.communication_load)
 
@@ -113,10 +115,13 @@ class TestDistributionLPFactorGraphWithHints(unittest.TestCase):
         cf1 = FactorComputationNode(f1)
         cg = ComputationsFactorGraph([cv1], [cf1])
 
-        hints = DistributionHints(must_host={'a1': ['f1']})
+        a1 = AgentDef("a1", capacity=200,  default_hosting_cost=1,
+                 hosting_costs={"f1" : 0})
+
+        a2 = AgentDef("a2", capacity=200,  default_hosting_cost=1)
 
         agent_mapping = distribute(cg, [a1, a2],
-                                   hints=hints,
+                                   hints=None,
                                    computation_memory=ms.computation_memory,
                                    communication_load=ms.communication_load)
 
@@ -129,10 +134,14 @@ class TestDistributionLPFactorGraphWithHints(unittest.TestCase):
         cf1 = FactorComputationNode(f1)
         cg = ComputationsFactorGraph([cv1], [cf1])
 
-        hints = DistributionHints(must_host={'a1': ['f1'], 'a2': ['v1']})
+        a1 = AgentDef("a1", capacity=200,  default_hosting_cost=1,
+                 hosting_costs={"f1" : 0})
+
+        a2 = AgentDef("a2", capacity=200,  default_hosting_cost=1,
+                 hosting_costs={"v1": 0})
 
         agent_mapping = distribute(cg, [a1, a2],
-                                   hints=hints,
+                                   hints=None,
                                    computation_memory=ms.computation_memory,
                                    communication_load=ms.communication_load)
 
@@ -147,10 +156,13 @@ class TestDistributionLPFactorGraphWithHints(unittest.TestCase):
         cf1 = FactorComputationNode(f1)
         cg = ComputationsFactorGraph([cv1, cv2], [cf1])
 
-        hints = DistributionHints(must_host={'a1': ['f1', 'v1']})
+        a1 = AgentDef("a1", capacity=200,  default_hosting_cost=1,
+                 hosting_costs={"f1" : 0, "v1": 0})
+
+        a2 = AgentDef("a2", capacity=200,  default_hosting_cost=1)
 
         agent_mapping = distribute(cg, [a1, a2],
-                                   hints=hints,
+                                   hints=None,
                                    computation_memory=ms.computation_memory,
                                    communication_load=ms.communication_load)
 
@@ -165,10 +177,14 @@ class TestDistributionLPFactorGraphWithHints(unittest.TestCase):
         cf1 = FactorComputationNode(f1)
         cg = ComputationsFactorGraph([cv1, cv2], [cf1])
 
-        hints = DistributionHints(must_host={'a1': ['f1', 'v1'],
-                                             'a2': ['v2']})
+        a1 = AgentDef("a1", capacity=200,  default_hosting_cost=1,
+                 hosting_costs={"f1" : 0, "v1": 0})
+
+        a2 = AgentDef("a2", capacity=200,  default_hosting_cost=1,
+                 hosting_costs={"v2": 0})
+
         agent_mapping = distribute(cg, [a1, a2],
-                                   hints=hints,
+                                   hints=None,
                                    computation_memory=ms.computation_memory,
                                    communication_load=ms.communication_load)
 
@@ -183,14 +199,17 @@ class TestDistributionLPFactorGraphWithHints(unittest.TestCase):
         cf1 = FactorComputationNode(f1)
         cg = ComputationsFactorGraph([cv1], [cf1])
 
-        hints = DistributionHints(must_host={'a1': ['f1', 'v1']})
+        a1 = AgentDef("a1", capacity=200,  default_hosting_cost=1,
+                 hosting_costs={"f1" : 0, "v1": 0})
+
+        a2 = AgentDef("a2", capacity=200,  default_hosting_cost=1)
 
         # These hints lead to an impossible distribution, as ilp-fgdp requires
         # each agent to host at least one computation. Here Both
         # computations are hosted on a1 and there is no computation
         # available for a2 !
         self.assertRaises(ImpossibleDistributionException, distribute,
-                          cg, [a1, a2], hints=hints,
+                          cg, [a1, a2], hints=None,
                           computation_memory=ms.computation_memory,
                           communication_load=ms.communication_load)
 
@@ -215,11 +234,15 @@ class ILPFGDP(unittest.TestCase):
         cv3 = VariableComputationNode(v3, ['f1'])
         cf1 = FactorComputationNode(f1)
         cg = ComputationsFactorGraph([cv1, cv2, cv3], [cf1])
-        hints = DistributionHints(must_host={'a1': ['v1', 'v2']})
+
+        a1 = AgentDef("a1", capacity=200,  default_hosting_cost=1,
+                 hosting_costs={"v1" : 0, "v2": 0})
+
+        a2 = AgentDef("a2", capacity=200,  default_hosting_cost=1)
 
         a1.capacity = 1000
         agent_mapping = distribute(cg, [a1, a2],
-                                   hints=hints,
+                                   hints=None,
                                    computation_memory=ms.computation_memory,
                                    communication_load=ms.communication_load)
 
@@ -236,11 +259,15 @@ class ILPFGDP(unittest.TestCase):
         cv3 = VariableComputationNode(v3, ['f1'])
         cf1 = FactorComputationNode(f1)
         cg = ComputationsFactorGraph([cv1, cv2, cv3], [cf1])
-        hints = DistributionHints(must_host={'a1': ['v1', 'v2']})
+
+        a1 = AgentDef("a1", capacity=200,  default_hosting_cost=1,
+                 hosting_costs={"v1" : 0, "v2": 0})
+
+        a2 = AgentDef("a2", capacity=200,  default_hosting_cost=1)
 
         a1.capacity = 15
         agent_mapping = distribute(cg, [a1, a2],
-                                   hints=hints,
+                                   hints=None,
                                    computation_memory=ms.computation_memory,
                                    communication_load=ms.communication_load)
 
