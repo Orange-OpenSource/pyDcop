@@ -29,11 +29,18 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """
 
-Distributed algorithm for Minimum Spanning Tree
+Distributed algorithm for Minimum Spanning Tree (MST)
+
+Note: most comments in this implementation mention 'min' (for example in the expression
+"min-weight outre edge), however it can actually be max when building a maximum
+weight spanning tree.
+
+TODO:
+* select node that wake up
+* min / max
 
 """
 from enum import Enum
-from random import random
 from typing import List, Tuple
 
 from pydcop.infrastructure.computations import (
@@ -53,11 +60,14 @@ class NodeState(Enum):
 
 
 class EdgeLabel(Enum):
-    BASIC = 1
-    BRANCH = 2
-    REJECTED = 3
+    """ Labels for edges in the graph. """
+
+    BASIC = 1  # When we have not decided if the edge is in the MST.
+    BRANCH = 2  # The edge is in the MST.
+    REJECTED = 3  # The edge is NOT in the MST.
 
 
+# Messages definitions
 ConnectMessage = message_type("connect", ["sender", "level"])
 InitiateMessage = message_type("initiate", ["sender", "level", "id", "state"])
 TestMessage = message_type("test", ["sender", "level", "id"])
@@ -71,7 +81,10 @@ class SpanningTreeComputation(MessagePassingComputation):
     """
     Computation for building a  Minimum (or maximum) weight spanning tree.
 
-
+    Parameters
+    ----------
+    name: str
+        the name of that node
     """
 
     def __init__(
@@ -122,10 +135,6 @@ class SpanningTreeComputation(MessagePassingComputation):
 
         self.logger.debug(f"Wake up on {self.name}  - send connect to {best_edge}")
 
-        # if bests
-        # try:
-        #     best_w, best_edge = newt(bests)
-        # except
         self.neighbors_labels[best_edge] = EdgeLabel.BRANCH
         self.level = 0
         self.state = NodeState.FOUND
@@ -134,27 +143,25 @@ class SpanningTreeComputation(MessagePassingComputation):
         # Now we wait from a message from `best_edge`
 
     @register("connect")
-    def on_connect(self, sender: str, msg: ConnectMessage, t: float):
+    def on_connect(self, sender: str, msg: ConnectMessage, t: float) -> None:
         """
         A connect message is sent over the minimum-weight outer edge of a fragment,
         to connect to another fragment.
 
         Parameters
         ----------
-        sender
-        msg
-        t
-
-        Returns
-        -------
-
+        sender: str
+            sender of the message
+        msg : ConnectMessage
+            message
+        t : float
+            time
         """
-        self.logger.debug(f"On connect on {self.name}  - {msg}")
+        self.logger.debug(f"On connect on {self.name}  - {msg} at {t}")
 
         if self.state == NodeState.SLEEPING:
             self.wakeup()
-        if msg.level < self.level:  # FIXME : elsif ?
-            # Connect from a lower-level fragment
+        if msg.level < self.level:
             self.logger.debug(f"Connect from lower level fragment {msg} on {self.name}")
             self.neighbors_labels[msg.sender] = EdgeLabel.BRANCH
             self.post_msg(
@@ -176,7 +183,6 @@ class SpanningTreeComputation(MessagePassingComputation):
                     f"New fragment creation on {self.name}  "
                     f" new id: {new_id} level: {self.level+1}"
                 )
-                # New
                 self.post_msg(
                     msg.sender,
                     InitiateMessage(self.name, self.level + 1, new_id, NodeState.FIND),
@@ -185,7 +191,7 @@ class SpanningTreeComputation(MessagePassingComputation):
     @register("initiate")
     def on_initiate(self, sender: str, msg: InitiateMessage, t: float):
         """
-        An `initate` message starts the search for the minimum-weight outer edge for a
+        An `initiate` message starts the search for the minimum-weight outer edge for a
         fragment.
 
         This search is performed by:
@@ -194,10 +200,12 @@ class SpanningTreeComputation(MessagePassingComputation):
         
         Parameters
         ----------
-        sender
-        msg
-        t
-
+        sender: str
+            sender of the message
+        msg: InitiateMessage
+            message
+        t: float
+            time
         """
         self.logger.debug(f"Initiate from {msg.sender} on {self.name} : {msg}")
         self.level = msg.level
