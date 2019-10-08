@@ -36,14 +36,17 @@ import pytest
 
 from pydcop.algorithms import AlgorithmDef, ComputationDef, load_algorithm_module
 from pydcop.computations_graph.constraints_hypergraph import VariableComputationNode
-from pydcop.dcop.objects import Variable
+from pydcop.dcop.objects import Variable, AgentDef
 from pydcop.infrastructure.agents import Agent
+from pydcop.infrastructure.communication import InProcessCommunicationLayer
 from pydcop.infrastructure.computations import (
     Message,
     message_type,
     MessagePassingComputation,
     register,
 )
+from pydcop.infrastructure.orchestratedagents import OrchestratedAgent
+from pydcop.infrastructure.orchestrator import RunAgentMessage, Orchestrator
 from pydcop.utils.simple_repr import simple_repr
 from pydcop.utils.simple_repr import from_repr
 
@@ -422,3 +425,82 @@ def test_fallback_memory_footprint_from_classic_import():
     comp = dsa_module.DsaTutoComputation(comp_def)
 
     assert comp.footprint() == 1
+
+
+def test_fix_delayed_message_on_start():
+    """
+    Test case for bug fix:
+
+    c1 send a message to c2 during its `on_start` handler. If c2 is not started yet
+    at that point, the message is stored and injected once c2 starts.
+
+    Sometime, when c2 starts in a2, it does not receive the pending message from c1.
+    This is timing dependent and most of the time, the bug does not happens, especially
+    if the on_start handlers contain log statements.
+
+    The problem is due to the fact that start, and hence, the on_start handler and
+    pending messages injection, might be done on the main thread, while message reception
+    (and thus storage of th pending messages) is performed on the agent's thread.
+
+    Everything that happens in an agent MUST run on the agent thread, including startup !
+
+    To start a computation (on a started agent), one may call the `agt.run()` method,
+    from any thread, in which case the computation is also started from that thread,
+    and not from the agent thread.
+
+    Currently (10/2019), there are only two ways for avoiding this:
+    * use an orcherstrated agent, and start computation by sending it messages.
+      However this also means using an orchestrator, which is not convenient during test
+      and when working on non-dcop algorithm (the orchestrator is heavily biased
+      toward DCOPs)
+    * start all computations when starting the agent,
+      using `a.start(run_computations=True)`, which is the workaround tested here.
+    """
+    class TestComputation1(MessagePassingComputation):
+        def __init__(self):
+            super().__init__("c1")
+
+        def on_start(self):
+            # self.logger.info("Starting c1, send to c2")
+            self.post_msg("c2", Message("foo"))
+
+    class TestComputation2(MessagePassingComputation):
+        def __init__(self):
+            super().__init__("c2")
+            self.received = False
+
+        # def on_start(self):
+        #     # self.logger.info("Starting c2")
+        #     pass
+
+        @register("foo")
+        def on_foo(self, sender, msg, t):
+            self.logger.info(f"Receiving message {msg} from {sender}")
+            self.received = True
+
+    c1 = TestComputation1()
+    c2 = TestComputation2()
+
+    a1 = Agent("a1", InProcessCommunicationLayer())
+    a1.add_computation(c1)
+    a2 = Agent("a2", InProcessCommunicationLayer())
+    a2.add_computation(c2)
+
+    a1.discovery.register_computation("c2", "a2", a2.address)
+    a2.discovery.register_computation("c1", "a1", a1.address)
+
+    agts = [a1, a2]
+    for a in agts:
+        a.start(run_computations=True)
+
+    sleep(0.5)
+
+    for a in agts:
+        a.stop()
+    for a in agts:
+        a.join()
+
+
+    # Check that c2 really received the message
+    assert c2.received
+

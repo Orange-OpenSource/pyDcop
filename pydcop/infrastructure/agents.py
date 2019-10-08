@@ -321,7 +321,7 @@ class Agent(object):
         """
         return self._comm.address
 
-    def start(self):
+    def start(self, run_computations = False):
         """
         Starts the agent.
 
@@ -347,6 +347,7 @@ class Agent(object):
                                  .format(self.name))
         self.logger.info('Starting agent %s ', self.name)
         self._running = True
+        self.run_computations = run_computations
         self._start_t = perf_counter()
         self.t.start()
 
@@ -787,6 +788,8 @@ class Agent(object):
         try:
             self._running = True
             self._on_start()
+            if self.run_computations:
+                self.run()
             while not self._stopping.is_set():
                 # Process messages, if any
                 full_msg, t = self._messaging.next_msg(0.05)
