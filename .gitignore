@@ -76,3 +76,10 @@ target/
 *pulp.sol
 /.python-version
 /.vscode/settings.json
+/docs/_figures_src/*.aux
+/docs/_figures_src/factor_graph.pdf
+/docs/_figures_src/factor_graph.png
+/docs/_figures_src/fg_distribution.pdf
+/docs/_figures_src/fg_distribution.png
+/tests/unit/progress
+/todo.txt
