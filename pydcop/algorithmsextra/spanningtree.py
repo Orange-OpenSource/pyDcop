@@ -303,7 +303,6 @@ class SpanningTreeComputation(MessagePassingComputation):
                     self.post_msg(msg.sender, RejectMessage(self.name))
                 else:
                     self.logger.debug(f"Try test on next edge on {self.name}")
-
                     self.test()
 
     @register("reject")
@@ -344,7 +343,7 @@ class SpanningTreeComputation(MessagePassingComputation):
                 )
                 self.best_weight = msg.weight
                 self.best_edge = msg.sender
-                self.report()
+            self.report()
         else:
             if self.state == NodeState.FIND:
                 # Postpone message:
@@ -364,7 +363,6 @@ class SpanningTreeComputation(MessagePassingComputation):
                         self.logger.debug(
                             f"Cannot finish on {self.name} {msg.weight} != {self.best_weight} "
                         )
-
 
     def change_root(self):
         if self.neighbors_labels[self.best_edge] == EdgeLabel.BRANCH:
