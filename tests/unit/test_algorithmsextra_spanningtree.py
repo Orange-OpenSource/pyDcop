@@ -117,6 +117,22 @@ def test_find_best_edge_with_filter_empty():
     assert "empty" in str(exceptinfo.value)
 
 
+def test_single_node():
+    """
+    Test with a graph made of a single node.
+    Of course, the MST is the single node as well, and we cannot check that edges are
+    correctly labelled, as there are no edges !
+    Thus, we simply want to make sure the computation terminates.
+    """
+    c1 = SpanningTreeComputation('c1', [], wakeup_at_start=True)
+    a1 = Agent("a1", InProcessCommunicationLayer())
+    a1.add_computation(c1)
+
+    run_agents({"a1":a1})
+    labels = extract_tree({"c1": c1})
+    assert not labels
+
+
 def test_two_nodes():
     """
     Very simple test: the graph is only made of two nodes and a simple edge,
@@ -127,7 +143,6 @@ def test_two_nodes():
     initial_wake_up = random.choice(list(computations.values()))
     initial_wake_up.wakeup_at_start = True
 
-    # let the system run for 2 seconds
     run_agents(agents)
 
     labels = extract_tree(computations)

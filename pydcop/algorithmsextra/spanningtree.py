@@ -174,8 +174,10 @@ class SpanningTreeComputation(MessagePassingComputation):
             # Now we wait from a message from `best_edge`
 
         except ValueError:
-            # this node has no neighbors ! nothing to do
+            # this node has no neighbors ! nothing to do, we can terminate directly
             self.state = NodeState.FOUND
+            self.stop()
+
 
     @register("connect")
     def on_connect(self, _sender: str, msg: ConnectMessage, t: float) -> None:
