@@ -29,8 +29,15 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """
 
-Distributed algorithm for Minimum Spanning Tree (MST)
+Distributed algorithm for Minimum Spanning Tree (MST).
 
+based on the orginal article from Gallager, Humblet, and Spira.
+
+
+Startup:
+A computation (i.e. a node in the weighted graph) can be requested to wake up
+immediately at startup, otherwise, it will periodically attempt spontaneous
+wake-up, based on the `wakeup_delay` and `wakeup_probability` parameters.
 
 Compared to the original algorithm, an extra `terminate` message has been added
 to inform all nodes in the MST that the algorithm has terminated.
@@ -39,12 +46,15 @@ Note: many comments in this implementation mention 'min' (for example in the exp
 "min-weight outre edge), however it can actually be max when building a maximum
 weight spanning tree.
 
-* TODO: select node that wake up
-  especially for disconnected graphs !
+TODO: Use algo params
+TODO: add algorithm description and reference
+TODO: add in documentation
 
 """
 from enum import Enum
 from typing import List, Tuple
+
+from random import random
 
 from pydcop.infrastructure.computations import (
     MessagePassingComputation,
@@ -52,6 +62,11 @@ from pydcop.infrastructure.computations import (
     ComputationException,
     message_type,
 )
+
+
+WAKEUP_DELAY = 0.5
+
+WAKEUP_PROBABILITY = 0.3
 
 
 class NodeState(Enum):
@@ -78,7 +93,6 @@ AcceptMessage = message_type("accept", ["sender"])
 RejectMessage = message_type("reject", ["sender"])
 ReportMessage = message_type("report", ["sender", "weight"])
 ChangeRootMessage = message_type("change_root", ["sender"])
-ChangeRootMessage = message_type("change_root", ["sender"])
 TerminateMessage = message_type("terminate", ["sender"])
 
 
@@ -97,6 +111,12 @@ class SpanningTreeComputation(MessagePassingComputation):
         `min` or `max`
     wakeup_at_start: boolean
         Indicates if that node should wake spontaneously at startup, defaults to False.
+    wakeup_delay: float
+        Max delay for attempting to wake up.
+        If `wakeup_at_start` is False, the node will spontaneously wake up,
+        with probability `wakeup_probability` after a random delay between 0 and `wakeup_delay`
+    wakeup_probability: float
+        Probability to wake up, when attempting spontaneous wakeup.
     """
 
     def __init__(
@@ -105,6 +125,8 @@ class SpanningTreeComputation(MessagePassingComputation):
         neighbors: List[Tuple[str, float]],
         mode: str = "min",
         wakeup_at_start=False,
+        wakeup_delay=WAKEUP_DELAY,
+        wakeup_probability=WAKEUP_PROBABILITY,
     ):
         super().__init__(name)
         if mode not in ["min", "max"]:
@@ -113,7 +135,7 @@ class SpanningTreeComputation(MessagePassingComputation):
             )
         self.mode = mode
 
-        # Weights are used as frament'id, for that reason they must be unique
+        # Weights are used as fragment's id, for that reason they must be unique
         # as we also want to support weighted graph with non-distinct graphs,
         # we add the edge in our internal weight definition.
         # E.g we use (2, "A", "C), instead of simply 3,  as the weight for the edge
@@ -132,6 +154,8 @@ class SpanningTreeComputation(MessagePassingComputation):
         self.best_weight = None
         self.test_edge = None
         self.wakeup_at_start = wakeup_at_start
+        self.wakeup_delay = wakeup_delay
+        self.wakeup_probability = wakeup_probability
 
     @property
     def all_labelled(self):
@@ -151,10 +175,10 @@ class SpanningTreeComputation(MessagePassingComputation):
         # wake-up at random
         if self.wakeup_at_start:
             self.wakeup()
-        # else:
-        #     # FIXME: re-try if nobody wakes up after some time ?
-        #     if random() > 0.5:
-        #         self.wakeup()
+        else:
+            self.add_periodic_action(
+                self.wakeup_delay * random(), self.tentative_wakeup
+            )
 
     def wakeup(self):
         """Wakeup make a single node a fragment of level 0."""
@@ -178,6 +202,17 @@ class SpanningTreeComputation(MessagePassingComputation):
             self.state = NodeState.FOUND
             self.stop()
 
+    def tentative_wakeup(self):
+        if self.state == NodeState.SLEEPING:
+            self.logger.debug(
+                f"{self.name} still sleeping, attempting probabilistic wake up"
+            )
+            if random() > 1 - self.wakeup_probability:
+                self.wakeup()
+            else:
+                self.add_periodic_action(
+                    self.wakeup_delay * random(), self.tentative_wakeup
+                )
 
     @register("connect")
     def on_connect(self, _sender: str, msg: ConnectMessage, t: float) -> None:

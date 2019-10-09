@@ -33,7 +33,7 @@ Tests for the GHS Distributed Minimum Spanning tree algorithm.
 
 * TODO: test with several node waking up spontaneously
 * TODO: check minimum tree with networkx - for larger graphs
-* TODO: test with disconnected graph ? single node ?
+* TODO: test with disconnected graph ?
 
 """
 import random
@@ -117,18 +117,34 @@ def test_find_best_edge_with_filter_empty():
     assert "empty" in str(exceptinfo.value)
 
 
-def test_single_node():
+def test_single_node_wakeup():
     """
     Test with a graph made of a single node.
     Of course, the MST is the single node as well, and we cannot check that edges are
     correctly labelled, as there are no edges !
-    Thus, we simply want to make sure the computation terminates.
+    The node is requested to wakes up at startup,
+    we simply want to make sure the computation terminates.
     """
-    c1 = SpanningTreeComputation('c1', [], wakeup_at_start=True)
+    c1 = SpanningTreeComputation("c1", [], wakeup_at_start=True)
     a1 = Agent("a1", InProcessCommunicationLayer())
     a1.add_computation(c1)
 
-    run_agents({"a1":a1})
+    run_agents({"a1": a1})
+    labels = extract_tree({"c1": c1})
+    assert not labels
+
+
+def test_single_node_auto_wakeup():
+    """
+    Test with a graph made of a single node, as `test_single_node_wakeup`.
+    In this case, the node does not wake up at startup but MUST wake up
+    spontaneously after a while.
+    """
+    c1 = SpanningTreeComputation("c1", [], wakeup_at_start=False)
+    a1 = Agent("a1", InProcessCommunicationLayer())
+    a1.add_computation(c1)
+
+    run_agents({"a1": a1})
     labels = extract_tree({"c1": c1})
     assert not labels
 
@@ -196,6 +212,26 @@ def test_3_nodes_loop_min():
     assert labels[("c2", "c3")] == EdgeLabel.BRANCH
 
 
+def test_3_nodes_loop_min_auto_wakeup():
+    """
+    Three nodes, three edges
+    * minimum weight spanning tree
+    * the spanning tree must exclude the most expensive edge
+    * single spontaneous waking up node
+
+    """
+
+    edges = [("c1", "c2", 1), ("c2", "c3", 2), ("c3", "c1", 3)]
+    graph, computations, agents = build_computation(edges, "min")
+
+    run_agents(agents)
+    labels = extract_tree(computations)
+
+    assert labels[("c1", "c2")] == EdgeLabel.BRANCH
+    assert labels[("c1", "c3")] == EdgeLabel.REJECTED
+    assert labels[("c2", "c3")] == EdgeLabel.BRANCH
+
+
 # noinspection DuplicatedCode
 def test_3_nodes_as_loop_max():
     """
@@ -245,23 +281,15 @@ def test_3_nodes_as_loop_same_weights():
     assert labels[("c2", "c3")] == EdgeLabel.REJECTED
 
 
-def test_5_nodes_min():
+def test_5_nodes_min(graph_5_nodes):
     """
     5 nodes, 6 edges
     * minimum weight spanning tree (MST)
     * the spanning tree must exclude the two most expensive edges
     * 2 spontaneous waking up node
     """
-
-    graph, computations, agents = build_computation(
-        [
-            ("A", "B", 2),
-            ("A", "C", 6),
-            ("B", "C", 4),
-            ("B", "D", 3),
-            ("C", "E", 5),
-            ("D", "E", 1),
-        ],
+    edges, excluded = graph_5_nodes
+    graph, computations, agents = build_computation(edges,
         "min",
     )
 
@@ -271,26 +299,18 @@ def test_5_nodes_min():
     run_agents(agents)
 
     labels = extract_tree(computations)
-    check_mst(labels, {("A", "C"), ("C", "E")})
+    check_mst(labels, excluded)
 
 
-def test_5_nodes_max():
+def test_5_nodes_max(graph_5_nodes):
     """
     5 nodes, 6 edges
     * maximum weight spanning tree (MST)
     * the spanning tree must exclude the two least expensive edges
     * 2 spontaneous waking up node
     """
-
-    graph, computations, agents = build_computation(
-        [
-            ("A", "B", 2),
-            ("A", "C", 6),
-            ("B", "C", 4),
-            ("B", "D", 3),
-            ("C", "E", 5),
-            ("D", "E", 1),
-        ],
+    edges, excluded = graph_5_nodes
+    graph, computations, agents = build_computation(edges,
         "max",
     )
 
@@ -300,38 +320,18 @@ def test_5_nodes_max():
     run_agents(agents)
 
     labels = extract_tree(computations)
-    check_mst(labels, {("A", "B"), ("D", "E")})
+    check_mst(labels, [("A", "B"), ("D", "E")])
 
 
-def test_graph1():
+def test_graph1(graph1_edges):
     """
     Larger graph, still with distinct weights
     Test case from:
     https://github.com/arjun-menon/Distributed-Graph-Algorithms/tree/master/Minimum-Spanning-Tree
 
     """
-    graph, computations, agents = build_computation(
-        [
-            ("A", "F", 2),
-            ("F", "G", 7),
-            ("G", "H", 15),
-            ("H", "J", 13),
-            ("J", "I", 9),
-            ("I", "C", 18),
-            ("C", "B", 17),
-            ("B", "A", 3),
-            ("E", "F", 1),
-            ("E", "G", 6),
-            ("E", "H", 5),
-            ("E", "I", 10),
-            ("E", "D", 11),
-            ("I", "H", 12),
-            ("D", "I", 4),
-            ("D", "C", 8),
-            ("D", "B", 16),
-        ],
-        "min",
-    )
+    edges, excluded = graph1_edges
+    graph, computations, agents = build_computation(edges, "min")
 
     for initial_wake_up in random.sample(list(computations.values()), 3):
         initial_wake_up.wakeup_at_start = True
@@ -340,50 +340,18 @@ def test_graph1():
 
     labels = extract_tree(computations)
 
-    check_mst(
-        labels,
-        [
-            ("C", "I"),
-            ("C", "B"),
-            ("B", "D"),
-            ("D", "E"),
-            ("H", "J"),
-            ("H", "I"),
-            ("H", "G"),
-            ("F", "G"),
-        ],
-    )
+    check_mst(labels, excluded)
 
 
-def test_graph1_single_wakeup():
+def test_graph1_single_wakeup(graph1_edges):
     """
     Larger graph, still with distinct weights
     Test case from:
     https://github.com/arjun-menon/Distributed-Graph-Algorithms/tree/master/Minimum-Spanning-Tree
 
     """
-    graph, computations, agents = build_computation(
-        [
-            ("A", "F", 2),
-            ("F", "G", 7),
-            ("G", "H", 15),
-            ("H", "J", 13),
-            ("J", "I", 9),
-            ("I", "C", 18),
-            ("C", "B", 17),
-            ("B", "A", 3),
-            ("E", "F", 1),
-            ("E", "G", 6),
-            ("E", "H", 5),
-            ("E", "I", 10),
-            ("E", "D", 11),
-            ("I", "H", 12),
-            ("D", "I", 4),
-            ("D", "C", 8),
-            ("D", "B", 16),
-        ],
-        "min",
-    )
+    edges, excluded = graph1_edges
+    graph, computations, agents = build_computation(edges, "min")
 
     for initial_wake_up in random.sample(list(computations.values()), 1):
         initial_wake_up.wakeup_at_start = True
@@ -392,19 +360,22 @@ def test_graph1_single_wakeup():
 
     labels = extract_tree(computations)
 
-    check_mst(
-        labels,
-        [
-            ("C", "I"),
-            ("C", "B"),
-            ("B", "D"),
-            ("D", "E"),
-            ("H", "J"),
-            ("H", "I"),
-            ("H", "G"),
-            ("F", "G"),
-        ],
-    )
+    check_mst(labels, excluded)
+
+
+def test_graph1_auto_wakeup(graph1_edges):
+    """
+    This time, no node is requested to wake up at startup, they should start by
+    themself after a while.
+    """
+    edges, excluded = graph1_edges
+    graph, computations, agents = build_computation(edges, "min")
+
+    run_agents(agents)
+
+    labels = extract_tree(computations)
+
+    check_mst(labels, excluded)
 
 
 def extract_tree(computations):
@@ -488,3 +459,51 @@ def run_agents(agents):
 
     for a in agents.values():
         a.join()
+
+
+@pytest.fixture
+def graph_5_nodes():
+    edges = [
+        ("A", "B", 2),
+        ("A", "C", 6),
+        ("B", "C", 4),
+        ("B", "D", 3),
+        ("C", "E", 5),
+        ("D", "E", 1),
+    ]
+    excluded = [("A", "C"), ("C", "E")]
+    return edges, excluded
+
+
+@pytest.fixture
+def graph1_edges():
+    edges = [
+        ("A", "F", 2),
+        ("F", "G", 7),
+        ("G", "H", 15),
+        ("H", "J", 13),
+        ("J", "I", 9),
+        ("I", "C", 18),
+        ("C", "B", 17),
+        ("B", "A", 3),
+        ("E", "F", 1),
+        ("E", "G", 6),
+        ("E", "H", 5),
+        ("E", "I", 10),
+        ("E", "D", 11),
+        ("I", "H", 12),
+        ("D", "I", 4),
+        ("D", "C", 8),
+        ("D", "B", 16),
+    ]
+    excluded = [
+        ("C", "I"),
+        ("C", "B"),
+        ("B", "D"),
+        ("D", "E"),
+        ("H", "J"),
+        ("H", "I"),
+        ("H", "G"),
+        ("F", "G"),
+    ]
+    return edges, excluded
