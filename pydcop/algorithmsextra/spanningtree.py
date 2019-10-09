@@ -107,12 +107,21 @@ class SpanningTreeComputation(MessagePassingComputation):
                 f"Invalid mode in SpanningTreeComputation, use 'min or 'max', not {mode}"
             )
         self.mode = mode
-        self.neighbors_weights = {n: w for n, w in neighbors}
-        self.neighbors_labels = {n: EdgeLabel.BASIC for n, w in neighbors}
+
+        # Weights are used as frament'id, for that reason they must be unique
+        # as we also want to support weighted graph with non-distinct graphs,
+        # we add the edge in our internal weight definition.
+        # E.g we use (2, "A", "C), instead of simply 3,  as the weight for the edge
+        # ("A", "C"). Note that the edge's nodes must be sorted !
+        self.weights = {n: (w, to_edge(name, n)) for n, w in neighbors}
+
+        # Each edge is labelled to indicated if it is part of the MST or not
+        # (or if we haven't decided yet)
+        self.labels = {n: EdgeLabel.BASIC for n, w in neighbors}
         self.state = NodeState.SLEEPING
         self.level = None
         self.find_count = None
-        self.fragment_identity = None  # FIXME: id is weight and edge in our case
+        self.fragment_identity = None
         self.in_branch = None
         self.best_edge = None
         self.best_weight = None
@@ -141,10 +150,10 @@ class SpanningTreeComputation(MessagePassingComputation):
             raise ComputationException("Cannot wake up when not sleeping")
 
         try:
-            best_edge, best_weight = find_best_edge(self.neighbors_weights, self.mode)
+            best_edge, best_weight = find_best_edge(self.weights, self.mode)
             self.logger.debug(f"Wake up on {self.name}  - send connect to {best_edge}")
 
-            self.neighbors_labels[best_edge] = EdgeLabel.BRANCH
+            self.labels[best_edge] = EdgeLabel.BRANCH
             self.level = 0
             self.state = NodeState.FOUND
             self.find_count = 0
@@ -176,7 +185,7 @@ class SpanningTreeComputation(MessagePassingComputation):
             self.wakeup()
         if msg.level < self.level:
             self.logger.debug(f"Connect from lower level fragment {msg} on {self.name}")
-            self.neighbors_labels[msg.sender] = EdgeLabel.BRANCH
+            self.labels[msg.sender] = EdgeLabel.BRANCH
             self.post_msg(
                 msg.sender,
                 InitiateMessage(
@@ -186,12 +195,12 @@ class SpanningTreeComputation(MessagePassingComputation):
             if self.state == NodeState.FIND:
                 self.find_count += 1
         else:
-            if self.neighbors_labels[msg.sender] == EdgeLabel.BASIC:
+            if self.labels[msg.sender] == EdgeLabel.BASIC:
                 # Postpone message until our level is higher
                 self.logger.debug(f"Postponing on {self.name} msg {msg}")
                 self.post_msg(self.name, msg)
             else:
-                new_id = self.neighbors_weights[msg.sender]  # FIXME: weight as id
+                new_id = self.weights[msg.sender]
                 self.logger.debug(
                     f"New fragment creation on {self.name}  "
                     f" new id: {new_id} level: {self.level+1}"
@@ -229,11 +238,8 @@ class SpanningTreeComputation(MessagePassingComputation):
         self.best_weight = inf_val(self.mode)
 
         # Send initiate to all other neighbors
-        for neighbor in self.neighbors_weights:
-            if (
-                neighbor == msg.sender
-                or self.neighbors_labels[neighbor] != EdgeLabel.BRANCH
-            ):
+        for neighbor in self.weights:
+            if neighbor == msg.sender or self.labels[neighbor] != EdgeLabel.BRANCH:
                 continue
             self.post_msg(
                 neighbor,
@@ -254,10 +260,7 @@ class SpanningTreeComputation(MessagePassingComputation):
 
         try:
             best_edge, best_weight = find_best_edge(
-                self.neighbors_weights,
-                self.mode,
-                self.neighbors_labels,
-                EdgeLabel.BASIC,
+                self.weights, self.mode, self.labels, EdgeLabel.BASIC
             )
             self.logger.debug(
                 f"Found best weight 'BASIC' edge {best_edge}, send test on id "
@@ -307,11 +310,11 @@ class SpanningTreeComputation(MessagePassingComputation):
                 self.logger.debug(
                     f"test from same level {msg} on {self.name} {self.level} {self.fragment_identity}"
                 )
-                if self.neighbors_labels[msg.sender] == EdgeLabel.BASIC:
+                if self.labels[msg.sender] == EdgeLabel.BASIC:
                     self.logger.debug(
                         f"Label edge {msg.sender} - {self.name} as `REJECTED`"
                     )
-                    self.neighbors_labels[msg.sender] = EdgeLabel.REJECTED
+                    self.labels[msg.sender] = EdgeLabel.REJECTED
                 if self.test_edge != msg.sender:
                     self.logger.debug(f"Reject test from {msg.sender} on {self.name}")
                     self.post_msg(msg.sender, RejectMessage(self.name))
@@ -322,19 +325,17 @@ class SpanningTreeComputation(MessagePassingComputation):
     @register("reject")
     def on_reject(self, _sender, msg, _t: float):
         self.logger.debug(f"On reject msg from {msg.sender} on {self.name} : {msg}")
-        if self.neighbors_labels[msg.sender] == EdgeLabel.BASIC:
-            self.neighbors_labels[msg.sender] = EdgeLabel.REJECTED
+        if self.labels[msg.sender] == EdgeLabel.BASIC:
+            self.labels[msg.sender] = EdgeLabel.REJECTED
         self.test()
 
     @register("accept")
     def on_accept(self, _sender, msg, _t: float):
         self.logger.debug(f"On accept msg from {msg.sender} on {self.name} : {msg}")
         self.test_edge = None
-        if is_best_weight(
-            self.neighbors_weights[msg.sender], self.best_weight, self.mode
-        ):
+        if is_best_weight(self.weights[msg.sender], self.best_weight, self.mode):
             self.best_edge = msg.sender
-            self.best_weight = self.neighbors_weights[msg.sender]
+            self.best_weight = self.weights[msg.sender]
         self.report()
 
     def report(self):
@@ -382,11 +383,11 @@ class SpanningTreeComputation(MessagePassingComputation):
                         )
 
     def change_root(self):
-        if self.neighbors_labels[self.best_edge] == EdgeLabel.BRANCH:
+        if self.labels[self.best_edge] == EdgeLabel.BRANCH:
             self.post_msg(self.best_edge, ChangeRootMessage(self.name))
         else:
             self.post_msg(self.best_edge, ConnectMessage(self.name, self.level))
-            self.neighbors_labels[self.best_edge] = EdgeLabel.BRANCH
+            self.labels[self.best_edge] = EdgeLabel.BRANCH
 
     @register("changeroot")
     def on_changeroot(self, _sender: str, msg: ChangeRootMessage, _t: float):
@@ -408,7 +409,10 @@ class SpanningTreeComputation(MessagePassingComputation):
 
 def inf_val(mode: str) -> float:
     """
-    Return the appropriate infinite value dependeing on mode
+    Return the appropriate infinite value depending on mode.
+
+    Note that the value is returned as a single-value tuple, in order to be
+    compared with weights, which are represented as tuples.
 
     Parameters
     ----------
@@ -417,10 +421,10 @@ def inf_val(mode: str) -> float:
 
     Returns
     -------
-    float
-        - inf or inf
+    tuple
+        a single-value tuple containing `-inf` or `inf`
      """
-    return float("inf") if mode == "min" else -float("inf")
+    return (float("inf"),) if mode == "min" else (-float("inf"),)
 
 
 def is_best_weight(w1, w2, mode: str) -> bool:
@@ -485,3 +489,12 @@ def find_best_edge(
     else:
         max_w, e = max(edges)
     return e, max_w
+
+
+def to_edge(node1, node2):
+    """
+    Make sure tuple representing edge are always ordered.
+    """
+    if node1 < node2:
+        return node1, node2
+    return node2, node1

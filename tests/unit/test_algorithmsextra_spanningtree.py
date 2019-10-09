@@ -31,11 +31,10 @@
 """
 Tests for the GHS Distributed Minimum Spanning tree algorithm.
 
-TODO:
-* test with identical weights on two edges
-* test with several node waking up spontaneously
-* check minimum tree with networkx - for larger graphs
-* test with disconnected graph ? single node ?
+* TODO: test with several node waking up spontaneously
+* TODO: check minimum tree with networkx - for larger graphs
+* TODO: test with disconnected graph ? single node ?
+* TODO: make tests faster ! requires termination detection
 
 """
 import random
@@ -51,14 +50,20 @@ from pydcop.algorithmsextra.spanningtree import (
     inf_val,
     is_best_weight,
     find_best_edge,
+    to_edge,
 )
 from pydcop.infrastructure.agents import Agent
 from pydcop.infrastructure.communication import InProcessCommunicationLayer
 
 
+def test_to_edge():
+    assert to_edge("A", "B") == ("A", "B")
+    assert to_edge("D", "B") == ("B", "D")
+
+
 def test_inf_value():
-    assert inf_val("min") == float("inf")
-    assert inf_val("max") == -float("inf")
+    assert inf_val("min") == (float("inf"),)
+    assert inf_val("max") == (-float("inf"),)
 
 
 def test_best_val():
@@ -202,6 +207,30 @@ def test_3_nodes_as_loop_max():
     assert labels[("c2", "c3")] == EdgeLabel.BRANCH
 
 
+def test_3_nodes_as_loop_same_weights():
+    """
+    Three nodes, three edges
+    * minimum weight spanning tree
+    *  all edges have the same weights, edge tuple is used to differentiate them
+    * single spontaneous waking up node
+
+    """
+
+    edges = [("c1", "c2", 1), ("c2", "c3", 1), ("c3", "c1", 1)]
+    graph, computations, agents = build_computation(edges, "min")
+
+    initial_wake_up = random.choice(list(computations.values()))
+    initial_wake_up.wakeup_at_start = True
+
+    run_agents(agents, 3)
+
+    labels = extract_tree(computations)
+
+    assert labels[("c1", "c2")] == EdgeLabel.BRANCH
+    assert labels[("c1", "c3")] == EdgeLabel.BRANCH
+    assert labels[("c2", "c3")] == EdgeLabel.REJECTED
+
+
 def test_5_nodes_min():
     """
     5 nodes, 6 edges
@@ -261,7 +290,7 @@ def test_5_nodes_max():
         assert c.is_done
 
     labels = extract_tree(computations)
-    check_mst(labels,  {("A", "B"), ("D", "E")})
+    check_mst(labels, {("A", "B"), ("D", "E")})
 
 
 def test_graph1():
@@ -378,15 +407,15 @@ def extract_tree(computations):
     assert all(c.is_done for c in computations.values())
     labels = {}
     for c in computations.values():
-        for n in c.neighbors_labels:
+        for n in c.labels:
             edge = tuple(sorted([c.name, n]))
             if edge in labels:
                 # Make sure the label are coherent on both nodes !
                 assert (
-                    labels[edge] == c.neighbors_labels[n]
+                    labels[edge] == c.labels[n]
                 ), f"incoherent edeg label {edge} {c.name}"
             else:
-                labels[edge] = c.neighbors_labels[n]
+                labels[edge] = c.labels[n]
     return labels
 
 
