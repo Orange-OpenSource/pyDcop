@@ -851,6 +851,9 @@ class Agent(object):
                     self._periodic_cb[cb] = (p, ct)
                     cb()
 
+    def has_running_computations(self):
+        return any(c.is_running for c in self.computations())
+
     def is_idle(self):
         """
         Indicate if the agent is idle. An idle agent is an agent which has no
