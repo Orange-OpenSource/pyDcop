@@ -377,3 +377,83 @@ class SpanningTreeComputation(MessagePassingComputation):
             f"On test changeroot msg from {msg.sender} on {self.name} : {msg}"
         )
         self.changeroot()
+
+def inf_val(mode: str) -> float:
+    """
+    Return the appropriate infinite value dependeing on mode
+
+    Parameters
+    ----------
+    mode: str
+        `min` or `max`
+
+    Returns
+    -------
+    float
+        - inf or inf
+     """
+    return float("inf") if mode == "min" else -float("inf")
+
+
+def is_best_weight(w1, w2, mode: str) -> bool:
+    """
+    returns True if w1 is 'better' than 'w2', depending on the mode.
+
+    Parameters
+    ----------
+    w1: number
+        a node weight
+    w2: number
+        a node weight
+    mode: str
+        'min' or 'max'
+
+    Returns
+    -------
+    bool:
+        True if w1 is 'better' than 'w2', depending on the mode.
+    """
+    if mode == "min":
+        return w1 < w2
+    else:
+        return w1 > w2
+
+
+def find_best_edge(
+    weights, mode: str, labels=None, filter_label=None
+) -> Tuple[str, float]:
+    """
+    Find the edge with the best weight, according to `mode`.
+
+    Parameters
+    ----------
+    weights : dict
+        Dict of weights.
+    mode: str
+        `min` or `max`
+    labels: dict
+        Dict of labels, only used when filtering.
+    filter_label: EdgeLabel
+        When used, only edges with this label will be considered.
+
+    Returns
+    -------
+    tuple:
+        edge name, weight
+
+    Raises
+    ------
+    ValueError
+        If there is no edge or the filter excluded all edges.
+    """
+    if filter_label is None:
+        edges = [(w, e) for e, w in weights.items()]
+    else:
+        edges = [(w, e) for e, w in weights.items() if labels[e] == filter_label]
+
+    if mode == "min":
+        min_w, e = min(edges)
+        return e, min_w
+    else:
+        max_w, e = max(edges)
+    return e, max_w

@@ -41,13 +41,74 @@ from time import sleep
 from typing import Dict
 
 import networkx as nx
+import pytest
 
 from pydcop.algorithmsextra.spanningtree import (
     SpanningTreeComputation,
     EdgeLabel,
+    inf_val,
+    is_best_weight,
+    find_best_edge,
 )
 from pydcop.infrastructure.agents import Agent
 from pydcop.infrastructure.communication import InProcessCommunicationLayer
+
+
+def test_inf_value():
+    assert inf_val("min") == float("inf")
+    assert inf_val("max") == -float("inf")
+
+
+def test_best_val():
+    assert is_best_weight(2, 5, "min")
+    assert not is_best_weight(8, 5, "min")
+
+    assert is_best_weight(7, 1, "max")
+    assert not is_best_weight(2, 5, "max")
+
+
+def test_find_best_edge():
+
+    assert find_best_edge({"A": 5, "B": 1, "C": 3}, "min") == ("B", 1)
+    assert find_best_edge({"A": 5, "B": 1, "C": 3}, "max") == ("A", 5)
+
+
+def test_find_best_edge_with_filter():
+
+    assert find_best_edge(
+        {"A": 5, "B": 1, "C": 3},
+        "min",
+        {"A": EdgeLabel.BASIC, "B": EdgeLabel.BRANCH, "C": EdgeLabel.BASIC},
+        filter_label=EdgeLabel.BASIC,
+    ) == ("C", 3)
+
+    assert find_best_edge(
+        {"A": 5, "B": 1, "C": 3},
+        "max",
+        {"A": EdgeLabel.BRANCH, "B": EdgeLabel.BASIC, "C": EdgeLabel.BASIC},
+        filter_label=EdgeLabel.BASIC,
+    ) == ("C", 3)
+
+
+def test_find_best_edge_with_filter_empty():
+
+    with pytest.raises(ValueError) as exceptinfo:
+        find_best_edge(
+            {"A": 5, "B": 1, "C": 3},
+            "min",
+            {"A": EdgeLabel.BRANCH, "B": EdgeLabel.BRANCH, "C": EdgeLabel.BRANCH},
+            filter_label=EdgeLabel.BASIC,
+        )
+    assert "empty" in str(exceptinfo.value)
+
+    with pytest.raises(ValueError) as exceptinfo:
+        find_best_edge(
+            {"A": 5, "B": 1, "C": 3},
+            "max",
+            {"A": EdgeLabel.BRANCH, "B": EdgeLabel.BRANCH, "C": EdgeLabel.BRANCH},
+            filter_label=EdgeLabel.BASIC,
+        )
+    assert "empty" in str(exceptinfo.value)
 
 
 def test_two_nodes():
