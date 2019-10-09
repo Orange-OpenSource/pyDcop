@@ -95,6 +95,10 @@ class SpanningTreeComputation(MessagePassingComputation):
         wakeup_at_start=False,
     ):
         super().__init__(name)
+        if mode not in ["min", "max"]:
+            raise ComputationException(
+                f"Invalid mode in SpanningTreeComputation, use 'min or 'max', not {mode}"
+            )
         self.mode = mode
         self.neighbors_weights = {n: w for n, w in neighbors}
         self.neighbors_labels = {n: EdgeLabel.BASIC for n, w in neighbors}
@@ -126,21 +130,21 @@ class SpanningTreeComputation(MessagePassingComputation):
         if self.state != NodeState.SLEEPING:
             self.logger.error(f"Cannot wake up when not sleeping at {self.name}")
             raise ComputationException("Cannot wake up when not sleeping")
-        # find best out edge
-        if self.mode == "min":
-            best_w, best_edge = min((w, n) for n, w in self.neighbors_weights.items())
 
-        else:
-            best_w, best_edge = min((w, n) for n, w in self.neighbors_weights.items())
+        try:
+            best_edge, best_weight = find_best_edge(self.neighbors_weights, self.mode)
+            self.logger.debug(f"Wake up on {self.name}  - send connect to {best_edge}")
 
-        self.logger.debug(f"Wake up on {self.name}  - send connect to {best_edge}")
+            self.neighbors_labels[best_edge] = EdgeLabel.BRANCH
+            self.level = 0
+            self.state = NodeState.FOUND
+            self.find_count = 0
+            self.post_msg(best_edge, ConnectMessage(self.name, 0))
+            # Now we wait from a message from `best_edge`
 
-        self.neighbors_labels[best_edge] = EdgeLabel.BRANCH
-        self.level = 0
-        self.state = NodeState.FOUND
-        self.find_count = 0
-        self.post_msg(best_edge, ConnectMessage(self.name, 0))
-        # Now we wait from a message from `best_edge`
+        except ValueError:
+            # this node has no neighbors ! nothing to do
+            self.state = NodeState.FOUND
 
     @register("connect")
     def on_connect(self, sender: str, msg: ConnectMessage, t: float) -> None:
@@ -213,7 +217,7 @@ class SpanningTreeComputation(MessagePassingComputation):
         self.state = msg.state
         self.in_branch = msg.sender
         self.best_edge = None
-        self.best_weight = float("inf")  # if self.mode == "min" else -float("inf")
+        self.best_weight = inf_val(self.mode)
 
         # Send initiate to all other neighbors
         for neighbor in self.neighbors_weights:
@@ -238,21 +242,22 @@ class SpanningTreeComputation(MessagePassingComputation):
 
     def test(self):
         self.logger.debug(f"Test `BASIC` adjacent edges on {self.name}")
-        basic_edges = [
-            (self.neighbors_weights[n], n)
-            for n, label in self.neighbors_labels.items()
-            if label == EdgeLabel.BASIC
-        ]
-        if basic_edges:
-            _, min_edge = min(basic_edges)
+
+        try:
+            best_edge, best_weight = find_best_edge(
+                self.neighbors_weights,
+                self.mode,
+                self.neighbors_labels,
+                EdgeLabel.BASIC,
+            )
             self.logger.debug(
-                f"Found lowest weight basec edge {min_edge}, send test on id "
+                f"Found best weight 'BASIC' edge {best_edge}, send test on id "
             )
-            self.test_edge = min_edge
+            self.test_edge = best_edge
             self.post_msg(
-                min_edge, TestMessage(self.name, self.level, self.fragment_identity)
+                best_edge, TestMessage(self.name, self.level, self.fragment_identity)
             )
-        else:
+        except ValueError:
             # No `BASIC` adjacent edge here, can report directly
             self.logger.debug(
                 f"No `BASIC` adjacent edge on {self.name}, can report directly"
@@ -316,7 +321,9 @@ class SpanningTreeComputation(MessagePassingComputation):
     def on_accept(self, sender, msg, t: float):
         self.logger.debug(f"On accept msg from {msg.sender} on {self.name} : {msg}")
         self.test_edge = None
-        if self.neighbors_weights[msg.sender] < self.best_weight:
+        if is_best_weight(
+            self.neighbors_weights[msg.sender], self.best_weight, self.mode
+        ):
             self.best_edge = msg.sender
             self.best_weight = self.neighbors_weights[msg.sender]
         self.report()
@@ -337,7 +344,7 @@ class SpanningTreeComputation(MessagePassingComputation):
 
         if msg.sender != self.in_branch:
             self.find_count -= 1
-            if msg.weight < self.best_weight:  # FIXME: support min and max !
+            if is_best_weight(msg.weight, self.best_weight, self.mode):
                 self.logger.debug(
                     f"found better weight on {self.name}, keep reporting {msg}"
                 )
@@ -350,14 +357,15 @@ class SpanningTreeComputation(MessagePassingComputation):
                 self.logger.debug(f"Postponing on {self.name} msg {msg}")
                 self.post_msg(self.name, msg)
             else:
-                if msg.weight > self.best_weight:
+                if is_best_weight(self.best_weight, msg.weight, self.mode):
                     self.logger.debug(f"Changing root on {self.name} msg {msg}")
                     self.change_root()
                 else:
-                    if msg.weight == self.best_weight and msg.weight == float("inf"):
-                        # handle termination
+                    if msg.weight == self.best_weight and msg.weight == inf_val(
+                        self.mode
+                    ):
+                        # FIXME handle termination
                         self.logger.info(f"Finished on  {self.name} msg {msg}")
-                        self.state = NodeState.DONE
                         self.stop()
                     else:
                         self.logger.debug(
