@@ -31,9 +31,7 @@
 """
 Tests for the GHS Distributed Minimum Spanning tree algorithm.
 
-* TODO: test with several node waking up spontaneously
 * TODO: check minimum tree with networkx - for larger graphs
-* TODO: test with disconnected graph ?
 
 """
 import random
@@ -289,9 +287,7 @@ def test_5_nodes_min(graph_5_nodes):
     * 2 spontaneous waking up node
     """
     edges, excluded = graph_5_nodes
-    graph, computations, agents = build_computation(edges,
-        "min",
-    )
+    graph, computations, agents = build_computation(edges, "min")
 
     for initial_wake_up in random.sample(list(computations.values()), 2):
         initial_wake_up.wakeup_at_start = True
@@ -310,9 +306,7 @@ def test_5_nodes_max(graph_5_nodes):
     * 2 spontaneous waking up node
     """
     edges, excluded = graph_5_nodes
-    graph, computations, agents = build_computation(edges,
-        "max",
-    )
+    graph, computations, agents = build_computation(edges, "max")
 
     for initial_wake_up in random.sample(list(computations.values()), 2):
         initial_wake_up.wakeup_at_start = True
@@ -321,6 +315,21 @@ def test_5_nodes_max(graph_5_nodes):
 
     labels = extract_tree(computations)
     check_mst(labels, [("A", "B"), ("D", "E")])
+
+
+def test_disconnected_graph(graph_5_nodes):
+    """
+    Disconnected graph made of a 3 node loop and the 5 node graph.
+    """
+    edges, excluded = graph_5_nodes
+    edges += [("c1", "c2", 1), ("c2", "c3", 2), ("c3", "c1", 3)]
+    graph, computations, agents = build_computation(edges, "min")
+
+    run_agents(agents)
+
+    labels = extract_tree(computations)
+    excluded += [("c1", "c3")]
+    check_mst(labels, excluded)
 
 
 def test_graph1(graph1_edges):
