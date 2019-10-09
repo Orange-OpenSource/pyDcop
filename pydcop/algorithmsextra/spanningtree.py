@@ -77,7 +77,8 @@ TestMessage = message_type("test", ["sender", "level", "id"])
 AcceptMessage = message_type("accept", ["sender"])
 RejectMessage = message_type("reject", ["sender"])
 ReportMessage = message_type("report", ["sender", "weight"])
-ChangeRootMessage = message_type("changeroot", ["sender"])
+ChangeRootMessage = message_type("change_root", ["sender"])
+ChangeRootMessage = message_type("change_root", ["sender"])
 TerminateMessage = message_type("terminate", ["sender"])
 
 
@@ -424,8 +425,8 @@ class SpanningTreeComputation(MessagePassingComputation):
             self.post_msg(self.best_edge, ConnectMessage(self.name, self.level))
             self.labels[self.best_edge] = EdgeLabel.BRANCH
 
-    @register("changeroot")
-    def on_changeroot(self, _sender: str, msg: ChangeRootMessage, _t: float):
+    @register("change_root")
+    def on_change_root(self, _sender: str, msg: ChangeRootMessage, _t: float):
         """
 
         Parameters
@@ -437,12 +438,12 @@ class SpanningTreeComputation(MessagePassingComputation):
             time
         """
         self.logger.debug(
-            f"On test changeroot msg from {msg.sender} on {self.name} : {msg}"
+            f"On test change_root msg from {msg.sender} on {self.name} : {msg}"
         )
         self.change_root()
 
 
-def inf_val(mode: str) -> float:
+def inf_val(mode: str) -> Tuple:
     """
     Return the appropriate infinite value depending on mode.
 
