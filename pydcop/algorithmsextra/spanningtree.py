@@ -133,10 +133,18 @@ class SpanningTreeComputation(MessagePassingComputation):
         self.wakeup_at_start = wakeup_at_start
 
     @property
-    def is_done(self):
-        """ A node has finished running the algorithm once all its edges have been
-         labelled as BRANCH of REJECTED"""
-        return all(label != EdgeLabel.BASIC for label in self.neighbors_labels.values())
+    def all_labelled(self):
+        """
+        A node is `all_labelled` once all its edges have been labelled as BRANCH of REJECTED.
+
+        At the end, all node must have `all_labelled` equals to `True`.
+
+        Note that this does not mean that the whole distributed algorithm has
+        terminated, a node where `all_labelled` is True may still receive messages and
+        MUST NOT be stopped.
+
+         """
+        return all(label != EdgeLabel.BASIC for label in self.labels.values())
 
     def on_start(self):
         # wake-up at random
@@ -399,7 +407,7 @@ class SpanningTreeComputation(MessagePassingComputation):
         self.logger.debug(
             f"Received termination from {msg.sender} on {self.name}, propagate and stop"
         )
-        if not self.is_done:
+        if not self.all_labelled:
             self.logger.critical(
                 f"Invalid terminate message, all edges are not labelled on {self.name} : {self.labels}"
             )

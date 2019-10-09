@@ -254,8 +254,6 @@ def test_5_nodes_min():
         initial_wake_up.wakeup_at_start = True
 
     run_agents(agents)
-    for c in computations.values():
-        assert c.is_done
 
     labels = extract_tree(computations)
     check_mst(labels, {("A", "C"), ("C", "E")})
@@ -285,8 +283,6 @@ def test_5_nodes_max():
         initial_wake_up.wakeup_at_start = True
 
     run_agents(agents)
-    for c in computations.values():
-        assert c.is_done
 
     labels = extract_tree(computations)
     check_mst(labels, {("A", "B"), ("D", "E")})
@@ -326,8 +322,6 @@ def test_graph1():
         initial_wake_up.wakeup_at_start = True
 
     run_agents(agents)
-    for c in computations.values():
-        assert c.is_done
 
     labels = extract_tree(computations)
 
@@ -380,8 +374,6 @@ def test_graph1_single_wakeup():
         initial_wake_up.wakeup_at_start = True
 
     run_agents(agents)
-    for c in computations.values():
-        assert c.is_done
 
     labels = extract_tree(computations)
 
@@ -403,7 +395,7 @@ def test_graph1_single_wakeup():
 def extract_tree(computations):
     """ Extract edge labels from computations """
     # first, check all computation finished properly
-    assert all(c.is_done for c in computations.values())
+    assert all(c.all_labelled for c in computations.values())
     labels = {}
     for c in computations.values():
         for n in c.labels:
