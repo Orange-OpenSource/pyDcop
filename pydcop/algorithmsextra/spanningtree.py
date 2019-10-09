@@ -31,13 +31,13 @@
 
 Distributed algorithm for Minimum Spanning Tree (MST)
 
-Note: most comments in this implementation mention 'min' (for example in the expression
+Note: many comments in this implementation mention 'min' (for example in the expression
 "min-weight outre edge), however it can actually be max when building a maximum
 weight spanning tree.
 
-TODO:
-* select node that wake up
-* min / max
+* TODO: select node that wake up
+* TODO: better end detection => pass token to inform all nodes ?
+  should be easy now that we a tree !
 
 """
 from enum import Enum
@@ -85,6 +85,13 @@ class SpanningTreeComputation(MessagePassingComputation):
     ----------
     name: str
         the name of that node
+    neighbors: list
+        a list of tuples, which contains the name of a neighbor node with the weight of
+        the edge to that neighbor.
+    mode: str
+        `min` or `max`
+    wakeup_at_start: boolean
+        Indicates if that node should wake spontaneously at startup, defaults to False.
     """
 
     def __init__(
@@ -114,6 +121,8 @@ class SpanningTreeComputation(MessagePassingComputation):
 
     @property
     def is_done(self):
+        """ A node has finished running the algorithm once all its edges have been
+         labelled as BRANCH of REJECTED"""
         return all(label != EdgeLabel.BASIC for label in self.neighbors_labels.values())
 
     def on_start(self):
@@ -147,14 +156,14 @@ class SpanningTreeComputation(MessagePassingComputation):
             self.state = NodeState.FOUND
 
     @register("connect")
-    def on_connect(self, sender: str, msg: ConnectMessage, t: float) -> None:
+    def on_connect(self, _sender: str, msg: ConnectMessage, t: float) -> None:
         """
         A connect message is sent over the minimum-weight outer edge of a fragment,
         to connect to another fragment.
 
         Parameters
         ----------
-        sender: str
+        _sender: str
             sender of the message
         msg : ConnectMessage
             message
@@ -193,7 +202,7 @@ class SpanningTreeComputation(MessagePassingComputation):
                 )
 
     @register("initiate")
-    def on_initiate(self, sender: str, msg: InitiateMessage, t: float):
+    def on_initiate(self, _sender: str, msg: InitiateMessage, _t: float):
         """
         An `initiate` message starts the search for the minimum-weight outer edge for a
         fragment.
@@ -204,11 +213,11 @@ class SpanningTreeComputation(MessagePassingComputation):
         
         Parameters
         ----------
-        sender: str
+        _sender: str
             sender of the message
         msg: InitiateMessage
             message
-        t: float
+        _t: float
             time
         """
         self.logger.debug(f"Initiate from {msg.sender} on {self.name} : {msg}")
@@ -266,7 +275,7 @@ class SpanningTreeComputation(MessagePassingComputation):
             self.report()
 
     @register("test")
-    def on_test(self, sender, msg: TestMessage, t: float):
+    def on_test(self, _sender, msg: TestMessage, _t: float):
         """
         A `test` message is send over a `BASIC` edge, to check if that edge is an
         outgoing edge for the fragment.
@@ -277,9 +286,9 @@ class SpanningTreeComputation(MessagePassingComputation):
 
         Parameters
         ----------
-        sender
+        _sender
         msg
-        t
+        _t
 
         """
         self.logger.debug(f"On test msg on {self.name} : {msg}")
@@ -311,14 +320,14 @@ class SpanningTreeComputation(MessagePassingComputation):
                     self.test()
 
     @register("reject")
-    def on_reject(self, sender, msg, t: float):
+    def on_reject(self, _sender, msg, _t: float):
         self.logger.debug(f"On reject msg from {msg.sender} on {self.name} : {msg}")
         if self.neighbors_labels[msg.sender] == EdgeLabel.BASIC:
             self.neighbors_labels[msg.sender] = EdgeLabel.REJECTED
         self.test()
 
     @register("accept")
-    def on_accept(self, sender, msg, t: float):
+    def on_accept(self, _sender, msg, _t: float):
         self.logger.debug(f"On accept msg from {msg.sender} on {self.name} : {msg}")
         self.test_edge = None
         if is_best_weight(
@@ -337,7 +346,7 @@ class SpanningTreeComputation(MessagePassingComputation):
             self.post_msg(self.in_branch, ReportMessage(self.name, self.best_weight))
 
     @register("report")
-    def on_report(self, sender, msg: ReportMessage, t: float):
+    def on_report(self, _sender, msg: ReportMessage, _t: float):
         self.logger.debug(
             f"On report msg from {msg.sender} on {self.name} : {msg} {self.state}"
         )
@@ -380,11 +389,22 @@ class SpanningTreeComputation(MessagePassingComputation):
             self.neighbors_labels[self.best_edge] = EdgeLabel.BRANCH
 
     @register("changeroot")
-    def on_changeroot(self, sender, msg, t):
+    def on_changeroot(self, _sender: str, msg: ChangeRootMessage, _t: float):
+        """
+
+        Parameters
+        ----------
+        _sender : str
+        msg: ChangeRootMessage
+            message
+        _t: float
+            time
+        """
         self.logger.debug(
             f"On test changeroot msg from {msg.sender} on {self.name} : {msg}"
         )
-        self.changeroot()
+        self.change_root()
+
 
 def inf_val(mode: str) -> float:
     """
