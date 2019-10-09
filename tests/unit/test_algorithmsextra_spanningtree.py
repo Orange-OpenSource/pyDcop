@@ -34,7 +34,6 @@ Tests for the GHS Distributed Minimum Spanning tree algorithm.
 * TODO: test with several node waking up spontaneously
 * TODO: check minimum tree with networkx - for larger graphs
 * TODO: test with disconnected graph ? single node ?
-* TODO: make tests faster ! requires termination detection
 
 """
 import random
@@ -129,7 +128,7 @@ def test_two_nodes():
     initial_wake_up.wakeup_at_start = True
 
     # let the system run for 2 seconds
-    run_agents(agents, 2)
+    run_agents(agents)
 
     labels = extract_tree(computations)
 
@@ -150,7 +149,7 @@ def test_3_nodes_chain():
     initial_wake_up = random.choice(list(computations.values()))
     initial_wake_up.wakeup_at_start = True
 
-    run_agents(agents, 3)
+    run_agents(agents)
 
     labels = extract_tree(computations)
 
@@ -173,7 +172,7 @@ def test_3_nodes_loop_min():
     initial_wake_up = random.choice(list(computations.values()))
     initial_wake_up.wakeup_at_start = True
 
-    run_agents(agents, 3)
+    run_agents(agents)
 
     labels = extract_tree(computations)
 
@@ -198,7 +197,7 @@ def test_3_nodes_as_loop_max():
     initial_wake_up = random.choice(list(computations.values()))
     initial_wake_up.wakeup_at_start = True
 
-    run_agents(agents, 3)
+    run_agents(agents)
 
     labels = extract_tree(computations)
 
@@ -222,7 +221,7 @@ def test_3_nodes_as_loop_same_weights():
     initial_wake_up = random.choice(list(computations.values()))
     initial_wake_up.wakeup_at_start = True
 
-    run_agents(agents, 3)
+    run_agents(agents)
 
     labels = extract_tree(computations)
 
@@ -254,7 +253,7 @@ def test_5_nodes_min():
     for initial_wake_up in random.sample(list(computations.values()), 2):
         initial_wake_up.wakeup_at_start = True
 
-    run_agents(agents, 5)
+    run_agents(agents)
     for c in computations.values():
         assert c.is_done
 
@@ -285,7 +284,7 @@ def test_5_nodes_max():
     for initial_wake_up in random.sample(list(computations.values()), 2):
         initial_wake_up.wakeup_at_start = True
 
-    run_agents(agents, 5)
+    run_agents(agents)
     for c in computations.values():
         assert c.is_done
 
@@ -326,7 +325,7 @@ def test_graph1():
     for initial_wake_up in random.sample(list(computations.values()), 3):
         initial_wake_up.wakeup_at_start = True
 
-    run_agents(agents, 10)
+    run_agents(agents)
     for c in computations.values():
         assert c.is_done
 
@@ -380,7 +379,7 @@ def test_graph1_single_wakeup():
     for initial_wake_up in random.sample(list(computations.values()), 1):
         initial_wake_up.wakeup_at_start = True
 
-    run_agents(agents, 10)
+    run_agents(agents)
     for c in computations.values():
         assert c.is_done
 
@@ -468,13 +467,17 @@ def build_computation(edges, mode):
     return graph, computations, agents
 
 
-def run_agents(agents, duration):
+def run_agents(agents):
     for a in agents.values():
         a.start(run_computations=True)
 
-    sleep(duration)  # let the system run for 1 second
+    active_agents = list(agents.values())
+    while active_agents:
+        for a in active_agents:
+            if not a.has_running_computations():
+                a.stop()
+                active_agents.remove(a)
+        sleep(0.02)
 
     for a in agents.values():
-        if a.is_running:
-            a.stop()
         a.join()

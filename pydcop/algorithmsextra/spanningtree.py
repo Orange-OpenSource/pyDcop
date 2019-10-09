@@ -31,13 +31,16 @@
 
 Distributed algorithm for Minimum Spanning Tree (MST)
 
+
+Compared to the original algorithm, an extra `terminate` message has been added
+to inform all nodes in the MST that the algorithm has terminated.
+
 Note: many comments in this implementation mention 'min' (for example in the expression
 "min-weight outre edge), however it can actually be max when building a maximum
 weight spanning tree.
 
 * TODO: select node that wake up
-* TODO: better end detection => pass token to inform all nodes ?
-  should be easy now that we a tree !
+  especially for disconnected graphs !
 
 """
 from enum import Enum
@@ -75,6 +78,7 @@ AcceptMessage = message_type("accept", ["sender"])
 RejectMessage = message_type("reject", ["sender"])
 ReportMessage = message_type("report", ["sender", "weight"])
 ChangeRootMessage = message_type("changeroot", ["sender"])
+TerminateMessage = message_type("terminate", ["sender"])
 
 
 class SpanningTreeComputation(MessagePassingComputation):
@@ -374,13 +378,36 @@ class SpanningTreeComputation(MessagePassingComputation):
                     if msg.weight == self.best_weight and msg.weight == inf_val(
                         self.mode
                     ):
-                        # FIXME handle termination
                         self.logger.info(f"Finished on  {self.name} msg {msg}")
+                        # Propagate termination info to all other nodes of the MSt
+                        self.propagate_termination(msg.sender)
                         self.stop()
                     else:
                         self.logger.debug(
                             f"Cannot finish on {self.name} {msg.weight} != {self.best_weight} "
                         )
+
+    def propagate_termination(self, origin_node):
+        for node, label in self.labels.items():
+            if origin_node == node:
+                continue
+            if label == EdgeLabel.BRANCH:
+                self.post_msg(node, TerminateMessage(self.name))
+
+    @register("terminate")
+    def on_terminate(self, _sender, msg, _t):
+        self.logger.debug(
+            f"Received termination from {msg.sender} on {self.name}, propagate and stop"
+        )
+        if not self.is_done:
+            self.logger.critical(
+                f"Invalid terminate message, all edges are not labelled on {self.name} : {self.labels}"
+            )
+            raise ComputationException(
+                f"Invalid terminate message, all edges are not labelled on {self.name} : {self.labels}"
+            )
+        self.propagate_termination(msg.sender)
+        self.stop()
 
     def change_root(self):
         if self.labels[self.best_edge] == EdgeLabel.BRANCH:
