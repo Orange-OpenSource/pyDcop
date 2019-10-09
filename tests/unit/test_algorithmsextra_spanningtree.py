@@ -29,11 +29,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
+Tests for the GHS Distributed Minimum Spanning tree algorithm.
+
 TODO:
 * test with identical weights on two edges
 * test with several node waking up spontaneously
-* check minimum tree with networkx
-* test with max instead of min
+* check minimum tree with networkx - for larger graphs
+* test with disconnected graph ? single node ?
 
 """
 import random
@@ -116,9 +118,7 @@ def test_two_nodes():
     Very simple test: the graph is only made of two nodes and a simple edge,
     thus the spanning graph is the whole edge.
     """
-
-    edges = [("c1", "c2", 1)]
-    graph, computations, agents = build_computation(edges)
+    graph, computations, agents = build_computation([("c1", "c2", 1)], "min")
 
     initial_wake_up = random.choice(list(computations.values()))
     initial_wake_up.wakeup_at_start = True
@@ -126,41 +126,34 @@ def test_two_nodes():
     # let the system run for 2 seconds
     run_agents(agents, 2)
 
-    # first, check all computation finished properly
-    assert all(c.is_done for c in computations.values())
+    labels = extract_tree(computations)
 
-    # TODO: verify using networkx ?
-    # tree = nx.algorithms.tree.minimum_spanning_tree()
-
-    assert computations["c1"].neighbors_labels["c2"] == EdgeLabel.BRANCH
-    assert computations["c2"].neighbors_labels["c1"] == EdgeLabel.BRANCH
+    assert labels[("c1", "c2")] == EdgeLabel.BRANCH
 
 
-def test_3_nodes():
+def test_3_nodes_chain():
     """
     Three nodes, only two edges, the spanning tree is the whole graph.
     * weights are distinct
     * minimum weight spanning tree
     * single spontaneous waking up node
     """
-    edges = [("c1", "c2", 1), ("c2", "c3", 2)]
-    graph, computations, agents = build_computation(edges)
+    graph, computations, agents = build_computation(
+        [("c1", "c2", 1), ("c2", "c3", 2)], "min"
+    )
 
     initial_wake_up = random.choice(list(computations.values()))
     initial_wake_up.wakeup_at_start = True
 
     run_agents(agents, 3)
 
-    # first, check all computation finished properly
-    assert all(c.is_done for c in computations.values())
+    labels = extract_tree(computations)
 
-    assert computations["c1"].neighbors_labels["c2"] == EdgeLabel.BRANCH
-    assert computations["c2"].neighbors_labels["c1"] == EdgeLabel.BRANCH
-    assert computations["c2"].neighbors_labels["c3"] == EdgeLabel.BRANCH
-    assert computations["c3"].neighbors_labels["c2"] == EdgeLabel.BRANCH
+    assert labels[("c1", "c2")] == EdgeLabel.BRANCH
+    assert labels[("c2", "c3")] == EdgeLabel.BRANCH
 
 
-def test_3_nodes_as_loop():
+def test_3_nodes_loop_min():
     """
     Three nodes, three edges
     * minimum weight spanning tree
@@ -170,40 +163,64 @@ def test_3_nodes_as_loop():
     """
 
     edges = [("c1", "c2", 1), ("c2", "c3", 2), ("c3", "c1", 3)]
-    graph, computations, agents = build_computation(edges)
+    graph, computations, agents = build_computation(edges, "min")
 
     initial_wake_up = random.choice(list(computations.values()))
     initial_wake_up.wakeup_at_start = True
 
     run_agents(agents, 3)
-    assert all(c.is_done for c in computations.values())
 
-    assert computations["c1"].neighbors_labels["c2"] == EdgeLabel.BRANCH
-    assert computations["c1"].neighbors_labels["c3"] == EdgeLabel.REJECTED
+    labels = extract_tree(computations)
 
-    assert computations["c2"].neighbors_labels["c1"] == EdgeLabel.BRANCH
-    assert computations["c2"].neighbors_labels["c3"] == EdgeLabel.BRANCH
-
-    assert computations["c3"].neighbors_labels["c2"] == EdgeLabel.BRANCH
-    assert computations["c3"].neighbors_labels["c1"] == EdgeLabel.REJECTED
+    assert labels[("c1", "c2")] == EdgeLabel.BRANCH
+    assert labels[("c1", "c3")] == EdgeLabel.REJECTED
+    assert labels[("c2", "c3")] == EdgeLabel.BRANCH
 
 
-def test_5_nodes():
+# noinspection DuplicatedCode
+def test_3_nodes_as_loop_max():
+    """
+    Three nodes, three edges
+    * minimum weight spanning tree
+    * the spanning tree must exclude the least expensive edge
+    * single spontaneous waking up node
+
+    """
+
+    edges = [("c1", "c2", 1), ("c2", "c3", 2), ("c3", "c1", 3)]
+    graph, computations, agents = build_computation(edges, "max")
+
+    initial_wake_up = random.choice(list(computations.values()))
+    initial_wake_up.wakeup_at_start = True
+
+    run_agents(agents, 3)
+
+    labels = extract_tree(computations)
+
+    assert labels[("c1", "c2")] == EdgeLabel.REJECTED
+    assert labels[("c1", "c3")] == EdgeLabel.BRANCH
+    assert labels[("c2", "c3")] == EdgeLabel.BRANCH
+
+
+def test_5_nodes_min():
     """
     5 nodes, 6 edges
     * minimum weight spanning tree (MST)
     * the spanning tree must exclude the two most expensive edges
     * 2 spontaneous waking up node
     """
-    edges = [
-        ("A", "B", 2),
-        ("A", "C", 6),
-        ("B", "C", 4),
-        ("B", "D", 3),
-        ("C", "E", 5),
-        ("D", "E", 1),
-    ]
-    graph, computations, agents = build_computation(edges)
+
+    graph, computations, agents = build_computation(
+        [
+            ("A", "B", 2),
+            ("A", "C", 6),
+            ("B", "C", 4),
+            ("B", "D", 3),
+            ("C", "E", 5),
+            ("D", "E", 1),
+        ],
+        "min",
+    )
 
     for initial_wake_up in random.sample(list(computations.values()), 2):
         initial_wake_up.wakeup_at_start = True
@@ -216,6 +233,37 @@ def test_5_nodes():
     check_mst(labels, {("A", "C"), ("C", "E")})
 
 
+def test_5_nodes_max():
+    """
+    5 nodes, 6 edges
+    * maximum weight spanning tree (MST)
+    * the spanning tree must exclude the two least expensive edges
+    * 2 spontaneous waking up node
+    """
+
+    graph, computations, agents = build_computation(
+        [
+            ("A", "B", 2),
+            ("A", "C", 6),
+            ("B", "C", 4),
+            ("B", "D", 3),
+            ("C", "E", 5),
+            ("D", "E", 1),
+        ],
+        "max",
+    )
+
+    for initial_wake_up in random.sample(list(computations.values()), 2):
+        initial_wake_up.wakeup_at_start = True
+
+    run_agents(agents, 5)
+    for c in computations.values():
+        assert c.is_done
+
+    labels = extract_tree(computations)
+    check_mst(labels,  {("A", "B"), ("D", "E")})
+
+
 def test_graph1():
     """
     Larger graph, still with distinct weights
@@ -223,27 +271,28 @@ def test_graph1():
     https://github.com/arjun-menon/Distributed-Graph-Algorithms/tree/master/Minimum-Spanning-Tree
 
     """
-    edges = [
-        ("A", "F", 2),
-        ("F", "G", 7),
-        ("G", "H", 15),
-        ("H", "J", 13),
-        ("J", "I", 9),
-        ("I", "C", 18),
-        ("C", "B", 17),
-        ("B", "A", 3),
-        ("E", "F", 1),
-        ("E", "G", 6),
-        ("E", "H", 5),
-        ("E", "I", 10),
-        ("E", "D", 11),
-        ("I", "H", 12),
-        ("D", "I", 4),
-        ("D", "C", 8),
-        ("D", "B", 16),
-    ]
-
-    graph, computations, agents = build_computation(edges)
+    graph, computations, agents = build_computation(
+        [
+            ("A", "F", 2),
+            ("F", "G", 7),
+            ("G", "H", 15),
+            ("H", "J", 13),
+            ("J", "I", 9),
+            ("I", "C", 18),
+            ("C", "B", 17),
+            ("B", "A", 3),
+            ("E", "F", 1),
+            ("E", "G", 6),
+            ("E", "H", 5),
+            ("E", "I", 10),
+            ("E", "D", 11),
+            ("I", "H", 12),
+            ("D", "I", 4),
+            ("D", "C", 8),
+            ("D", "B", 16),
+        ],
+        "min",
+    )
 
     for initial_wake_up in random.sample(list(computations.values()), 3):
         initial_wake_up.wakeup_at_start = True
@@ -269,7 +318,64 @@ def test_graph1():
     )
 
 
+def test_graph1_single_wakeup():
+    """
+    Larger graph, still with distinct weights
+    Test case from:
+    https://github.com/arjun-menon/Distributed-Graph-Algorithms/tree/master/Minimum-Spanning-Tree
+
+    """
+    graph, computations, agents = build_computation(
+        [
+            ("A", "F", 2),
+            ("F", "G", 7),
+            ("G", "H", 15),
+            ("H", "J", 13),
+            ("J", "I", 9),
+            ("I", "C", 18),
+            ("C", "B", 17),
+            ("B", "A", 3),
+            ("E", "F", 1),
+            ("E", "G", 6),
+            ("E", "H", 5),
+            ("E", "I", 10),
+            ("E", "D", 11),
+            ("I", "H", 12),
+            ("D", "I", 4),
+            ("D", "C", 8),
+            ("D", "B", 16),
+        ],
+        "min",
+    )
+
+    for initial_wake_up in random.sample(list(computations.values()), 1):
+        initial_wake_up.wakeup_at_start = True
+
+    run_agents(agents, 10)
+    for c in computations.values():
+        assert c.is_done
+
+    labels = extract_tree(computations)
+
+    check_mst(
+        labels,
+        [
+            ("C", "I"),
+            ("C", "B"),
+            ("B", "D"),
+            ("D", "E"),
+            ("H", "J"),
+            ("H", "I"),
+            ("H", "G"),
+            ("F", "G"),
+        ],
+    )
+
+
 def extract_tree(computations):
+    """ Extract edge labels from computations """
+    # first, check all computation finished properly
+    assert all(c.is_done for c in computations.values())
     labels = {}
     for c in computations.values():
         for n in c.neighbors_labels:
@@ -307,29 +413,30 @@ def check_mst(labels: Dict, expected_rejected):
             assert label == EdgeLabel.BRANCH, f"{edge} should be accepted"
 
 
-def build_computation(edges):
+def build_computation(edges, mode):
     """ Build computations and agents for computing the min spanning tree for a
     weighted graph."""
-    G = nx.Graph()
-    G.add_weighted_edges_from(edges)
+    graph = nx.Graph()
+    graph.add_weighted_edges_from(edges)
 
     computations = {}
     agents = {}
-    for node in G.nodes:
-        node_edges = [(neighbor, G[node][neighbor]["weight"]) for neighbor in G[node]]
+    for node in graph.nodes:
+        node_edges = [
+            (neighbor, graph[node][neighbor]["weight"]) for neighbor in graph[node]
+        ]
 
-        c = SpanningTreeComputation(node, node_edges)
-        computations[node] = c
+        computations[node] = SpanningTreeComputation(node, node_edges, mode=mode)
         a = Agent(f"a_{node}", InProcessCommunicationLayer())
-        a.add_computation(c)
+        a.add_computation(computations[node])
         agents[node] = a
 
-    for node in G.nodes:
-        for neighbor in G[node]:
+    for node in graph.nodes:
+        for neighbor in graph[node]:
             agents[node].discovery.register_computation(
                 neighbor, agents[neighbor].name, agents[neighbor].address
             )
-    return G, computations, agents
+    return graph, computations, agents
 
 
 def run_agents(agents, duration):
