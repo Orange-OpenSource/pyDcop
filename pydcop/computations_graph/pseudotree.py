@@ -444,6 +444,10 @@ class ComputationPseudoTree(ComputationGraph):
         v = len(self.nodes)
         return e / (v * (v - 1))
 
+    def __str__(self):
+        return f"PseudoTree nodes={ [n.name for n in self.nodes]} " \
+               f"links={[l for l in self.links]}"
+
 
 def _filter_relation_to_lowest_node(dfs_root):
     """"
