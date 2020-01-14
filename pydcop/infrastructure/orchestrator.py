@@ -573,7 +573,7 @@ class AgentsMgt(MessagePassingComputation):
                  orchestrator_agent: Agent, orchestrator: Orchestrator,
                  infinity=float('inf'),
                  collector: Queue=None,
-                 collect_moment: str='value_change',
+                 collect_moment= None,
                  collect_period: float=None):
         super().__init__(ORCHESTRATOR_MGT)
         self._orchestrator_agent = orchestrator_agent
@@ -873,6 +873,7 @@ class AgentsMgt(MessagePassingComputation):
                                       cycle_end, msg.computation)
 
     def _on_metrics_msg(self, sender: str, msg: MetricsMessage, t):
+
         # Called when receiving a metric message from one of the
         # orchestrated agent. The metric message contains the metrics for
         # all the computations hosted by this agent.

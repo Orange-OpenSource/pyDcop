@@ -279,7 +279,7 @@ def set_parser(subparsers):
         "-c",
         "--collect_on",
         choices=["value_change", "cycle_change", "period"],
-        default="value_change",
+        default=None,
         help='When should a "new" assignment be observed',
     )
 
@@ -468,6 +468,7 @@ def run_cmd(args, timer=None, timeout=None):
     global dcop
     logger.info("loading dcop from {}".format(args.dcop_files))
     dcop = load_dcop_from_file(args.dcop_files)
+    logger.debug(f"dcop  {dcop} ")
 
     # Build factor-graph computation graph
     logger.info("Building computation graph ")
