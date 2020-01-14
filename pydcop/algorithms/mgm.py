@@ -540,14 +540,14 @@ class MgmComputation(VariableComputation):
             if ties[0][1] == self.name:
                 if self.logger.isEnabledFor(logging.INFO):
                     self.logger.info(
-                        f"Won ties for equal gain {self._gain} , "
+                        f"Won random ties for equal gain {self._gain} , "
                         f"selects new value {self._new_value} - {ties}"
                     )
                 self.value_selection(self._new_value, self.current_cost - self._gain)
             else:
                 if self.logger.isEnabledFor(logging.INFO):
                     self.logger.info(
-                        f"Lost ties for equal gain {self._gain} , "
+                        f"Lost random ties for equal gain {self._gain} , "
                         f"does not change value to {self._new_value} - {ties}"
                     )
         else:
@@ -562,14 +562,14 @@ class MgmComputation(VariableComputation):
             if ties[0] == self.name:
                 if self.logger.isEnabledFor(logging.INFO):
                     self.logger.info(
-                        f"Won ties for equal gain {self._gain} , "
+                        f"Won lexic ties for equal gain {self._gain} , "
                         f"selects new value {self._new_value} - {ties}"
                     )
                 self.value_selection(self._new_value, self.current_cost - self._gain)
             else:
                 if self.logger.isEnabledFor(logging.INFO):
                     self.logger.info(
-                        f"Lost ties for equal gain {self._gain} , does "
+                        f"Lost lexic ties for equal gain {self._gain} , does "
                         f"not change value to {self._new_value} - {ties}"
                     )
 
