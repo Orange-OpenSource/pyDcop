@@ -74,6 +74,7 @@ import shutil
 import re
 import os
 import signal
+import pathlib
 
 from subprocess import (
     check_output,
@@ -178,7 +179,43 @@ def run_batches(batches_definition, simulate: bool, jobs=None):
             logger.debug("Starting set %s", set_name)
 
             iterations = 1 if "iterations" not in pb_set else pb_set["iterations"]
-            if "path" in pb_set and "file_re" not in pb_set:
+
+            if "path_re" in pb_set:
+                extras_files = (
+                    pb_set["extras_files"] if "extras_files" in pb_set else []
+                )
+                matched_paths = list_path_re(pb_set["path_re"])
+                files, extras, match_contexts, paths = [],[],[], []
+                for p, p_context in matched_paths:
+                    p_files, p_extras, p_match_contexts = input_files_re(
+                        p, pb_set["file_re"], extras_files
+                    )
+                    [m.update(p_context) for m in p_match_contexts ]
+                    files.extend(p_files)
+                    extras.extend(p_extras)
+                    match_contexts.extend(p_match_contexts)
+                    paths.extend([ p for _ in files])
+
+                for file_path, extra_files, match_context, base_path in zip(
+                    files, extras, match_contexts, paths
+                ):
+
+                    file_context = context.copy()
+                    file_context.update(match_context)
+                    file_path = os.path.join(base_path, file_path)
+                    extra_path = [os.path.join(base_path, e) for e in extra_files]
+                    run_batch_for_files(
+                        file_path,
+                        extra_path,
+                        file_context,
+                        iterations,
+                        batches,
+                        global_options,
+                        simulate,
+                    )
+
+
+            elif "path" in pb_set and "file_re" not in pb_set:
 
                 for file_path in input_files_glob(pb_set["path"]):
                     run_batch_for_files(
@@ -255,6 +292,34 @@ def input_files_glob(path_glob: str) -> List[str]:
     return list(glob.iglob(path_glob))
 
 
+def list_path_re(path_re):
+    p = pathlib.Path(path_re)
+    matches = _path_matches(list(p.parts), {})
+    return matches
+
+
+def _path_matches(parts, context):
+    result = []
+    p1 = pathlib.Path(parts[0])
+
+    children = list(p1.iterdir())
+
+    p2 = parts[1]
+    for child in children:
+        m = re.match(p2, str(child.name))
+        if m:
+            if len(parts) > 2:
+                entry_context = context.copy()
+                entry_context.update(m.groupdict())
+                result.extend(
+                    _path_matches([p1 / m.group()] + parts[2:], entry_context))
+            else:
+                entry_context = context.copy()
+                entry_context.update(m.groupdict())
+                result.append((p1 / m.group(), entry_context))
+    return result
+
+
 def input_files_re(
     path: str, file_re: str, extra_paths: List[str]
 ) -> Tuple[List[str], List[List[str]], List[Dict]]:
@@ -318,7 +383,17 @@ def input_files_re(
 def estimate_set(set_def: Dict) -> int:
     iterations = 1 if "iterations" not in set_def else set_def["iterations"]
 
-    if "path" in set_def and "file_re" not in set_def:
+    if "path_re" in set_def:
+        matched_paths = list_path_re(set_def["path_re"])
+        t = 0
+        for p, p_context in matched_paths:
+            p_files, p_extras, p_match_contexts = input_files_re(
+                p, set_def["file_re"], []
+            )
+            t += len(p_files)
+        return t
+
+    elif "path" in set_def and "file_re" not in set_def:
         file_count = len(input_files_glob(set_def["path"]))
         logger.debug(f"Found {file_count} input to handle")
         return file_count * iterations

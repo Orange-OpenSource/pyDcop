@@ -61,6 +61,12 @@ sets:
     # Here path is simply a directory
     path: /path/set3/
 
+    # But it can also be a regexp, in which case we will consider all file in
+    # directory that match that regexp. Named group are used to capture matched subgroup
+    # and re-use them later
+    path_re: /path/a_dir_(?P<dir_num>.+)/
+
+
     # With file_re, you can use a regular expression instead of a glob.
     # Files in <path> matching this regular expression will e used as input parameters
     # for the batches.
@@ -76,6 +82,8 @@ sets:
     # These files must be in the same directory as the file matched by file_re
     extras_files:
       - coloring_random_{num}_dcop_agts.yaml
+
+
 
 """
 When using the  'parallel: <num>', <num> commands will be run in parallel.
