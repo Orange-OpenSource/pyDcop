@@ -52,6 +52,7 @@ from pydcop.dcop.relations import (
     find_dependent_relations,
     generate_assignment_as_dict,
     assignment_cost,
+    optimal_cost_value,
 )
 
 __author__ = "Pierre Nagellen, Pierre Rust"
@@ -465,11 +466,11 @@ class Mgm2Computation(VariableComputation):
             # If we don't have any neighbor, simply select the best value
             # for us and be done with it !
             vals, cost = self._compute_best_value()
-            val = random.choice(vals)
-            self.value_selection(val, cost)
+            value = random.choice(vals)
+            self.value_selection(value, cost)
             if self.logger.isEnabledFor(logging.INFO):
                 self.logger.info(
-                    f"No neighbors: stop immediately with value {val} - {cost}"
+                    f"No neighbors: stop immediately with value {value} - {cost}"
                 )
             self.finished()
 

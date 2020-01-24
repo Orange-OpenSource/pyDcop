@@ -83,7 +83,12 @@ import random
 from typing import Tuple, Any, List, Dict
 
 from pydcop.algorithms import AlgoParameterDef, ComputationDef
-from pydcop.dcop.relations import find_optimum, assignment_cost, filter_assignment_dict
+from pydcop.dcop.relations import (
+    find_optimum,
+    assignment_cost,
+    filter_assignment_dict,
+    optimal_cost_value,
+)
 from pydcop.infrastructure.computations import (
     VariableComputation,
     register,
@@ -179,13 +184,34 @@ class ADsaComputation(VariableComputation):
             self.logger.debug("Remove start delayed action %s ", self._start_handle)
         self._start_handle = None
 
-        self._tick_handle = self.add_periodic_action(self.period, self.tick)
-        self.random_value_selection()
-        if self.logger.isEnabledFor(logging.INFO):
-            self.logger.info(
-                "ADSA starts: randomly select value %s", self.current_value
-            )
-        self.post_to_all_neighbors(ADsaMessage(self.current_value))
+        if not self.neighbors:
+            # If a variable has no neighbors, we must select its final value immediately.
+            # We also do not need to setup a periodic action.
+            if hasattr(self._variable, "cost_for_val"):
+                current_cost, value = optimal_cost_value(self._variable, self.mode)
+                self.value_selection(value, current_cost)
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"ADSA starts: initial value {self.current_value} "
+                        f"based on cost function for var {self._variable.name}"
+                    )
+            else:
+                self.value_selection(random.choice(self.variable.domain), None)
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"ADSA starts: initial random value {self.current_value} "
+                        f"for unconstrained variable {self._variable.name}"
+                    )
+            self.finished()
+            self.stop()
+        else:
+            self._tick_handle = self.add_periodic_action(self.period, self.tick)
+            self.random_value_selection()
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info(
+                    "ADSA starts: randomly select value %s", self.current_value
+                )
+            self.post_to_all_neighbors(ADsaMessage(self.current_value))
 
     @register("adsa_value")
     def _on_value_msg(self, variable_name, msg: ADsaMessage, _):

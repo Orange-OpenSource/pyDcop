@@ -44,29 +44,32 @@ from collections import defaultdict
 from typing import Iterable, Dict, Any, Tuple
 
 from pydcop.algorithms import AlgoParameterDef, ComputationDef
-from pydcop.infrastructure.computations import Message, VariableComputation, \
-    register
-from pydcop.computations_graph.constraints_hypergraph import \
-    VariableComputationNode
+from pydcop.infrastructure.computations import Message, VariableComputation, register
+from pydcop.computations_graph.constraints_hypergraph import VariableComputationNode
 from pydcop.dcop.objects import Variable
-from pydcop.dcop.relations import RelationProtocol, NAryMatrixRelation, \
-    generate_assignment_as_dict, filter_assignment_dict
+from pydcop.dcop.relations import (
+    RelationProtocol,
+    NAryMatrixRelation,
+    generate_assignment_as_dict,
+    filter_assignment_dict,
+    optimal_cost_value)
 
 __author__ = "Pierre Nagellen, Pierre Rust"
 
-GRAPH_TYPE = 'constraints_hypergraph'
+GRAPH_TYPE = "constraints_hypergraph"
 
 HEADER_SIZE = 100
 UNIT_SIZE = 5
 
 
-
 def build_computation(comp_def: ComputationDef):
-    return GdbaComputation(comp_def.node.variable,
-                           comp_def.node.constraints,
-                           mode=comp_def.algo.mode,
-                           **comp_def.algo.params,
-                           comp_def=comp_def)
+    return GdbaComputation(
+        comp_def.node.variable,
+        comp_def.node.constraints,
+        mode=comp_def.algo.mode,
+        **comp_def.algo.params,
+        comp_def=comp_def
+    )
 
 
 def computation_memory(computation: VariableComputationNode) -> float:
@@ -88,8 +91,9 @@ def computation_memory(computation: VariableComputationNode) -> float:
         the memory footprint of the computation.
 
     """
-    neighbors = set((n for l in computation.neighbors for n in l.nodes
-                     if n not in computation.name))
+    neighbors = set(
+        (n for l in computation.neighbors for n in l.nodes if n not in computation.name)
+    )
     return len(neighbors) * UNIT_SIZE
 
 
@@ -122,7 +126,7 @@ def communication_load(src: VariableComputationNode, target: str) -> float:
 # ############################   MESSAGES   ################################
 class GdbaOkMessage(Message):
     def __init__(self, value):
-        super().__init__('gdba_ok', None)
+        super().__init__("gdba_ok", None)
         self._value = value
 
     @property
@@ -134,10 +138,10 @@ class GdbaOkMessage(Message):
         return 1
 
     def __str__(self):
-        return 'GdbaOkMessage({})'.format(self.value)
+        return "GdbaOkMessage({})".format(self.value)
 
     def __repr__(self):
-        return 'GdbaOkMessage({})'.format(self.value)
+        return "GdbaOkMessage({})".format(self.value)
 
     def __eq__(self, other):
         if type(other) != GdbaOkMessage:
@@ -149,7 +153,7 @@ class GdbaOkMessage(Message):
 
 class GdbaImproveMessage(Message):
     def __init__(self, improve):
-        super().__init__('gdba_improve', None)
+        super().__init__("gdba_improve", None)
         self._improve = improve
 
     @property
@@ -161,10 +165,10 @@ class GdbaImproveMessage(Message):
         return 1
 
     def __str__(self):
-        return 'GdbaImproveMessage({})'.format(self.improve)
+        return "GdbaImproveMessage({})".format(self.improve)
 
     def __repr__(self):
-        return 'GdbaImproveMessage({})'.format(self.improve)
+        return "GdbaImproveMessage({})".format(self.improve)
 
     def __eq__(self, other):
         if type(other) != GdbaImproveMessage:
@@ -175,10 +179,9 @@ class GdbaImproveMessage(Message):
 
 
 algo_params = [
-    AlgoParameterDef('infinity', 'int', None, 10000),
-    AlgoParameterDef('modifier', 'str',  ['A', 'M'], 'A'),
-    AlgoParameterDef('violation', 'str', ['NZ', 'NM', 'MX'], 'NZ'),
-    AlgoParameterDef('increase_mode', 'str', ['E', 'R', 'C', 'T'], "E"),
+    AlgoParameterDef("modifier", "str", ["A", "M"], "A"),
+    AlgoParameterDef("violation", "str", ["NZ", "NM", "MX"], "NZ"),
+    AlgoParameterDef("increase_mode", "str", ["E", "R", "C", "T"], "E"),
 ]
 
 
@@ -204,10 +207,17 @@ class GdbaComputation(VariableComputation):
 
     """
 
-    def __init__(self, variable: Variable,
-                 constraints: Iterable[RelationProtocol], mode='min',
-                 modifier='A', violation='NZ', increase_mode='E',
-                 msg_sender=None, comp_def=None):
+    def __init__(
+        self,
+        variable: Variable,
+        constraints: Iterable[RelationProtocol],
+        mode="min",
+        modifier="A",
+        violation="NZ",
+        increase_mode="E",
+        msg_sender=None,
+        comp_def=None,
+    ):
         """
         :param variable: a variable object for which this computation is
         responsible
@@ -229,12 +239,12 @@ class GdbaComputation(VariableComputation):
         self.__postponed_improve_messages__ = []
         self.__postponed_ok_messages__ = []
 
-        self._waiting_mode = 'starting'
+        self._waiting_mode = "starting"
         self._mode = mode
         self._modifier_mode = modifier
         self._violation_mode = violation
         self._increase_mode = increase_mode
-        base_modifier = 0 if self._modifier_mode == 'A' else 1
+        base_modifier = 0 if self._modifier_mode == "A" else 1
         self.__constraints__ = list()
         self.__constraints_modifiers__ = dict()
         # Transform the constraints in matrices, with also the min and max
@@ -265,14 +275,14 @@ class GdbaComputation(VariableComputation):
             # The modifiers for constraints. It is a Dictionary of dictionary
             # (of dictionary ... regarding the arity of each constraint). It
             # represents the value of the modifier for each constraint asgt.
-            self.__constraints_modifiers__[rel[0]] = defaultdict(lambda:
-                                                                 base_modifier)
+            self.__constraints_modifiers__[rel[0]] = defaultdict(lambda: base_modifier)
 
         self._violated_constraints = []
         # some constraints might be unary, and our variable can have several
         # constraints involving the same variable
-        self._neighbors = set([v for c in constraints
-                               for v in c.dimensions if v != variable])
+        self._neighbors = set(
+            [v for c in constraints for v in c.dimensions if v != variable]
+        )
         # Agent view of its neighbors resp. for ok and improve modes
         self._neighbors_values = {}
         self._neighbors_improvements = {}
@@ -290,55 +300,79 @@ class GdbaComputation(VariableComputation):
         return self._neighbors
 
     def on_start(self):
-        # randomly select a value if no initial value set in the variable object
-        if self.variable.initial_value is None:
-            self.value_selection(random.choice(self.variable.domain),
-                                 self.current_cost)
-            self.logger.info('%s gdba starts: randomly select value %s and '
-                             'send to neighbors', self.variable.name,
-                             self.current_value)
-        else:
-            self.value_selection(self.variable.initial_value, self.current_cost)
-            self.logger.info('%s gdba starts: randomly select value %s and '
-                             'send to neighbors', self.variable.name,
-                             self.current_value)
+        # Select an initial value.
+        if not self.neighbors:
+            # If a variable has no neighbors, we must select its final value immediately
+            # as it will never receive any message.
+            value, cost = optimal_cost_value(self._variable, self._mode)
+            self.value_selection(value, cost)
 
-        self._send_current_value()
-        self._go_to_wait_ok_mode()
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info(
+                    f"Select initial value {self.current_value} "
+                    f"based on cost function for var {self._variable.name}"
+                )
+            self.finished()
+
+        else:
+            if self.variable.initial_value is None:
+                self.value_selection(random.choice(self.variable.domain), self.current_cost)
+                self.logger.info(
+                    "%s gdba starts: randomly select value %s and " "send to neighbors",
+                    self.variable.name,
+                    self.current_value,
+                )
+            else:
+                self.value_selection(self.variable.initial_value, self.current_cost)
+                self.logger.info(
+                    "%s gdba starts: select initial value %s and send to neighbors",
+                    self.variable.name,
+                    self.current_value,
+                )
+            self._send_current_value()
+            self._go_to_wait_ok_mode()
 
     @register("gdba_ok")
     def _on_ok_msg(self, variable_name, recv_msg, t):
-        self.logger.debug('%s received %s from %s', self.name, recv_msg,
-                          variable_name)
-        if self._waiting_mode == 'ok':
+        self.logger.debug("%s received %s from %s", self.name, recv_msg, variable_name)
+        if self._waiting_mode == "ok":
             self._handle_ok_message(variable_name, recv_msg)
         else:
             # A value message can be received during the improve mode (due to
             # async.). In this case, its handling is postponed until the next
             # iteration of wait_ok_mode
-            self.logger.debug('%s postponed processing of %s from %s',
-                              self.name, recv_msg, variable_name)
+            self.logger.debug(
+                "%s postponed processing of %s from %s",
+                self.name,
+                recv_msg,
+                variable_name,
+            )
             self.__postponed_ok_messages__.append((variable_name, recv_msg))
 
     def _handle_ok_message(self, variable_name, recv_msg):
 
         self._neighbors_values[variable_name] = recv_msg.value
-        self.logger.debug('%s processes %s from %s',
-                          self.variable.name, recv_msg, variable_name)
+        self.logger.debug(
+            "%s processes %s from %s", self.variable.name, recv_msg, variable_name
+        )
         # if we have a value for all neighbors, compute our best value for
         # conflict reduction
         if len(self._neighbors_values) == len(self.neighbors):
-            self.logger.info('%s received values from all neighbors : %s',
-                             self.name,
-                             self._neighbors_values)
-            self.__cost__, self._violated_constraints = \
-                self.compute_eval_value(self.current_value)
+            self.logger.info(
+                "%s received values from all neighbors : %s",
+                self.name,
+                self._neighbors_values,
+            )
+            self.__cost__, self._violated_constraints = self.compute_eval_value(
+                self.current_value
+            )
             # Set cost at the first step
             # Compute and send best improvement to neighbors
             bests, best_eval = self._compute_best_improvement()
             self._my_improve = self.__cost__ - best_eval
-            if (self._my_improve > 0 and self._mode == 'min') or \
-                    (self._my_improve < 0 and self._mode == 'max'):
+            if (self._my_improve > 0 and self._mode == "min") or (
+                self._my_improve < 0 and self._mode == "max"
+            ):
                 self._new_value = random.choice(bests)
             else:
                 self._new_value = self.current_value
@@ -347,14 +381,16 @@ class GdbaComputation(VariableComputation):
         else:
             # Still waiting for other neighbors
             self.logger.debug(
-                '%s waiting for OK values from other neighbors (got %s)',
-                self.name, [n for n in self._neighbors_values])
+                "%s waiting for OK values from other neighbors (got %s)",
+                self.name,
+                [n for n in self._neighbors_values],
+            )
 
     def _send_improve(self):
         msg = GdbaImproveMessage(self._my_improve)
         for n in self.neighbors:
             self.post_msg(n.name, msg)
-            self.logger.debug('%s has sent %s to %s', self.name, msg, n.name)
+            self.logger.debug("%s has sent %s to %s", self.name, msg, n.name)
 
     def _compute_best_improvement(self):
 
@@ -370,8 +406,9 @@ class GdbaComputation(VariableComputation):
             if best_eval is None:
                 best_eval = curr_eval
                 best_vals = [v]
-            elif (self._mode == 'min' and curr_eval < best_eval) or \
-                    (self._mode == 'max' and curr_eval > best_eval):
+            elif (self._mode == "min" and curr_eval < best_eval) or (
+                self._mode == "max" and curr_eval > best_eval
+            ):
                 best_eval = curr_eval
                 best_vals = [v]
             elif curr_eval == best_eval:
@@ -386,7 +423,7 @@ class GdbaComputation(VariableComputation):
         for n in self.neighbors:
             msg = GdbaOkMessage(self.current_value)
             self.post_msg(n.name, msg)
-            self.logger.debug('%s has sent %s to %s', self.name, msg, n.name)
+            self.logger.debug("%s has sent %s to %s", self.name, msg, n.name)
 
     def compute_eval_value(self, val):
         """
@@ -405,21 +442,20 @@ class GdbaComputation(VariableComputation):
         for c in self.__constraints__:
             (rel_mat, _, _) = c
             for v in rel_mat.dimensions:
-                if hasattr(v, 'cost_for_val'):
+                if hasattr(v, "cost_for_val"):
                     if v.name != self.name:
-                        vars_with_cost.update([(v, self._neighbors_values[
-                            v.name])])
+                        vars_with_cost.update([(v, self._neighbors_values[v.name])])
                     else:
                         vars_with_cost.update([(v, self.current_value)])
             if self._is_violated(c, val):
                 violated_constraints.append(rel_mat)
             new_eval_value += self._eff_cost(rel_mat, val)
 
-            vars_cost = functools.reduce(operator.add,
-                                         [v.cost_for_val(v_val)
-                                          for (v, v_val) in vars_with_cost],
-                                         0
-                                         )
+            vars_cost = functools.reduce(
+                operator.add,
+                [v.cost_for_val(v_val) for (v, v_val) in vars_with_cost],
+                0,
+            )
             new_eval_value += vars_cost
 
         return new_eval_value, violated_constraints
@@ -429,39 +465,44 @@ class GdbaComputation(VariableComputation):
         Set _mode attribute to 'improve' and process postponed improve messages
         (if any)
         """
-        self._waiting_mode = 'improve'
-        self.logger.debug('%s enters improve mode', self.name)
+        self._waiting_mode = "improve"
+        self.logger.debug("%s enters improve mode", self.name)
         # if improve messages were received during wiat_ok_mode, they should be
         # processed now
         for sender, msg in self.__postponed_improve_messages__:
-            self.logger.debug('%s processes postponed improve message %s',
-                              self.name, msg)
+            self.logger.debug(
+                "%s processes postponed improve message %s", self.name, msg
+            )
             self._handle_improve_message(sender, msg)
         self.__postponed_improve_messages__.clear()
 
     @register("gdba_improve")
     def _on_improve_message(self, variable_name, recv_msg, t):
-        self.logger.debug('%s received %s from %s', self.name, recv_msg,
-                          variable_name)
-        if self._waiting_mode == 'improve':
+        self.logger.debug("%s received %s from %s", self.name, recv_msg, variable_name)
+        if self._waiting_mode == "improve":
             self._handle_improve_message(variable_name, recv_msg)
         else:
-            self.logger.debug('%s postpones processing of %s from %s',
-                              self.name, recv_msg, variable_name)
-            self.__postponed_improve_messages__.append((variable_name,
-                                                        recv_msg))
+            self.logger.debug(
+                "%s postpones processing of %s from %s",
+                self.name,
+                recv_msg,
+                variable_name,
+            )
+            self.__postponed_improve_messages__.append((variable_name, recv_msg))
 
     def _handle_improve_message(self, variable_name, recv_msg):
 
         self._neighbors_improvements[variable_name] = recv_msg
 
-        self.logger.debug('%s computes %s from %s',
-                          self.name, recv_msg, variable_name)
+        self.logger.debug("%s computes %s from %s", self.name, recv_msg, variable_name)
 
         # if messages received from all neighbors
         if len(self._neighbors_improvements) == len(self.neighbors):
-            self.logger.info('%s improvement messages from all neighbors: %s',
-                             self.name, self._neighbors_values)
+            self.logger.info(
+                "%s improvement messages from all neighbors: %s",
+                self.name,
+                self._neighbors_values,
+            )
             maxi = self._my_improve
             max_list = [self.name]
             for n, msg in self._neighbors_improvements.items():
@@ -471,14 +512,15 @@ class GdbaComputation(VariableComputation):
                 elif msg.improve == maxi:
                     max_list.append(n)
 
-            if (self._my_improve > 0 and self._mode == 'min') or \
-                    ((self._my_improve < 0) and (self._mode == 'max')):
+            if (self._my_improve > 0 and self._mode == "min") or (
+                (self._my_improve < 0) and (self._mode == "max")
+            ):
                 winner = break_ties(max_list)
                 if winner == self.name:  # covers all cases with self is in
                     # max_list
-                    self.value_selection(self._new_value,
-                                         self.current_cost +
-                                         self._my_improve)
+                    self.value_selection(
+                        self._new_value, self.current_cost + self._my_improve
+                    )
             elif maxi == 0:  # No neighbor can improve
                 for c in self._violated_constraints:
                     self._increase_cost(c)
@@ -492,23 +534,22 @@ class GdbaComputation(VariableComputation):
             self._go_to_wait_ok_mode()
         else:
             # Still waiting for other neighbors
-            self.logger.debug('%s waiting for improve values from other '
-                              'neighbors (got %s)',
-                              self.name, [n for n in
-                                          self._neighbors_improvements])
+            self.logger.debug(
+                "%s waiting for improve values from other " "neighbors (got %s)",
+                self.name,
+                [n for n in self._neighbors_improvements],
+            )
 
     def _go_to_wait_ok_mode(self):
-        self._waiting_mode = 'ok'
-        self.logger.debug('%s enters values mode', self.name)
+        self._waiting_mode = "ok"
+        self.logger.debug("%s enters values mode", self.name)
         for sender, msg in self.__postponed_ok_messages__:
-            self.logger.debug('%s processes postponed value message %s',
-                              self.name, msg)
+            self.logger.debug("%s processes postponed value message %s", self.name, msg)
             self._handle_ok_message(sender, msg)
 
         self.__postponed_ok_messages__.clear()
 
-    def _is_violated(self, rel: Tuple[NAryMatrixRelation, float, float], val)\
-            -> bool:
+    def _is_violated(self, rel: Tuple[NAryMatrixRelation, float, float], val) -> bool:
         """
         Determine if a constraint is violated according to the chosen violation
         mode.
@@ -523,9 +564,9 @@ class GdbaComputation(VariableComputation):
         global_asgt[self.name] = val
         tmp_assignment = filter_assignment_dict(global_asgt, m.dimensions)
 
-        if self._violation_mode == 'NZ':
+        if self._violation_mode == "NZ":
             return m.get_value_for_assignment(tmp_assignment) != 0
-        elif self._violation_mode == 'NM':
+        elif self._violation_mode == "NM":
             return m.get_value_for_assignment(tmp_assignment) != min_val
         else:  # self._violation_mode == 'MX'
             return m.get_value_for_assignment(tmp_assignment) == max_val
@@ -548,15 +589,16 @@ class GdbaComputation(VariableComputation):
 
         c = rel.get_value_for_assignment(asgt)
         modifier = self._get_modifier_for_assignment(rel, asgt)
-        if self._modifier_mode == 'A':
+        if self._modifier_mode == "A":
             c += modifier
         else:  # modifier_mode == 'M'
             c *= modifier
 
         return c
 
-    def _get_modifier_for_assignment(self, constraint: NAryMatrixRelation,
-                                     asgt: Dict[str, Any]):
+    def _get_modifier_for_assignment(
+        self, constraint: NAryMatrixRelation, asgt: Dict[str, Any]
+    ):
         """
         Search in the modifiers dictionary, the modifier corresponding to the
         given constraint and assignment, and return its value
@@ -571,8 +613,7 @@ class GdbaComputation(VariableComputation):
 
         return modifier[key]
 
-    def _increase_modifier(self, constraint: NAryMatrixRelation,
-                           asgt: Dict[str, Any]):
+    def _increase_modifier(self, constraint: NAryMatrixRelation, asgt: Dict[str, Any]):
         """
         Increase the modifier corresponding to the arguments
         :param constraint: a constraint as NAryMatrixRelation
@@ -592,21 +633,21 @@ class GdbaComputation(VariableComputation):
         """
         asgt = self._neighbors_values.copy()
         asgt[self.name] = self.current_value
-        self.logger.debug('%s increases cost for %s', self.name, constraint)
-        if self._increase_mode == 'E':
+        self.logger.debug("%s increases cost for %s", self.name, constraint)
+        if self._increase_mode == "E":
             self._increase_modifier(constraint, asgt)
-        elif self._increase_mode == 'R':
+        elif self._increase_mode == "R":
             for val in self.variable.domain:
                 asgt[self.name] = val
                 self._increase_modifier(constraint, asgt)
-        elif self._increase_mode == 'C':
+        elif self._increase_mode == "C":
             # Creates all the assignments for the constraints, with the
             # agent variable set to its current value
             asgts = generate_assignment_as_dict(list(self._neighbors))
             for ass in asgts:
                 ass[self.name] = self.current_value
                 self._increase_modifier(constraint, ass)
-        elif self._increase_mode == 'T':
+        elif self._increase_mode == "T":
             # Creates all the assignments for the constraints
             asgts = generate_assignment_as_dict(constraint.dimensions)
             for ass in asgts:

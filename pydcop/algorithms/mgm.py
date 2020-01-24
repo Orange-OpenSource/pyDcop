@@ -55,13 +55,13 @@ from typing import Any
 from typing import Dict
 from typing import Iterable, Set
 
-from pydcop.algorithms import AlgoParameterDef, ComputationDef, check_param_value
+from pydcop.algorithms import AlgoParameterDef, ComputationDef
 from pydcop.computations_graph.constraints_hypergraph import VariableComputationNode
-from pydcop.dcop.objects import Variable
 from pydcop.dcop.relations import (
     RelationProtocol,
     filter_assignment_dict,
     find_arg_optimal,
+    optimal_cost_value,
 )
 from pydcop.infrastructure.computations import Message, VariableComputation, register
 
@@ -277,20 +277,37 @@ class MgmComputation(VariableComputation):
 
     def on_start(self):
         """
-        Start the algorithm (and select an initial random value for the
-        variable if none is set by default) when the agent is started
-
+        Start the algorithm and select an initial value for the variable when the
+        agent is started.
         """
-        # randomly select a value
-        if self.variable.initial_value is None:
-            self.value_selection(random.choice(self.variable.domain), None)
+
+        if not self._neighbors:
+            # If a variable has no neighbors, we must select its final value immediately
+            # as it will never receive any message.
+            value, cost = optimal_cost_value(self._variable, self._mode)
+            self.value_selection(value, cost)
+
             if self.logger.isEnabledFor(logging.INFO):
-                self.logger.info(f"Select initial random value {self.current_value}")
+                self.logger.info(
+                    f"Select initial value {self.current_value} "
+                    f"based on cost function for var {self._variable.name}"
+                )
+            self.finished()
+
         else:
-            self.value_selection(self.variable.initial_value, None)
-            if self.logger.isEnabledFor(logging.INFO):
-                self.logger.info(f"Select initial value {self.current_value}")
-        self._wait_for_values()
+            # The variable has neighbors: select a value, which might change
+            # once we receive messages.
+            if self.variable.initial_value is None:
+                self.value_selection(random.choice(self.variable.domain), None)
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"Select initial random value {self.current_value}"
+                    )
+            else:
+                self.value_selection(self.variable.initial_value, None)
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(f"Select initial value {self.current_value}")
+            self._wait_for_values()
 
     @register("mgm_value")
     def _on_value_msg(self, variable_name, recv_msg, t):
@@ -317,7 +334,7 @@ class MgmComputation(VariableComputation):
     def _handle_value_message(self, variable_name, recv_msg):
         """
         Processes a received Value message to determine what is the best gain
-        the varaible can achieve
+        the variable can achieve
 
         :param variable_name: name of the sender
         :param recv_msg: A MgmValueMessage
@@ -513,7 +530,7 @@ class MgmComputation(VariableComputation):
                 if self.logger.isEnabledFor(logging.INFO):
                     self.logger.info(
                         f"Doe not change value : "
-                        f"not the best gain {self._gain} < {max_neighbors} ",
+                        f"not the best gain {self._gain} < {max_neighbors} "
                     )
 
             self._neighbors_gains.clear()
@@ -586,7 +603,7 @@ class MgmComputation(VariableComputation):
         self._send_value()
         for msg in self.__postponed_value_messages__:
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug("Processing postponed message {msg}", )
+                self.logger.debug("Processing postponed message {msg}")
 
             self._handle_value_message(msg[0], msg[1])
         self.__postponed_value_messages__.clear()
