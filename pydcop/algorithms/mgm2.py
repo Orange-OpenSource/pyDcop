@@ -465,7 +465,8 @@ class Mgm2Computation(VariableComputation):
         if not self.neighbors_vars:
             # If we don't have any neighbor, simply select the best value
             # for us and be done with it !
-            value, cost = optimal_cost_value(self._variable, self._mode)
+            vals, cost = self._compute_best_value()
+            value = random.choice(vals)
             self.value_selection(value, cost)
             if self.logger.isEnabledFor(logging.INFO):
                 self.logger.info(
