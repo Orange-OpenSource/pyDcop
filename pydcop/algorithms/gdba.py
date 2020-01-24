@@ -52,7 +52,7 @@ from pydcop.dcop.relations import (
     NAryMatrixRelation,
     generate_assignment_as_dict,
     filter_assignment_dict,
-)
+    optimal_cost_value)
 
 __author__ = "Pierre Nagellen, Pierre Rust"
 
@@ -300,24 +300,37 @@ class GdbaComputation(VariableComputation):
         return self._neighbors
 
     def on_start(self):
-        # randomly select a value if no initial value set in the variable object
-        if self.variable.initial_value is None:
-            self.value_selection(random.choice(self.variable.domain), self.current_cost)
-            self.logger.info(
-                "%s gdba starts: randomly select value %s and " "send to neighbors",
-                self.variable.name,
-                self.current_value,
-            )
-        else:
-            self.value_selection(self.variable.initial_value, self.current_cost)
-            self.logger.info(
-                "%s gdba starts: randomly select value %s and " "send to neighbors",
-                self.variable.name,
-                self.current_value,
-            )
+        # Select an initial value.
+        if not self.neighbors:
+            # If a variable has no neighbors, we must select its final value immediately
+            # as it will never receive any message.
+            value, cost = optimal_cost_value(self._variable, self._mode)
+            self.value_selection(value, cost)
 
-        self._send_current_value()
-        self._go_to_wait_ok_mode()
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info(
+                    f"Select initial value {self.current_value} "
+                    f"based on cost function for var {self._variable.name}"
+                )
+            self.finished()
+
+        else:
+            if self.variable.initial_value is None:
+                self.value_selection(random.choice(self.variable.domain), self.current_cost)
+                self.logger.info(
+                    "%s gdba starts: randomly select value %s and " "send to neighbors",
+                    self.variable.name,
+                    self.current_value,
+                )
+            else:
+                self.value_selection(self.variable.initial_value, self.current_cost)
+                self.logger.info(
+                    "%s gdba starts: select initial value %s and send to neighbors",
+                    self.variable.name,
+                    self.current_value,
+                )
+            self._send_current_value()
+            self._go_to_wait_ok_mode()
 
     @register("gdba_ok")
     def _on_ok_msg(self, variable_name, recv_msg, t):
