@@ -850,8 +850,12 @@ class AgentsMgt(MessagePassingComputation):
             else:
                 self._computation_cycle[cycle_end].add(msg.computation)
                 self._agt_cycle_metrics[cycle_end][msg.agent] = msg.metrics
-                if len(self._computation_cycle[cycle_end]) == \
-                        self._nb_computations:
+                comp_count = len([1 for status in self._computation_status.values()
+                                 if status != 'finished'])
+                self.logger.debug(f'Cycle {cycle_end} - received '
+                                  f'{len(self._computation_cycle[cycle_end])} value out of '
+                                  f'{comp_count} - {self._computation_status}')
+                if len(self._computation_cycle[cycle_end]) == comp_count:
                     self._current_cycle = cycle_end
 
                     if cycle_end > 0:
