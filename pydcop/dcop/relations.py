@@ -73,7 +73,7 @@ class RelationProtocol(object):
         raise NotImplemented("dimensions not implemented")
 
     @property
-    def scope_names(self) ->List[str]:
+    def scope_names(self) -> List[str]:
         """
         The names of the variable in the scope of this constraint.
 
@@ -1617,6 +1617,32 @@ def find_optimal(
             best_cost, arg_best = cost, [value]
 
     return arg_best, best_cost
+
+
+def optimal_cost_value(variable: Variable, mode: str):
+    """
+    Find the value that optimizes the integrated cost function fof a variable.
+
+    Parameters
+    ----------
+    variable: Variable
+        a variable with an integrated cost function
+    mode: str
+        'min' or 'max"
+
+    Returns
+    -------
+    value:
+        the value that optimizes the integrated cost function
+    cost:
+        the cost associated with the returned value
+
+    """
+    opt_func = min if mode == "min" else max
+    best_cost, best_value = opt_func(
+        (variable.cost_for_val(value), value) for value in variable.domain
+    )
+    return best_value, best_cost
 
 
 def join(u1: Constraint, u2: Constraint) -> Constraint:
