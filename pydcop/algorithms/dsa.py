@@ -91,23 +91,21 @@ implementation of DSA.
 
 
 """
-
+import logging
 import random
 
-from typing import Any, Tuple, List
 
 from pydcop.algorithms import AlgoParameterDef, ComputationDef
-from pydcop.infrastructure.computations import (
-    MessagePassingComputation,
-    Message,
-    VariableComputation,
-    DcopComputation,
-    register,
-)
+from pydcop.infrastructure.computations import Message, VariableComputation, register
 
 from pydcop.computations_graph.constraints_hypergraph import VariableComputationNode
-from pydcop.dcop.relations import find_optimum, assignment_cost, filter_assignment_dict, \
-    find_optimal
+from pydcop.dcop.relations import (
+    find_optimum,
+    assignment_cost,
+    filter_assignment_dict,
+    find_optimal,
+    optimal_cost_value,
+)
 
 HEADER_SIZE = 0
 UNIT_SIZE = 1
@@ -122,13 +120,16 @@ GRAPH_TYPE = "constraints_hypergraph"
 #     probability: float
 #         The probability threshold for changing value. Used differently
 #         depending on the variant of DSA. See (Zhang, 2005) for details
+#     p_mode: str
+#         TODO
 #     stop_cycle: int
-#         the number of cycle after which the computation must stop. If not
+#         The number of cycle after which the computation must stop. If not
 #         given, the computation does not stop automatically.
 
 
 algo_params = [
     AlgoParameterDef("probability", "float", None, 0.7),
+    AlgoParameterDef("p_mode", "str", ["fixed", "arity"], "fixed"),
     AlgoParameterDef("variant", "str", ["A", "B", "C"], "B"),
     AlgoParameterDef("stop_cycle", "int", None, 0),
 ]
@@ -253,6 +254,14 @@ class DsaComputation(VariableComputation):
         self.stop_cycle = comp_def.algo.param_value("stop_cycle")
         self.constraints = comp_def.node.constraints
 
+        if comp_def.algo.param_value("p_mode") == "arity":
+            n_count = sum(len(c.dimensions) - 1 for c in self.constraints)
+            n = len(comp_def.node.neighbors)
+            self.probability = 1 / n_count * 1.2
+            self.logger.debug(
+                f"Using arity-based threshold : {self.probability} {n_count} {n}"
+            )
+
         # Maps for the values of our neighbors for the current and next cycle:
         self.current_cycle = {}
         self.next_cycle = {}
@@ -266,19 +275,41 @@ class DsaComputation(VariableComputation):
             }
 
     def on_start(self):
-        # randomly select a value
-        self.random_value_selection()
-        self.logger.debug("DSA starts: randomly select value %s", self.current_value)
-        self.post_to_all_neighbors(DsaMessage(self.current_value))
+        if not self.neighbors:
+            # If a variable has no neighbors, we must select its final value immediately
+            # as it will never receive any message.
+            if hasattr(self._variable, "cost_for_val"):
+                current_cost, value = optimal_cost_value(self._variable, self.mode)
+                self.value_selection(value, current_cost)
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"Select initial value {self.current_value} "
+                        f"based on cost function for var {self._variable.name}"
+                    )
+            else:
+                self.value_selection(random.choice(self.variable.domain), None)
+                if self.logger.isEnabledFor(logging.INFO):
+                    self.logger.info(
+                        f"Select initial random value {self.current_value} "
+                        f"for unconstrained variable {self._variable.name}"
+                    )
+            self.finished()
+            self.stop()
+        else:
+            self.random_value_selection()
+            self.logger.debug(
+                "DSA starts: randomly select value %s", self.current_value
+            )
+            self.post_to_all_neighbors(DsaMessage(self.current_value))
 
-        # As everything is asynchronous, we might have received our
-        # neighbors values even before starting this algorithm.
-        self.evaluate_cycle()
+            # As everything is asynchronous, we might have received our
+            # neighbors values even before starting this algorithm.
+            self.evaluate_cycle()
 
     @register("dsa_value")
     def _on_value_msg(self, variable_name, recv_msg, t):
         if not self._running:
-            return 
+            return
         if variable_name not in self.current_cycle:
             self.current_cycle[variable_name] = recv_msg.value
             self.logger.debug(
