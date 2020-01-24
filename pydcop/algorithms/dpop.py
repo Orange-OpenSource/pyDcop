@@ -171,10 +171,7 @@ class DpopAlgo(VariableComputation):
         (min or max)
     """
 
-    def __init__(
-        self,
-        comp_def: ComputationDef,
-    ):
+    def __init__(self, comp_def: ComputationDef):
 
         assert comp_def.algo.algo == "dpop"
 
@@ -200,7 +197,9 @@ class DpopAlgo(VariableComputation):
                     constraints.remove(r)
                     break
         self._constraints = constraints
-        self.logger.debug(f"Constraints for computation {self.name}: {self._constraints} ")
+        self.logger.debug(
+            f"Constraints for computation {self.name}: {self._constraints} "
+        )
 
         if hasattr(self._variable, "cost_for_val"):
             costs = []
@@ -262,9 +261,24 @@ class DpopAlgo(VariableComputation):
                 )
 
                 self.select_value_and_finish(values[0], float(current_cost))
+            elif hasattr(self._variable, "cost_for_val"):
+                # The variable has no constraint with other variable but has a cost function,
+                # (i.e a unary constraint) : select the value that optimize that constraint.
+
+                self.logger.debug(
+                    f"Selecting value for {self._variable.name} based only on cost function"
+                )
+                values, current_cost = find_arg_optimal(
+                    self._variable, self._joined_utils, self._mode
+                )
+                self.select_value_and_finish(values[0], float(current_cost))
+
             else:
                 # If the variable is not constrained, we can simply take a value at
                 # random:
+                self.logger.debug(
+                    f"Selecting random value for {self._variable.name} (not constrained)"
+                )
                 value = choice(self._variable.domain)
                 self.select_value_and_finish(value, 0.0)
 
