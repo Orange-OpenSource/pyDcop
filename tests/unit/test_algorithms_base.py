@@ -273,6 +273,18 @@ def test_find_optimal_several_best_values():
 ################################################################################
 
 
+def test_optimal_cost_value():
+
+    x1 = VariableWithCostFunc("x1", list(range(10)), lambda x: x * 2 + 1)
+
+    assert (0, 1) == optimal_cost_value(x1, "min")
+
+    assert (9, 19) == optimal_cost_value(x1, "max")
+
+
+################################################################################
+
+
 def test_check_type_by_string():
     pydcop.algorithms.is_of_type_by_str(2, "int")
     pydcop.algorithms.is_of_type_by_str(2.5, "float")
