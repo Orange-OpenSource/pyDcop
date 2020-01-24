@@ -1621,7 +1621,8 @@ def find_optimal(
 
 def optimal_cost_value(variable: Variable, mode: str):
     """
-    Find the value that optimizes the integrated cost function fof a variable.
+    Find the value that optimizes the integrated cost function for a variable.
+    If the variable has not cost function, simply returns a random value from the domain.
 
     Parameters
     ----------
@@ -1638,10 +1639,14 @@ def optimal_cost_value(variable: Variable, mode: str):
         the cost associated with the returned value
 
     """
-    opt_func = min if mode == "min" else max
-    best_cost, best_value = opt_func(
-        (variable.cost_for_val(value), value) for value in variable.domain
-    )
+    if hasattr(variable, "cost_for_val"):
+        opt_func = min if mode == "min" else max
+        best_cost, best_value = opt_func(
+            (variable.cost_for_val(value), value) for value in variable.domain
+        )
+    else:
+        best_value, best_cost = random.choice(variable.domain), None
+
     return best_value, best_cost
 
 

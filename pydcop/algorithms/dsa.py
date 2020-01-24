@@ -278,21 +278,13 @@ class DsaComputation(VariableComputation):
         if not self.neighbors:
             # If a variable has no neighbors, we must select its final value immediately
             # as it will never receive any message.
-            if hasattr(self._variable, "cost_for_val"):
-                current_cost, value = optimal_cost_value(self._variable, self.mode)
-                self.value_selection(value, current_cost)
-                if self.logger.isEnabledFor(logging.INFO):
-                    self.logger.info(
-                        f"Select initial value {self.current_value} "
-                        f"based on cost function for var {self._variable.name}"
-                    )
-            else:
-                self.value_selection(random.choice(self.variable.domain), None)
-                if self.logger.isEnabledFor(logging.INFO):
-                    self.logger.info(
-                        f"Select initial random value {self.current_value} "
-                        f"for unconstrained variable {self._variable.name}"
-                    )
+            value, cost = optimal_cost_value(self._variable, self.mode)
+            self.value_selection(value, cost)
+            if self.logger.isEnabledFor(logging.INFO):
+                self.logger.info(
+                    f"Select initial value {self.current_value} "
+                    f"based on cost function for var {self._variable.name}"
+                )
             self.finished()
             self.stop()
         else:
