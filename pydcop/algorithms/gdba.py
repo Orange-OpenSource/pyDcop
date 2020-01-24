@@ -175,7 +175,6 @@ class GdbaImproveMessage(Message):
 
 
 algo_params = [
-    AlgoParameterDef('infinity', 'int', None, 10000),
     AlgoParameterDef('modifier', 'str',  ['A', 'M'], 'A'),
     AlgoParameterDef('violation', 'str', ['NZ', 'NM', 'MX'], 'NZ'),
     AlgoParameterDef('increase_mode', 'str', ['E', 'R', 'C', 'T'], "E"),
