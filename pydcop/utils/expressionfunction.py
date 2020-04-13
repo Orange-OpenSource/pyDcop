@@ -28,8 +28,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import ast
 
-from typing import List
+from typing import List, Tuple, Any, Set
 from collections.abc import Callable
 from pydcop.utils.simple_repr import SimpleRepr, simple_repr, from_repr
 
@@ -153,3 +154,48 @@ class ExpressionFunction(Callable, SimpleRepr):
                 if k not in ['__qualname__', '__module__']}
         exp_fct =  cls(**args, **fixed_vars)
         return exp_fct
+
+
+class VarCounterVisitor(ast.NodeVisitor):
+    """ A simple visitor to count variables in an AST tree."""
+
+    def __init__(self):
+        self.loaded = set()
+        self.stored = set()
+        self.has_return = False
+
+    def visit(self, node) -> Any:
+        if isinstance(node, ast.Name):
+            if isinstance(node.ctx, ast.Load):
+                self.loaded.add(node.id)
+            elif isinstance(node.ctx, ast.Store):
+                self.stored.add(node.id)
+        elif isinstance(node, ast.Return):
+            self.has_return = True
+
+        self.generic_visit(node)
+
+
+def _analyse_ast(str_code: str) -> Tuple[bool, Set[str]]:
+    """
+    Analyse the AST built from `str_definition`.
+
+    Parameters
+    ----------
+    str_code: str
+        A string containing a piece of valid python code : statement, expression or
+         function definition (but without the `def ....` line).
+
+    Returns
+    -------
+    has_return: bool
+        True is the expression contains at least one return statement.
+    variables: Set of str
+        A set containing the identifiers of all variables used but not declared
+        in `str_code`.
+
+    """
+    node = ast.parse(str_code)
+    visitor = VarCounterVisitor()
+    visitor.visit(node)
+    return visitor.has_return, visitor.loaded - visitor.stored
