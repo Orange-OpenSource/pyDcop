@@ -238,3 +238,41 @@ return c
     assert has_return
     assert exp_vars == {"a", "b"}
 
+
+def test_multiline_expression_starting_with_newline():
+    exp = ExpressionFunction("""
+a=3
+return a""")
+
+    assert exp() == 3
+
+
+def test_multiline_expression_no_newline_at_start():
+    exp = ExpressionFunction("""a=3
+return a + 2""")
+
+    assert exp() == 5
+
+    # As f has no arg, it must raise an error :
+    with pytest.raises(TypeError):
+        exp(a=4, b=3, c=2)
+    with pytest.raises(TypeError):
+        exp(a=4)
+    with pytest.raises(TypeError):
+        exp(4)
+
+
+def test_multiline_expression_one_var():
+    exp = ExpressionFunction("""a=3
+return a * b""")
+
+    assert exp(b=2) == 6
+
+    with pytest.raises(TypeError) as exception:
+        exp()
+    assert "Missing named argument(s)" in str(exception.value)
+
+    with pytest.raises(TypeError) as exception:
+        exp(4)
+    assert "takes 1 positional argument but 2 were given" in str(exception.value)
+
