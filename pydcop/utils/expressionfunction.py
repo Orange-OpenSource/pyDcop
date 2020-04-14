@@ -77,15 +77,17 @@ class ExpressionFunction(Callable, SimpleRepr):
 
         f_def = f"def f({', '.join([v for v in self.exp_vars])} ):\n"
         if not has_return:
-            f_def += f"    return {expression}"
+            f_def += f"    return {self._expression}"
         else:
-            f_def += expression.replace("\n", "\n    ")
+            self._expression = f"\n{self._expression}" \
+                if not self._expression.startswith("\n") \
+                else self._expression
+            f_def += self._expression.replace("\n", "\n    ")
 
         try:
             f_compiled = compile(f_def, '<string>', 'exec')
         except SyntaxError:
-            raise SyntaxError('Syntax error in string expression ' +
-                              str(expression))
+            raise SyntaxError(f"Syntax error in string expression: '{self._expression}'")
         g = dict(globals())
         local = {}
         try:
@@ -118,7 +120,8 @@ class ExpressionFunction(Callable, SimpleRepr):
     def partial(self, **kwargs):
         return ExpressionFunction(self.expression, **kwargs)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, **kwargs):
+        # Note that we only accept named arguments !
         l = kwargs.copy()
         l.update(self._fixed_vars)
 
