@@ -510,6 +510,29 @@ class TestDcopLoadConstraints(unittest.TestCase):
         self.assertEqual(c(e1=False, v1=1, v2=1), 0)
         self.assertEqual(c(e1=False, v1=1, v2=2), 0)
 
+    def test_multiline_intention_constraint(self):
+        self.dcop_str += """
+        constraints:
+          cond:
+            type: intention
+            function: | 
+              if e1:
+                  b = v1 * 2
+              else:
+                  b = 0
+              return b + v2
+        """
+
+        dcop = load_dcop(self.dcop_str)
+
+        self.assertEqual(len(dcop.constraints), 1)
+        c = dcop.constraint("cond")
+        self.assertEqual(c.name, "cond")
+        self.assertEqual(c(e1=True, v1=1, v2=1), 3)
+        self.assertEqual(c(e1=True, v1=1, v2=2), 4)
+        self.assertEqual(c(e1=False, v1=1, v2=1), 1)
+        self.assertEqual(c(e1=False, v1=1, v2=2), 2)
+
     def test_extensional_constraint_one_var(self):
         self.dcop_str += """
         constraints:

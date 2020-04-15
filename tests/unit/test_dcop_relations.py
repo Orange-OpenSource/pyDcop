@@ -1452,6 +1452,24 @@ class RelationFromExpression(unittest.TestCase):
         self.assertIn(s2, r.dimensions)
         self.assertEqual(2, len(r.dimensions))
 
+    def test_relation_from_str_multiline(self):
+        d = pydcop.dcop.objects.VariableDomain("d", "d", [0, 1, 2])
+        s1 = ExternalVariable("s1", d, 0)
+        s2 = ExternalVariable("s2", d, 0)
+        expr = """
+b = s1 / 2
+return b * s2        
+        """
+        r = relation_from_str("test_rel", expr, [s1, s2])
+
+        self.assertEqual(r(s1=1, s2=3), 1.5)
+        self.assertEqual(r(s2=3, s1=4), 6)
+        self.assertIn(s1, r.dimensions)
+        self.assertIn(s2, r.dimensions)
+        self.assertEqual(2, len(r.dimensions))
+
+        self.assertEqual(r.expression, expr)
+
 
 class FindDependentRelations(unittest.TestCase):
     def test_no_relation(self):

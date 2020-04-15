@@ -34,7 +34,7 @@ from functools import partial
 
 import pytest
 
-from pydcop.utils.expressionfunction import ExpressionFunction
+from pydcop.utils.expressionfunction import ExpressionFunction, _analyse_ast
 from pydcop.utils.simple_repr import simple_repr, from_repr
 
 
@@ -186,3 +186,93 @@ def test_type_error_on_excessive_assignment():
 
     with pytest.raises(TypeError):
         f(a=4, b=3, c=2)
+
+
+def test_analyse_ast_simple_expr_no_variable():
+    has_return, exp_vars = _analyse_ast("3 ")
+    assert not has_return
+    assert exp_vars == set()
+
+
+def test_analyse_ast_simple_expr_one_variable():
+    has_return, exp_vars = _analyse_ast("a + 3 ")
+    assert not has_return
+    assert exp_vars == { "a"}
+
+
+def test_analyse_ast_simple_expr_two_variable():
+    has_return, exp_vars = _analyse_ast("a + b ")
+    assert not has_return
+    assert exp_vars == { "a", "b"}
+
+
+def test_analyse_ast_simple_if_expr():
+    has_return, exp_vars = _analyse_ast("10 if a == b  else 0")
+    assert not has_return
+    assert exp_vars == { "a", "b"}
+
+
+def test_analyse_ast_func_no_variable():
+    has_return, exp_vars = _analyse_ast("""
+a = 3
+return a
+""")
+    assert has_return
+    assert exp_vars == set()
+
+
+def test_analyse_ast_func_one_variable():
+    has_return, exp_vars = _analyse_ast("""
+a = 3
+return a + b
+""")
+    assert has_return
+    assert exp_vars == {"b"}
+
+
+def test_analyse_ast_func_two_variable():
+    has_return, exp_vars = _analyse_ast("""
+c = 10 *a + 5 * b
+return c
+""")
+    assert has_return
+    assert exp_vars == {"a", "b"}
+
+
+def test_multiline_expression_starting_with_newline():
+    exp = ExpressionFunction("""
+a=3
+return a""")
+
+    assert exp() == 3
+
+
+def test_multiline_expression_no_newline_at_start():
+    exp = ExpressionFunction("""a=3
+return a + 2""")
+
+    assert exp() == 5
+
+    # As f has no arg, it must raise an error :
+    with pytest.raises(TypeError):
+        exp(a=4, b=3, c=2)
+    with pytest.raises(TypeError):
+        exp(a=4)
+    with pytest.raises(TypeError):
+        exp(4)
+
+
+def test_multiline_expression_one_var():
+    exp = ExpressionFunction("""a=3
+return a * b""")
+
+    assert exp(b=2) == 6
+
+    with pytest.raises(TypeError) as exception:
+        exp()
+    assert "Missing named argument(s)" in str(exception.value)
+
+    with pytest.raises(TypeError) as exception:
+        exp(4)
+    assert "takes 1 positional argument but 2 were given" in str(exception.value)
+

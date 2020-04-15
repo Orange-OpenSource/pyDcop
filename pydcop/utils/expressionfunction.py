@@ -28,8 +28,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import ast
 
-from typing import List
+from typing import List, Tuple, Any, Set
 from collections.abc import Callable
 from pydcop.utils.simple_repr import SimpleRepr, simple_repr, from_repr
 
@@ -64,27 +65,42 @@ class ExpressionFunction(Callable, SimpleRepr):
         not match any of the variables found in the expression,
         a `ValueError` is raised.
         """
-        self._expression = expression
+        self._expression = expression.lstrip()
         self._fixed_vars = fixed_vars
 
-        try:
-            self._c = compile('_fres=' + str(expression), '<string>', 'exec')
-        except SyntaxError:
-            raise SyntaxError('Syntax error in string expression ' +
-                              str(expression))
-        f_vars = set(self._c.co_names)
-        f_vars.remove('_fres')
-        for v in fixed_vars:
-            if v not in f_vars:
-                raise ValueError('Cannot fix variable "{}" which is not '
-                                 'present in the expression ""'
-                                 .format(v, expression))
-
+        has_return, exp_vars = _analyse_ast(self._expression)
         # We want to allow using builtin function like abs, round, etc.
         # We must filter them out from the list of variables
         import sys
         builtins = dir(sys.modules["builtins"])
-        self._vars = [v for v in f_vars if v not in builtins]
+        self.exp_vars = [v for v in exp_vars if v not in builtins]
+
+        f_def = f"def f({', '.join([v for v in self.exp_vars])} ):\n"
+        if not has_return:
+            f_def += f"    return {self._expression}"
+        else:
+            self._expression = f"\n{self._expression}" \
+                if not self._expression.startswith("\n") \
+                else self._expression
+            f_def += self._expression.replace("\n", "\n    ")
+
+        try:
+            f_compiled = compile(f_def, '<string>', 'exec')
+        except SyntaxError:
+            raise SyntaxError(f"Syntax error in string expression: '{self._expression}'")
+        g = dict(globals())
+        local = {}
+        try:
+            exec(f_compiled, g, local)
+            self.exp_func = local["f"]
+        except SyntaxError:
+            raise SyntaxError(f"Syntax error in multi-line string expression {f_def}'")
+
+        for v in fixed_vars:
+            if v not in self.exp_vars:
+                raise ValueError('Cannot fix variable "{}" which is not '
+                                 'present in the expression ""'
+                                 .format(v, expression))
 
     @property
     def expression(self):
@@ -99,12 +115,13 @@ class ExpressionFunction(Callable, SimpleRepr):
         """
         :return: a set of variable names that must be set when calling f
         """
-        return [ v for v in self._vars if v not in self._fixed_vars]
+        return [ v for v in self.exp_vars if v not in self._fixed_vars]
 
     def partial(self, **kwargs):
         return ExpressionFunction(self.expression, **kwargs)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, **kwargs):
+        # Note that we only accept named arguments !
         l = kwargs.copy()
         l.update(self._fixed_vars)
 
@@ -119,9 +136,8 @@ class ExpressionFunction(Callable, SimpleRepr):
             raise TypeError(
                 "Unexpected argument(s) " + str(unexpected))
 
-        exec(self._c, globals(), l)
-
-        return l['_fres']
+        res = self.exp_func(**l)
+        return res
 
     def __eq__(self, other):
         if type(self) != type(other):
@@ -135,7 +151,7 @@ class ExpressionFunction(Callable, SimpleRepr):
 
     def __repr__(self):
         return 'ExpressionFunction({}, {})'.format(self._expression,
-                                                   self._vars)
+                                                   self.exp_vars)
 
     def __hash__(self):
         return hash((self._expression, tuple(self._fixed_vars.items())))
@@ -147,9 +163,54 @@ class ExpressionFunction(Callable, SimpleRepr):
 
     @classmethod
     def _from_repr(cls, r):
-        fixed_vars =  r['fixed_vars']
+        fixed_vars = r['fixed_vars']
         del r['fixed_vars']
         args = {k: from_repr(v) for k, v in r.items()
                 if k not in ['__qualname__', '__module__']}
-        exp_fct =  cls(**args, **fixed_vars)
+        exp_fct = cls(**args, **fixed_vars)
         return exp_fct
+
+
+class VarCounterVisitor(ast.NodeVisitor):
+    """ A simple visitor to count variables in an AST tree."""
+
+    def __init__(self):
+        self.loaded = set()
+        self.stored = set()
+        self.has_return = False
+
+    def visit(self, node) -> Any:
+        if isinstance(node, ast.Name):
+            if isinstance(node.ctx, ast.Load):
+                self.loaded.add(node.id)
+            elif isinstance(node.ctx, ast.Store):
+                self.stored.add(node.id)
+        elif isinstance(node, ast.Return):
+            self.has_return = True
+
+        self.generic_visit(node)
+
+
+def _analyse_ast(str_code: str) -> Tuple[bool, Set[str]]:
+    """
+    Analyse the AST built from `str_definition`.
+
+    Parameters
+    ----------
+    str_code: str
+        A string containing a piece of valid python code : statement, expression or
+         function definition (but without the `def ....` line).
+
+    Returns
+    -------
+    has_return: bool
+        True is the expression contains at least one return statement.
+    variables: Set of str
+        A set containing the identifiers of all variables used but not declared
+        in `str_code`.
+
+    """
+    node = ast.parse(str_code)
+    visitor = VarCounterVisitor()
+    visitor.visit(node)
+    return visitor.has_return, visitor.loaded - visitor.stored

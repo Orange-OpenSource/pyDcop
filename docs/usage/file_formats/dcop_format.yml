@@ -82,6 +82,8 @@ external_variables:
 constraints:
   c1:
     # type: pydcop supports intentional and extensional constraints
+    # When using an intentional constraint, the constraint can be defined with a
+    # simple python expression (see c1) or a full python function (see c4)
     type: intention
     # Any valid python expression can be used as a function declaration and
     # any builtin python function can be used (e.g. abs, round, etc.).
@@ -101,6 +103,23 @@ constraints:
     # Real hard constraints are not supported, you can emulate them by defining
     # contraints  
     function: 1000 if var2 == var3 else 0
+  c4:
+    type: intention
+    # this is an example of a multi-line intentional constraints
+    # The `function` if a full python function
+    # Real hard constraints are not supported, you can emulate them by defining
+    # constraints as a full python function. The `def` line is omitted and will be
+    # automatically generated based on the dcops variables used in the function.
+    # The function MUST have a return statement in all execution paths.
+    # The yaml multi-line syntax is recommended (starting with `|`, as shown bellow)
+    # and the code must be 4-space indented.
+    function: |
+      if var1 == 2:
+          b= 4
+      else:
+          b = 2
+      return var1 + 2
+
   cost_d1:
     type: intention
     function: var1 * 0.8
