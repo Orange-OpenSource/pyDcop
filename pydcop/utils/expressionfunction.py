@@ -29,6 +29,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import ast
+import importlib.util
+import sys
 
 from typing import List, Tuple, Any, Set
 from collections.abc import Callable
@@ -50,7 +52,7 @@ class ExpressionFunction(Callable, SimpleRepr):
 
     """
 
-    def __init__(self, expression: str, **fixed_vars) -> None:
+    def __init__(self, expression: str, source_file=None, **fixed_vars) -> None:
         """
         Create a callable representing the expression.
 
@@ -67,14 +69,11 @@ class ExpressionFunction(Callable, SimpleRepr):
         """
         self._expression = expression.lstrip()
         self._fixed_vars = fixed_vars
+        self._source_file = source_file
 
-        has_return, exp_vars = _analyse_ast(self._expression)
-        # We want to allow using builtin function like abs, round, etc.
-        # We must filter them out from the list of variables
-        import sys
-        builtins = dir(sys.modules["builtins"])
-        self.exp_vars = [v for v in exp_vars if v not in builtins]
+        has_return, self.exp_vars = _analyse_ast(self._expression)
 
+        # Build the function definition code from the expression:
         f_def = f"def f({', '.join([v for v in self.exp_vars])} ):\n"
         if not has_return:
             f_def += f"    return {self._expression}"
@@ -83,14 +82,22 @@ class ExpressionFunction(Callable, SimpleRepr):
                 if not self._expression.startswith("\n") \
                 else self._expression
             f_def += self._expression.replace("\n", "\n    ")
-
         try:
             f_compiled = compile(f_def, '<string>', 'exec')
         except SyntaxError:
             raise SyntaxError(f"Syntax error in string expression: '{self._expression}'")
+
+        # Make the module that contains the constraint definition available to exec:
         g = dict(globals())
-        local = {}
+        if source_file is not None:
+            # import the module that contains the constraint definition
+            spec = importlib.util.spec_from_file_location("source", source_file)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            g["source"] = module
+        # And execute on compiled function definition, to get the function object:
         try:
+            local = {}
             exec(f_compiled, g, local)
             self.exp_func = local["f"]
         except SyntaxError:
@@ -142,7 +149,8 @@ class ExpressionFunction(Callable, SimpleRepr):
     def __eq__(self, other):
         if type(self) != type(other):
             return False
-        if self._expression == other._expression:
+        if self._expression == other._expression and \
+                self._source_file == other._source_file:
             return True
         return False
 
