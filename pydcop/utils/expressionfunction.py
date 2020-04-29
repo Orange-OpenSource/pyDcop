@@ -178,6 +178,7 @@ class VarCounterVisitor(ast.NodeVisitor):
         self.loaded = set()
         self.stored = set()
         self.has_return = False
+        self.imported = set()
 
     def visit(self, node) -> Any:
         if isinstance(node, ast.Name):
@@ -187,8 +188,23 @@ class VarCounterVisitor(ast.NodeVisitor):
                 self.stored.add(node.id)
         elif isinstance(node, ast.Return):
             self.has_return = True
+        # We must keep track of importer name in order to avoid considering as variable
+        # names:
+        elif isinstance(node, ast.Import):
+            self.imported.update([ n.name for n in node.names])
+        elif isinstance(node, ast.ImportFrom):
+            self.imported.update([ n.name for n in node.names])
 
         self.generic_visit(node)
+
+    def get_vars(self):
+        names = (self.loaded - self.stored) -self.imported
+        # We want to allow using builtin function like abs, round, etc.
+        # We must filter them out from the list of variables.
+        # We also filter out any name that starts with 'source', as this is the syntax
+        # used in yaml when referring to constraints defined in separate python files.
+        builtins = dir(sys.modules["builtins"])
+        return { n for n in names if not n.startswith("source") and n not in builtins}
 
 
 def _analyse_ast(str_code: str) -> Tuple[bool, Set[str]]:
@@ -213,4 +229,4 @@ def _analyse_ast(str_code: str) -> Tuple[bool, Set[str]]:
     node = ast.parse(str_code)
     visitor = VarCounterVisitor()
     visitor.visit(node)
-    return visitor.has_return, visitor.loaded - visitor.stored
+    return visitor.has_return, visitor.get_vars()
