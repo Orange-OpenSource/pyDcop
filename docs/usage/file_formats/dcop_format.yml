@@ -105,7 +105,7 @@ constraints:
     function: 1000 if var2 == var3 else 0
   c4:
     type: intention
-    # this is an example of a multi-line intentional constraints
+    # This is an example of a multi-line intentional constraints:
     # The `function` if a full python function
     # Real hard constraints are not supported, you can emulate them by defining
     # constraints as a full python function. The `def` line is omitted and will be
@@ -119,6 +119,18 @@ constraints:
       else:
           b = 2
       return var1 + 2
+
+  diff_2_3:
+    type: intention
+    # Example of an intentional constraints defined as a function in an external file
+    # The `source` entry must point to a valid python file that containts a definition
+    # of a function implementing the constraint. Relative or absolute path can be used,
+    # when using a relative path, the actual path is based on the location of the dcop
+    # yaml file. When defining a dcop in several yaml files, the actual path is based
+    # on the location of the first yaml file.
+    source: "./external_python_constraints.py"
+    #
+    function: source.diff_vars(v2, v3)
 
   cost_d1:
     type: intention

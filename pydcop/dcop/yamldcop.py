@@ -27,8 +27,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-
+import pathlib
 from collections import defaultdict
 from collections import Iterable as CollectionIterable
 from typing import Dict, Iterable, Union, List
@@ -50,7 +49,8 @@ from pydcop.dcop.relations import (
     RelationProtocol,
     NAryMatrixRelation,
     assignment_matrix,
-    generate_assignment_as_dict,
+    generate_assignment_as_dict, constraint_from_str,
+    constraint_from_external_definition,
 )
 from pydcop.utils.expressionfunction import ExpressionFunction
 from pydcop.distribution.objects import DistributionHints
@@ -78,19 +78,22 @@ def load_dcop_from_file(filenames: Union[str, Iterable[str]]):
 
     """
     content = ""
-    if isinstance(filenames, CollectionIterable):
-        for filename in filenames:
-            with open(filename, mode="r", encoding="utf-8") as f:
-                content += f.read()
-    else:
-        with open(filenames, mode="r", encoding="utf-8") as f:
-            content += f.read()
+    main_dir = None
+
+    if not isinstance(filenames, CollectionIterable):
+        filenames = [filenames]
+
+    for filename in filenames:
+        p = pathlib.Path(filename)
+        if main_dir is None:
+            main_dir = p.parent
+        content += p.read_text(encoding="utf-8")
 
     if content:
-        return load_dcop(content)
+        return load_dcop(content, main_dir)
 
 
-def load_dcop(dcop_str: str) -> DCOP:
+def load_dcop(dcop_str: str, main_dir=None) -> DCOP:
     loaded = yaml.load(dcop_str, Loader=yaml.FullLoader)
 
     if "name" not in loaded:
@@ -107,7 +110,7 @@ def load_dcop(dcop_str: str) -> DCOP:
     dcop.domains = _build_domains(loaded)
     dcop.variables = _build_variables(loaded, dcop)
     dcop.external_variables = _build_external_variables(loaded, dcop)
-    dcop._constraints = _build_constraints(loaded, dcop)
+    dcop._constraints = _build_constraints(loaded, dcop, main_dir)
     dcop._agents_def = _build_agents(loaded)
     dcop.dist_hints = _build_dist_hints(loaded, dcop)
     return dcop
@@ -211,7 +214,7 @@ def _build_external_variables(loaded, dcop) -> Dict[str, ExternalVariable]:
     return ext_vars
 
 
-def _build_constraints(loaded, dcop) -> Dict[str, RelationProtocol]:
+def _build_constraints(loaded, dcop, main_dir) -> Dict[str, RelationProtocol]:
     constraints = {}
     if "constraints" in loaded:
         for c_name in loaded["constraints"]:
@@ -223,9 +226,17 @@ def _build_constraints(loaded, dcop) -> Dict[str, RelationProtocol]:
                     "supported for now".format(c_name)
                 )
             elif c["type"] == "intention":
-                constraints[c_name] = relation_from_str(
-                    c_name, c["function"], dcop.all_variables
-                )
+                if "source" in c:
+                    src_path = c["source"] \
+                        if pathlib.Path(c["source"]).is_absolute() \
+                        else main_dir / c["source"]
+                    constraints[c_name] = constraint_from_external_definition(
+                        c_name, src_path, c["function"], dcop.all_variables
+                    )
+                else:
+                    constraints[c_name] = constraint_from_str(
+                        c_name, c["function"], dcop.all_variables
+                    )
             elif c["type"] == "extensional":
                 values_def = c["values"]
                 default = None if "default" not in c else c["default"]
