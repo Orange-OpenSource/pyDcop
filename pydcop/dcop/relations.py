@@ -1311,6 +1311,25 @@ def constraint_from_str(name: str, expression: str, all_variables: Iterable[Vari
 # should be used.
 relation_from_str = constraint_from_str
 
+def constraint_from_external_definition(name: str,
+        source_file: str, expression: str, all_variables: Iterable[Variable]):
+
+    f_exp = ExpressionFunction(expression, source_file)
+    relation_variables = []
+    for v in f_exp.variable_names:
+        found = False
+        for s in all_variables:
+            if s.name == v:
+                relation_variables.append(s)
+                found = True
+        if not found:
+            raise Exception(
+                "Missing variable {} for string-based function "
+                '"{}"'.format(v, expression)
+            )
+
+    return NAryFunctionRelation(f_exp, relation_variables, name, f_kwargs=True)
+
 
 def add_var_to_rel(
     name: str, original_relation: RelationProtocol, variable: Variable, f

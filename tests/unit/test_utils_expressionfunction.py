@@ -276,3 +276,24 @@ return a * b""")
         exp(4)
     assert "takes 1 positional argument but 2 were given" in str(exception.value)
 
+
+def test_multiline_expression_with_import():
+    exp = ExpressionFunction("""import math
+return math.pi + a""")
+
+    import math
+    assert exp(a=2) == math.pi + 2
+
+    with pytest.raises(TypeError) as exception:
+        exp(2)
+
+
+def test_multiline_expression_with_fromimport():
+    exp = ExpressionFunction("""from math import pi
+return pi + a""")
+
+    import math
+    assert exp(a=2) == math.pi + 2
+
+    with pytest.raises(TypeError) as exception:
+        exp(2)
