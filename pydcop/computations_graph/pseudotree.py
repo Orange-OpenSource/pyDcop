@@ -350,8 +350,8 @@ def _generate_dfs_tree(variables, relations, root=None):
     if root is None:
         # heuristic :
         # root = random.choice(variables)
-        nodes.sort(key=lambda a: n.neighbors_count())
-        root = nodes[0]
+        nodes.sort(key=lambda n: n.neighbors_count())
+        root = nodes[-1]
     else:
         for n in nodes:
             if n.variable == root:
