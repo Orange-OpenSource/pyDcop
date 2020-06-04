@@ -165,6 +165,51 @@ class Domain(Sized, SimpleRepr, Iterable[Any]):
         raise ValueError(str(val) + " is not in the domain " + self._name)
 
 
+class ContinuousDomain(Domain):
+    """
+    A ContinuousDomain indicates the lower and upper bound of the values 
+    that are valid for variables with this domain. 
+    It also indicates the type of environment state represented
+    by there variable : 'luminosity', humidity', etc.
+
+    The lower and upper bound of the domain is stored separately
+    as well as within the values (values = [lower bound, upper bound])
+    in order to be compatible with the Domain class.
+    """
+
+    def __init__(self, name: str, domain_type: str, lower_bound: float, upper_bound: float) -> None:
+        """
+
+        :param: name: name of the domain.
+        :param domain_type: a string identifying the kind of value in the
+                            domain. For example : 'luminosity', 'humidity', ...
+        :param lower_bound: the lower bound of the domain of the valid values
+        :param upper_bound: the upper bound of the domain of the valid values
+        """
+        # Check the bounds for consistency
+        assert lower_bound <= upper_bound
+
+        # Initiate the parent class
+        super().__init__(name, domain_type, [lower_bound, upper_bound])
+
+        # Store the parameters
+        self._lower_bound = lower_bound
+        self._upper_bound = upper_bound
+
+    @property
+    def upper_bound(self) -> float:
+        return self._upper_bound
+
+    @property
+    def lower_bound(self) -> float:
+        return self._lower_bound
+
+    def __str__(self):
+        return f"ContinuousDomain({self.name})"
+
+    def __repr__(self):
+        return f"ContinuousDomain({self.name}, {self.type}, ({self.lower_bound}..{self.upper_bound}))"
+
 # We keep VariableDomain as an alias for the moment, but Domain should be
 # preferred.
 VariableDomain = Domain
