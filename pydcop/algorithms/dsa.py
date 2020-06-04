@@ -97,7 +97,7 @@ import random
 
 from pydcop.algorithms import AlgoParameterDef, ComputationDef
 from pydcop.infrastructure.computations import Message, VariableComputation, register
-
+from pydcop.dcop.objects import Domain
 from pydcop.computations_graph.constraints_hypergraph import VariableComputationNode
 from pydcop.dcop.relations import (
     find_optimum,
@@ -247,6 +247,8 @@ class DsaComputation(VariableComputation):
 
         assert comp_def.algo.algo == "dsa"
         assert (comp_def.algo.mode == "min") or (comp_def.algo.mode == "max")
+        # Check if the domains of the variables are suitable
+        assert type(self._variable.domain) is Domain
 
         self.mode = comp_def.algo.mode
         self.probability = comp_def.algo.param_value("probability")

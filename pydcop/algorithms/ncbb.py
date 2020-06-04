@@ -102,6 +102,7 @@ from typing import Optional, List
 
 from pydcop.algorithms import ComputationDef
 from pydcop.computations_graph.pseudotree import get_dfs_relations
+from pydcop.dcop.objects import Domain
 from pydcop.dcop.relations import find_optimal
 from pydcop.infrastructure.computations import (
     VariableComputation,
@@ -149,7 +150,8 @@ class NcbbAlgo(SynchronousComputationMixin, VariableComputation):
 
     def __init__(self, computation_definition: ComputationDef):
         super().__init__(computation_definition.node.variable, computation_definition)
-
+        # Check if the domains of the variables are suitable
+        assert type(self._variable.domain) is Domain
         assert computation_definition.algo.algo == "ncbb"
         self._mode = computation_definition.algo.mode
 

@@ -38,7 +38,7 @@ from typing import Dict, List, Tuple
 
 from pydcop.dcop.relations import RelationProtocol, generate_assignment_as_dict, \
     filter_assignment_dict
-
+from pydcop.dcop.objects import Domain
 from pydcop.algorithms import AlgoParameterDef, ComputationDef
 from pydcop.infrastructure.computations import Message, VariableComputation, \
     register
@@ -183,6 +183,8 @@ class MixedDsaComputation(VariableComputation):
 
         """
         super().__init__(variable, comp_def)
+        # Check if the domains of the variables are suitable
+        assert type(self._variable.domain) is Domain
 
         self.proba_hard = proba_hard
         self.proba_soft = proba_soft

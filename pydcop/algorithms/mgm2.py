@@ -46,7 +46,7 @@ from typing import Dict, Any, Tuple, List
 
 from pydcop.algorithms import AlgoParameterDef, ComputationDef
 from pydcop.infrastructure.computations import Message, VariableComputation, register
-
+from pydcop.dcop.objects import Domain
 from pydcop.computations_graph.constraints_hypergraph import VariableComputationNode
 from pydcop.dcop.relations import (
     find_dependent_relations,
@@ -417,6 +417,8 @@ class Mgm2Computation(VariableComputation):
     def __init__(self, computation_def: ComputationDef = None):
         assert computation_def.algo.algo == "mgm2"
         super().__init__(computation_def.node.variable, computation_def)
+        # Check if the domains of the variables are suitable
+        assert type(self._variable.domain) is Domain
 
         self._mode = computation_def.algo.mode
         self.stop_cycle = computation_def.algo.param_value("stop_cycle")

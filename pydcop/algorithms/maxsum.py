@@ -90,7 +90,7 @@ from pydcop.computations_graph.factor_graph import (
     FactorComputationNode,
     VariableComputationNode,
 )
-from pydcop.dcop.objects import Variable, VariableNoisyCostFunc
+from pydcop.dcop.objects import Variable, VariableNoisyCostFunc, Domain
 from pydcop.dcop.relations import Constraint, generate_assignment_as_dict
 from pydcop.infrastructure.computations import (
     DcopComputation,
@@ -280,7 +280,10 @@ class MaxSumFactorComputation(SynchronousComputationMixin, DcopComputation):
     def __init__(self, comp_def: ComputationDef):
         assert comp_def.algo.algo == "maxsum"
         super().__init__(comp_def.node.factor.name, comp_def)
-        self.logger.warning(f"Neiborghs {self.neighbors}")
+        # Check if the domains of the variables are suitable
+        assert type(self._variable.domain) is Domain
+
+        self.logger.warning(f"Neighbors {self.neighbors}")
 
         self.mode = comp_def.algo.mode
         self.factor = comp_def.node.factor

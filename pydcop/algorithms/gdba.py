@@ -46,7 +46,7 @@ from typing import Iterable, Dict, Any, Tuple
 from pydcop.algorithms import AlgoParameterDef, ComputationDef
 from pydcop.infrastructure.computations import Message, VariableComputation, register
 from pydcop.computations_graph.constraints_hypergraph import VariableComputationNode
-from pydcop.dcop.objects import Variable
+from pydcop.dcop.objects import Variable, Domain
 from pydcop.dcop.relations import (
     RelationProtocol,
     NAryMatrixRelation,
@@ -232,6 +232,8 @@ class GdbaComputation(VariableComputation):
         """
 
         super().__init__(variable, comp_def)
+        # Check if the domains of the variables are suitable
+        assert type(self._variable.domain) is Domain
 
         self._msg_sender = msg_sender
 

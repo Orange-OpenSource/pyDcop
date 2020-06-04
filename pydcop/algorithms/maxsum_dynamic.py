@@ -35,6 +35,7 @@ from pydcop.infrastructure.computations import Message, register
 from pydcop.algorithms.amaxsum import MaxSumFactorComputation, MaxSumVariableComputation
 from pydcop.algorithms.maxsum import MaxSumMessage
 from pydcop.dcop.relations import NeutralRelation
+from pydcop.dcop.objects import Domain
 
 
 class DynamicFunctionFactorComputation(MaxSumFactorComputation):
@@ -76,6 +77,8 @@ class DynamicFunctionFactorComputation(MaxSumFactorComputation):
 
     def __init__(self, comp_def=None):
         super().__init__(comp_def=comp_def)
+        # Check if the domains of the variables are suitable
+        assert type(self._variable.domain) is Domain
 
     def change_factor_function(self, fn):
         """

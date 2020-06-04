@@ -83,6 +83,7 @@ import random
 from typing import Tuple, Any, List, Dict
 
 from pydcop.algorithms import AlgoParameterDef, ComputationDef
+from pydcop.dcop.objects import Domain
 from pydcop.dcop.relations import (
     find_optimum,
     assignment_cost,
@@ -134,6 +135,8 @@ class ADsaComputation(VariableComputation):
 
         assert comp_def.algo.algo == "adsa"
         assert (comp_def.algo.mode == "min") or (comp_def.algo.mode == "max")
+        # Check if the domains of the variables are suitable
+        assert type(self._variable.domain) is Domain
 
         self.mode = comp_def.algo.mode
         self.probability = comp_def.algo.param_value("probability")

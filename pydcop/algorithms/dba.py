@@ -107,7 +107,7 @@ from pydcop.infrastructure.computations import Message, VariableComputation, \
 
 from pydcop.computations_graph.constraints_hypergraph import \
     VariableComputationNode
-from pydcop.dcop.objects import Variable
+from pydcop.dcop.objects import Variable, Domain
 from pydcop.dcop.relations import RelationProtocol, filter_assignment_dict
 
 INFINITY = 10000
@@ -296,7 +296,9 @@ class DbaComputation(VariableComputation):
             raise ValueError('DBA is a constraint **satisfaction** '
                              'algorithm and only support '
                              'minimization objective')
-
+        # Check if the domains of the variables are suitable
+        assert type(self._variable.domain) is Domain
+        
         self._msg_sender = msg_sender
 
         global INFINITY
