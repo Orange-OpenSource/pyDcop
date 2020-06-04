@@ -35,6 +35,7 @@ from typing import Dict, Iterable, Union, List
 import yaml
 
 from pydcop.dcop.objects import (
+    ContinuousDomain,
     VariableDomain,
     Variable,
     ExternalVariable,
@@ -143,13 +144,22 @@ def _build_domains(loaded) -> Dict[str, VariableDomain]:
     domains = {}
     if "domains" in loaded:
         for d_name in loaded["domains"]:
+            # Retrieve the properties
             d = loaded["domains"][d_name]
             values = d["values"]
-
-            if len(values) == 1 and ".." in values[0]:
-                values = str_2_domain_values(d["values"][0])
             d_type = d["type"] if "type" in d else ""
-            domains[d_name] = VariableDomain(d_name, d_type, values)
+
+            # Check the type of domain
+            if len(values) == 1 and ".." in values[0]:
+                # Continuous domain
+                bounds = [float(b) 
+                    for b 
+                    in values[0].replace(' ','').split('..')]
+                domains[d_name] = ContinuousDomain(
+                    d_name, d_type, bounds[0], bounds[1])
+            else:
+                # Discrete domain
+                domains[d_name] = VariableDomain(d_name, d_type, values)
 
     return domains
 
@@ -474,32 +484,6 @@ def _build_dist_hints(loaded, dcop):
     return DistributionHints(
         must_host, dict(host_with) if host_with is not None else {}
     )
-
-
-def str_2_domain_values(domain_str):
-    """
-    Deserialize a domain expressed as a string.
-
-    If all variable in the domain can be interpreted as a int, the list is a
-    list of int, otherwise it is a list of strings.
-
-    :param domain_str: a string like 0..5 of A, B, C, D
-
-    :return: the list of values in the domain
-    """
-    try:
-        sep_index = domain_str.index("..")
-        # Domain str is : [0..5]
-        min_d = int(domain_str[0:sep_index])
-        max_d = int(domain_str[sep_index + 2 :])
-        return list(range(min_d, max_d + 1))
-    except ValueError:
-        values = [v.strip() for v in domain_str[1:].split(",")]
-        try:
-            return [int(v) for v in values]
-        except ValueError:
-            return values
-
 
 def load_scenario_from_file(filename: str) -> Scenario:
     """
