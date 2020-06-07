@@ -72,7 +72,7 @@ import logging
 from collections import defaultdict
 from typing import Dict, Any, List
 
-from pydcop.dcop.objects import VariableNoisyCostFunc, Variable
+from pydcop.dcop.objects import VariableNoisyCostFunc, Variable, Domain
 from pydcop.algorithms import AlgoParameterDef, ComputationDef
 from pydcop.algorithms import maxsum
 from pydcop.dcop.relations import generate_assignment_as_dict
@@ -114,6 +114,9 @@ class MaxSumFactorComputation(DcopComputation):
     def __init__(self, comp_def=None):
         assert comp_def.algo.algo == "amaxsum"
         super().__init__(comp_def.node.factor.name, comp_def)
+        # Check if the domains of the variables are suitable
+        assert type(self._variable.domain) is Domain
+        
         self.mode = comp_def.algo.mode
         self.factor = comp_def.node.factor
         self.variables = self.factor.dimensions

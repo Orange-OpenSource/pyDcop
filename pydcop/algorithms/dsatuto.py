@@ -50,6 +50,7 @@ from numpy import random
 
 from pydcop.algorithms import ComputationDef
 from pydcop.dcop.relations import assignment_cost, find_optimal
+from pydcop.dcop.objects import Domain
 from pydcop.infrastructure.computations import (
     VariableComputation,
     message_type,
@@ -82,6 +83,9 @@ class DsaTutoComputation(SynchronousComputationMixin, VariableComputation):
         super().__init__(computation_definition.node.variable, computation_definition)
 
         assert computation_definition.algo.algo == "dsatuto"
+        # Check if the domains of the variables are suitable
+        assert type(self._variable.domain) is Domain
+        
         self.mode = computation_definition.algo.mode
 
         self.constraints = computation_definition.node.constraints

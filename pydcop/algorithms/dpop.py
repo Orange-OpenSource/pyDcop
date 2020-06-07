@@ -58,7 +58,7 @@ from typing import Iterable
 
 from pydcop.computations_graph.pseudotree import get_dfs_relations
 from pydcop.infrastructure.computations import Message, VariableComputation, register
-from pydcop.dcop.objects import Variable
+from pydcop.dcop.objects import Variable, Domain
 from pydcop.dcop.relations import (
     NAryMatrixRelation,
     Constraint,
@@ -172,11 +172,13 @@ class DpopAlgo(VariableComputation):
     """
 
     def __init__(self, comp_def: ComputationDef):
-
         assert comp_def.algo.algo == "dpop"
 
         super().__init__(comp_def.node.variable, comp_def)
         self._mode = comp_def.algo.mode
+
+        # Check if the domains of the variables are suitable
+        assert type(self._variable.domain) is Domain
 
         self._parent, self._pseudo_parents, self._children, self._pseudo_children = get_dfs_relations(
             self.computation_def.node

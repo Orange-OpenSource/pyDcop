@@ -63,6 +63,7 @@ from pydcop.dcop.relations import (
     find_arg_optimal,
     optimal_cost_value,
 )
+from pydcop.dcop.objects import Domain
 from pydcop.infrastructure.computations import Message, VariableComputation, register
 
 GRAPH_TYPE = "constraints_hypergraph"
@@ -231,6 +232,8 @@ class MgmComputation(VariableComputation):
         )
 
         super().__init__(computation_definition.node.variable, computation_definition)
+        # Check if the domains of the variables are suitable
+        assert type(self._variable.domain) is Domain
 
         self.__utilities__ = list(computation_definition.node.constraints)
         self._mode = computation_definition.algo.mode  # min or max

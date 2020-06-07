@@ -149,7 +149,7 @@ Computation
 from typing import Optional, List, Any, Tuple
 
 from pydcop.algorithms import ComputationDef
-from pydcop.dcop.objects import Variable
+from pydcop.dcop.objects import Variable, Domain
 from pydcop.dcop.relations import assignment_cost, Constraint
 from pydcop.infrastructure.computations import (
     VariableComputation,
@@ -181,6 +181,8 @@ class SyncBBComputation(VariableComputation):
 
     def __init__(self, computation_definition: ComputationDef):
         super().__init__(computation_definition.node.variable, computation_definition)
+        # Check if the domains of the variables are suitable
+        assert type(self._variable.domain) is Domain
 
         assert computation_definition.algo.algo == "syncbb"
         self.constraints = computation_definition.node.constraints

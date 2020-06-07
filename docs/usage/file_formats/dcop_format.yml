@@ -29,7 +29,6 @@ domains:
   d3:
     values  : [1 .. 10]
     type   : non_semantic
-    initial_value: 3
   dbool:
     values  : [true, false]
 
