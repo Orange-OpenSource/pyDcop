@@ -580,6 +580,11 @@ class NAryFunctionRelation(AbstractBaseRelation, SimpleRepr):
             else:
                 slice_f = functools.partial(self._f, **slicing_dict)
 
+            # Check if there is a source file for the relation defined
+            if 'source' in self._f.exp_func.__globals__:
+                # Add the source object
+                slice_f.exp_func.__globals__['source'] = self._f.exp_func.__globals__['source']
+
             return NAryFunctionRelation(slice_f, remaining_vars, name=self.name)
 
     def set_value_for_assignment(self, assignment, relation_value):
