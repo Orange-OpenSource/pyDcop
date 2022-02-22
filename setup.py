@@ -32,10 +32,10 @@
 
 # Basic dependencies, required to run pyDCOP:
 deps = [
-        'pulp',
+        'pulp==2.0',
         'numpy',
         'networkx',
-        'pyyaml',
+        'pyyaml==5.4.1',
         'requests',
         'websocket-server',
         'tqdm',
