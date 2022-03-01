@@ -35,7 +35,8 @@ where pseudo-parent and pseudo-children links are added to the tree.
  
  This model is typically used for the dpop algorithm.
 """
-from typing import Dict
+import functools
+from typing import Callable, Dict # , Literal not yet available in all Pythons
 from typing import Iterable
 
 from collections import defaultdict
@@ -139,11 +140,11 @@ class PseudoTreeNode(ComputationNode):
     """
 
     def __init__(
-        self,
-        variable: Variable,
-        constraints: Iterable[Constraint],
-        links: Iterable[PseudoTreeLink],
-        name: str = None,
+            self,
+            variable: Variable,
+            constraints: Iterable[Constraint],
+            links: Iterable[PseudoTreeLink],
+            name: str = None,
     ) -> None:
         name = name if name is not None else variable.name
         super().__init__(name, "PseudoTreeComputation", links=links)
@@ -322,6 +323,25 @@ def _find_neighbors_relations(node, relations, nodes):
     return node_neighbors, node_relations
 
 
+def _deterministic_compare(node1: _BuildingNode, node2: _BuildingNode): # -> Literal[-1, 0, 1]:
+    nn1: int = node1.neighbors_count()
+    nn2: int = node2.neighbors_count()
+    if nn1 < nn2:
+        return -1
+    if nn1 > nn2:
+        return 1
+    nm1: str = node1.name
+    nm2: str = node2.name
+    if nm1 < nm2:
+        return -1
+    if nm2 > nm1:
+        return 1
+    return 0
+
+
+_deterministic_compare_node: Callable = functools.cmp_to_key(_deterministic_compare)
+
+
 def _generate_dfs_tree(variables, relations, root=None):
     """
     Generate a DFS tree for these variables connected by these relations.
@@ -350,7 +370,7 @@ def _generate_dfs_tree(variables, relations, root=None):
     if root is None:
         # heuristic :
         # root = random.choice(variables)
-        nodes.sort(key=lambda n: n.neighbors_count())
+        nodes.sort(key=_deterministic_compare_node)
         root = nodes[-1]
     else:
         for n in nodes:
@@ -390,7 +410,7 @@ def tree_str_desc(root, indent_num=0):
     pp = ", ".join([p.variable.name for p in root.pseudo_parents])
     pc = ", ".join([c.variable.name for c in root.pseudo_children])
     desc += (
-        indent + "* " + root.variable.name + " - PP : [" + pp + "] - PC: [" + pc + "]\n"
+            indent + "* " + root.variable.name + " - PP : [" + pp + "] - PC: [" + pc + "]\n"
     )
     for n in root.children:
         desc += tree_str_desc(n, indent_num=(indent_num + 2))
@@ -445,7 +465,7 @@ class ComputationPseudoTree(ComputationGraph):
         return e / (v * (v - 1))
 
     def __str__(self):
-        return f"PseudoTree nodes={ [n.name for n in self.nodes]} " \
+        return f"PseudoTree nodes={[n.name for n in self.nodes]} " \
                f"links={[l for l in self.links]}"
 
 
@@ -470,9 +490,9 @@ def _filter_relation_to_lowest_node(dfs_root):
 
 
 def build_computation_graph(
-    dcop: DCOP,
-    variables: Iterable[Variable] = None,
-    constraints: Iterable[Constraint] = None,
+        dcop: DCOP,
+        variables: Iterable[Variable] = None,
+        constraints: Iterable[Constraint] = None,
 ) -> ComputationPseudoTree:
     """
     Build a computation pseudo-tree graph for the DCOP.
